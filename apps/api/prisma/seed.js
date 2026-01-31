@@ -1,6 +1,14 @@
 const { PrismaClient } = require("@prisma/client");
 
+const { randomBytes, scryptSync } = require("node:crypto");
+
 const prisma = new PrismaClient();
+
+function hashPassword(password) {
+  const salt = randomBytes(16).toString("hex");
+  const hash = scryptSync(password, salt, 64).toString("hex");
+  return `${salt}:${hash}`;
+}
 
 const ids = {
   tenant: "00000000-0000-0000-0000-000000000001",
@@ -44,12 +52,18 @@ async function main() {
 
   const user = await prisma.user.upsert({
     where: { id: ids.user },
-    update: {},
+    update: {
+      email: "admin@acme.test",
+      name: "Admin",
+      passwordHash: hashPassword("Admin#123"),
+      status: "ACTIVE",
+    },
     create: {
       id: ids.user,
       tenantId: tenant.id,
       email: "admin@acme.test",
       name: "Admin",
+      passwordHash: hashPassword("Admin#123"),
       status: "ACTIVE",
     },
   });
