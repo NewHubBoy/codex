@@ -1,0 +1,58 @@
+import { z } from "zod";
+export declare const OpportunityDTOSchema: z.ZodObject<{
+    id: z.ZodString;
+    tenantId: z.ZodString;
+    orgUnitId: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    ownerId: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    status: z.ZodString;
+    createdAt: z.ZodString;
+    updatedAt: z.ZodString;
+} & {
+    name: z.ZodString;
+    stage: z.ZodString;
+    amount: z.ZodOptional<z.ZodNumber>;
+    currency: z.ZodOptional<z.ZodString>;
+    expectedCloseDate: z.ZodOptional<z.ZodString>;
+    probability: z.ZodOptional<z.ZodNumber>;
+    accountId: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    contactId: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    leadId: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    reasonLost: z.ZodOptional<z.ZodString>;
+}, "strip", z.ZodTypeAny, {
+    id: string;
+    tenantId: string;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+    name: string;
+    stage: string;
+    orgUnitId?: string | null | undefined;
+    ownerId?: string | null | undefined;
+    accountId?: string | null | undefined;
+    contactId?: string | null | undefined;
+    amount?: number | undefined;
+    currency?: string | undefined;
+    expectedCloseDate?: string | undefined;
+    probability?: number | undefined;
+    leadId?: string | null | undefined;
+    reasonLost?: string | undefined;
+}, {
+    id: string;
+    tenantId: string;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+    name: string;
+    stage: string;
+    orgUnitId?: string | null | undefined;
+    ownerId?: string | null | undefined;
+    accountId?: string | null | undefined;
+    contactId?: string | null | undefined;
+    amount?: number | undefined;
+    currency?: string | undefined;
+    expectedCloseDate?: string | undefined;
+    probability?: number | undefined;
+    leadId?: string | null | undefined;
+    reasonLost?: string | undefined;
+}>;
+export type OpportunityDTO = z.infer<typeof OpportunityDTOSchema>;

@@ -1,0 +1,55 @@
+import { z } from "zod";
+export declare const QuoteDTOSchema: z.ZodObject<{
+    id: z.ZodString;
+    tenantId: z.ZodString;
+    orgUnitId: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    ownerId: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    createdAt: z.ZodString;
+    updatedAt: z.ZodString;
+} & {
+    number: z.ZodOptional<z.ZodString>;
+    version: z.ZodOptional<z.ZodNumber>;
+    status: z.ZodString;
+    validFrom: z.ZodOptional<z.ZodString>;
+    validTo: z.ZodOptional<z.ZodString>;
+    totalAmount: z.ZodOptional<z.ZodNumber>;
+    currency: z.ZodOptional<z.ZodString>;
+    opportunityId: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    accountId: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    contactId: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+}, "strip", z.ZodTypeAny, {
+    id: string;
+    tenantId: string;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+    number?: string | undefined;
+    orgUnitId?: string | null | undefined;
+    ownerId?: string | null | undefined;
+    accountId?: string | null | undefined;
+    contactId?: string | null | undefined;
+    currency?: string | undefined;
+    version?: number | undefined;
+    validFrom?: string | undefined;
+    validTo?: string | undefined;
+    totalAmount?: number | undefined;
+    opportunityId?: string | null | undefined;
+}, {
+    id: string;
+    tenantId: string;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+    number?: string | undefined;
+    orgUnitId?: string | null | undefined;
+    ownerId?: string | null | undefined;
+    accountId?: string | null | undefined;
+    contactId?: string | null | undefined;
+    currency?: string | undefined;
+    version?: number | undefined;
+    validFrom?: string | undefined;
+    validTo?: string | undefined;
+    totalAmount?: number | undefined;
+    opportunityId?: string | null | undefined;
+}>;
+export type QuoteDTO = z.infer<typeof QuoteDTOSchema>;

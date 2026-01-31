@@ -1,0 +1,52 @@
+import { z } from "zod";
+export declare const TicketDTOSchema: z.ZodObject<{
+    id: z.ZodString;
+    tenantId: z.ZodString;
+    orgUnitId: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    ownerId: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    createdAt: z.ZodString;
+    updatedAt: z.ZodString;
+} & {
+    number: z.ZodOptional<z.ZodString>;
+    type: z.ZodOptional<z.ZodString>;
+    priority: z.ZodOptional<z.ZodString>;
+    subject: z.ZodOptional<z.ZodString>;
+    status: z.ZodString;
+    slaDueAt: z.ZodOptional<z.ZodString>;
+    accountId: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    contactId: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    orderId: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+}, "strip", z.ZodTypeAny, {
+    id: string;
+    tenantId: string;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+    number?: string | undefined;
+    orgUnitId?: string | null | undefined;
+    ownerId?: string | null | undefined;
+    type?: string | undefined;
+    accountId?: string | null | undefined;
+    contactId?: string | null | undefined;
+    priority?: string | undefined;
+    subject?: string | undefined;
+    slaDueAt?: string | undefined;
+    orderId?: string | null | undefined;
+}, {
+    id: string;
+    tenantId: string;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+    number?: string | undefined;
+    orgUnitId?: string | null | undefined;
+    ownerId?: string | null | undefined;
+    type?: string | undefined;
+    accountId?: string | null | undefined;
+    contactId?: string | null | undefined;
+    priority?: string | undefined;
+    subject?: string | undefined;
+    slaDueAt?: string | undefined;
+    orderId?: string | null | undefined;
+}>;
+export type TicketDTO = z.infer<typeof TicketDTOSchema>;
