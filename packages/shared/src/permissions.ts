@@ -1,0 +1,36 @@
+export const PERMISSIONS = [
+  {
+    code: "crm:full_access",
+    name: "CRM Full Access",
+    type: "ACTION",
+    description: "Full access to all CRM modules"
+  },
+  { code: "user:read", name: "User Read", type: "ACTION" },
+  { code: "user:write", name: "User Write", type: "ACTION" },
+  { code: "user:role:write", name: "User Role Write", type: "ACTION" },
+  { code: "rbac:role:read", name: "RBAC Role Read", type: "ACTION" },
+  { code: "rbac:role:write", name: "RBAC Role Write", type: "ACTION" },
+  { code: "rbac:permission:read", name: "RBAC Permission Read", type: "ACTION" },
+  { code: "rbac:permission:write", name: "RBAC Permission Write", type: "ACTION" },
+  { code: "orgunit:read", name: "Org Unit Read", type: "ACTION" },
+  { code: "orgunit:write", name: "Org Unit Write", type: "ACTION" },
+  { code: "orgunit:member:write", name: "Org Unit Member Write", type: "ACTION" },
+  { code: "numberrange:read", name: "Number Range Read", type: "ACTION" },
+  { code: "numberrange:write", name: "Number Range Write", type: "ACTION" },
+  { code: "config:workflow:read", name: "Workflow Config Read", type: "ACTION" },
+  { code: "config:workflow:write", name: "Workflow Config Write", type: "ACTION" },
+  { code: "config:field:read", name: "Field Config Read", type: "ACTION" },
+  { code: "config:field:write", name: "Field Config Write", type: "ACTION" },
+  { code: "account:read", name: "Account Read", type: "ACTION" },
+  { code: "account:write", name: "Account Write", type: "ACTION" },
+  { code: "contact:read", name: "Contact Read", type: "ACTION" },
+  { code: "contact:write", name: "Contact Write", type: "ACTION" },
+  { code: "lead:read", name: "Lead Read", type: "ACTION" },
+  { code: "lead:write", name: "Lead Write", type: "ACTION" },
+  { code: "opportunity:read", name: "Opportunity Read", type: "ACTION" },
+  { code: "opportunity:write", name: "Opportunity Write", type: "ACTION" },
+  { code: "activity:read", name: "Activity Read", type: "ACTION" },
+  { code: "activity:write", name: "Activity Write", type: "ACTION" }
+] as const;
+
+export type PermissionCode = (typeof PERMISSIONS)[number]["code"];

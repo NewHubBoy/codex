@@ -2,10 +2,16 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import type { AddOrgMemberInput, CreateOrgUnitInput, UpdateOrgUnitInput } from "@crm/shared";
 import type { RequestContext } from "../../common/request-context";
 import { PrismaService } from "../../prisma/prisma.service";
+import { AuditLogService } from "../../common/services/audit-log.service";
+import { OutboxService } from "../../common/services/outbox.service";
 
 @Injectable()
 export class OrgUnitsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditLogService,
+    private readonly outbox: OutboxService
+  ) {}
 
   health() {
     return { status: "ok", module: "org-units" };
@@ -28,7 +34,7 @@ export class OrgUnitsService {
   }
 
   async create(ctx: RequestContext, input: CreateOrgUnitInput) {
-    return this.prisma.orgUnit.create({
+    const orgUnit = await this.prisma.orgUnit.create({
       data: {
         tenantId: ctx.tenantId,
         parentId: input.parentId ?? undefined,
@@ -39,11 +45,16 @@ export class OrgUnitsService {
         status: input.status ?? "ACTIVE"
       }
     });
+    await this.audit.log(ctx, "create", "OrgUnit", orgUnit.id, `Created ${orgUnit.name}`);
+    await this.outbox.enqueue(ctx, "OrgUnit", orgUnit.id, "orgunit.created", {
+      name: orgUnit.name
+    });
+    return orgUnit;
   }
 
   async update(ctx: RequestContext, id: string, input: UpdateOrgUnitInput) {
     await this.get(ctx, id);
-    return this.prisma.orgUnit.update({
+    const orgUnit = await this.prisma.orgUnit.update({
       where: { id },
       data: {
         parentId: input.parentId ?? undefined,
@@ -54,6 +65,11 @@ export class OrgUnitsService {
         status: input.status
       }
     });
+    await this.audit.log(ctx, "update", "OrgUnit", orgUnit.id, `Updated ${orgUnit.name}`);
+    await this.outbox.enqueue(ctx, "OrgUnit", orgUnit.id, "orgunit.updated", {
+      name: orgUnit.name
+    });
+    return orgUnit;
   }
 
   async listMembers(ctx: RequestContext, orgUnitId: string) {
@@ -75,7 +91,7 @@ export class OrgUnitsService {
     if (!user) {
       throw new NotFoundException("User not found");
     }
-    return this.prisma.userOrgMembership.upsert({
+    const membership = await this.prisma.userOrgMembership.upsert({
       where: {
         userId_orgUnitId: {
           userId: input.userId,
@@ -91,11 +107,16 @@ export class OrgUnitsService {
         roleInOrg: input.roleInOrg
       }
     });
+    await this.audit.log(ctx, "update", "UserOrgMembership", `${input.userId}:${orgUnitId}`, "Member added");
+    await this.outbox.enqueue(ctx, "OrgUnit", orgUnitId, "orgunit.member.added", {
+      userId: input.userId
+    });
+    return membership;
   }
 
   async removeMember(ctx: RequestContext, orgUnitId: string, userId: string) {
     await this.get(ctx, orgUnitId);
-    return this.prisma.userOrgMembership.delete({
+    const removal = await this.prisma.userOrgMembership.delete({
       where: {
         userId_orgUnitId: {
           userId,
@@ -103,5 +124,10 @@ export class OrgUnitsService {
         }
       }
     });
+    await this.audit.log(ctx, "delete", "UserOrgMembership", `${userId}:${orgUnitId}`, "Member removed");
+    await this.outbox.enqueue(ctx, "OrgUnit", orgUnitId, "orgunit.member.removed", {
+      userId
+    });
+    return removal;
   }
 }

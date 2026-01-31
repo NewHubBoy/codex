@@ -268,6 +268,124 @@ model Activity {
   @@index([relatedType, relatedId])
 }
 
+model NumberRange {
+  id           String   @id @default(uuid())
+  tenantId     String
+  objectType   String
+  prefix       String?
+  currentValue Int      @default(0)
+  format       String?
+  resetRule    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([tenantId, objectType])
+  @@index([tenantId])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  tenantId  String
+  actorId   String?
+  action    String
+  objectType String
+  objectId  String
+  summary   String?
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([objectType, objectId])
+}
+
+model OutboxEvent {
+  id            String       @id @default(uuid())
+  tenantId      String
+  aggregateType String
+  aggregateId   String
+  eventType     String
+  payloadJson   Json
+  status        OutboxStatus @default(PENDING)
+  createdAt     DateTime     @default(now())
+
+  @@index([tenantId])
+  @@index([status])
+}
+
+model ProcessDefinition {
+  id        String   @id @default(uuid())
+  tenantId  String
+  entityType String
+  name      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  states      ProcessState[]
+  transitions ProcessTransition[]
+
+  @@index([tenantId])
+  @@unique([tenantId, entityType, name])
+}
+
+model ProcessState {
+  id          String   @id @default(uuid())
+  processId   String
+  stateKey    String
+  displayName String
+  category    String?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  process ProcessDefinition @relation(fields: [processId], references: [id])
+
+  @@index([processId])
+  @@unique([processId, stateKey])
+}
+
+model ProcessTransition {
+  id            String   @id @default(uuid())
+  processId     String
+  fromState     String
+  toState       String
+  conditionExpr String?
+  requiredRoles String?
+  createdAt     DateTime @default(now())
+
+  process ProcessDefinition @relation(fields: [processId], references: [id])
+
+  @@index([processId])
+}
+
+model FieldDefinition {
+  id           String   @id @default(uuid())
+  tenantId     String
+  entityType   String
+  fieldKey     String
+  label        String
+  dataType     String
+  required     Boolean  @default(false)
+  optionsJson  Json?
+  validationJson Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([tenantId])
+  @@unique([tenantId, entityType, fieldKey])
+}
+
+model FieldGroup {
+  id         String   @id @default(uuid())
+  tenantId   String
+  entityType String
+  groupName  String
+  sortOrder  Int      @default(0)
+  layoutJson Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([tenantId])
+}
+
 enum TenantStatus {
   ACTIVE
   INACTIVE
@@ -300,4 +418,11 @@ enum DataScope {
   TEAM
   SUBTREE
   ALL
+}
+
+enum OutboxStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
 }

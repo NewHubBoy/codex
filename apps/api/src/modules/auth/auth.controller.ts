@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Post, Req, UseGuards } from "@nestjs/common";
 import type { Request } from "express";
+import { ApiBody, ApiOkResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { getRequestContext } from "../../common/request-context";
 import { AuthGuard } from "../../common/guards/auth.guard";
 import {
@@ -8,12 +9,22 @@ import {
   SetPasswordInputSchema
 } from "./dto/auth.input";
 import { AuthService } from "./auth.service";
+import {
+  AuthTokensDto,
+  LoginRequestDto,
+  RefreshRequestDto,
+  SetPasswordRequestDto
+} from "./dto/auth.swagger";
 
+@ApiTags("auth")
+@ApiSecurity("tenant")
 @Controller("auth")
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post("login")
+  @ApiBody({ type: LoginRequestDto })
+  @ApiOkResponse({ type: AuthTokensDto })
   async login(@Req() req: Request, @Body() body: unknown) {
     const ctx = getRequestContext(req);
     const input = LoginInputSchema.parse(body);
@@ -21,6 +32,8 @@ export class AuthController {
   }
 
   @Post("refresh")
+  @ApiBody({ type: RefreshRequestDto })
+  @ApiOkResponse({ type: AuthTokensDto })
   async refresh(@Req() req: Request, @Body() body: unknown) {
     const ctx = getRequestContext(req);
     const input = RefreshInputSchema.parse(body);
@@ -29,6 +42,7 @@ export class AuthController {
 
   @Post("logout")
   @UseGuards(AuthGuard)
+  @ApiOkResponse({ schema: { example: { success: true } } })
   async logout(@Req() req: Request) {
     const ctx = getRequestContext(req);
     if (!ctx.userId) {
@@ -39,6 +53,8 @@ export class AuthController {
 
   @Post("set-password")
   @UseGuards(AuthGuard)
+  @ApiBody({ type: SetPasswordRequestDto })
+  @ApiOkResponse({ schema: { example: { success: true } } })
   async setPassword(@Req() req: Request, @Body() body: unknown) {
     const ctx = getRequestContext(req);
     const input = SetPasswordInputSchema.parse(body);

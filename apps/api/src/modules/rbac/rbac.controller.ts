@@ -11,6 +11,14 @@ import {
 } from "@nestjs/common";
 import type { Request } from "express";
 import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiSecurity,
+  ApiTags
+} from "@nestjs/swagger";
+import {
   AssignPermissionInputSchema,
   CreatePermissionInputSchema,
   CreateRoleInputSchema,
@@ -23,7 +31,20 @@ import { RequirePermissions } from "../../common/decorators/permissions.decorato
 import { AuthGuard } from "../../common/guards/auth.guard";
 import { PermissionsGuard } from "../../common/guards/permissions.guard";
 import { RbacService } from "./rbac.service";
+import {
+  AssignPermissionDto,
+  CreatePermissionDto,
+  CreateRoleDto,
+  PermissionDto,
+  RoleDto,
+  RolePermissionDto,
+  UpdatePermissionDto,
+  UpdateRoleDto
+} from "./dto/rbac.swagger";
 
+@ApiTags("rbac")
+@ApiBearerAuth()
+@ApiSecurity("tenant")
 @UseGuards(AuthGuard, PermissionsGuard)
 @Controller("rbac")
 export class RbacController {
@@ -31,6 +52,7 @@ export class RbacController {
 
   @Get("roles")
   @RequirePermissions("rbac:role:read")
+  @ApiOkResponse({ type: RoleDto, isArray: true })
   async listRoles(@Req() req: Request) {
     const ctx = getRequestContext(req);
     return this.rbacService.listRoles(ctx);
@@ -38,6 +60,8 @@ export class RbacController {
 
   @Post("roles")
   @RequirePermissions("rbac:role:write")
+  @ApiBody({ type: CreateRoleDto })
+  @ApiCreatedResponse({ type: RoleDto })
   async createRole(@Req() req: Request, @Body() body: unknown) {
     const ctx = getRequestContext(req);
     const input = CreateRoleInputSchema.parse(body);
@@ -46,6 +70,7 @@ export class RbacController {
 
   @Get("roles/:id")
   @RequirePermissions("rbac:role:read")
+  @ApiOkResponse({ type: RoleDto })
   async getRole(@Req() req: Request, @Param("id") id: string) {
     const ctx = getRequestContext(req);
     return this.rbacService.getRole(ctx, id);
@@ -53,6 +78,8 @@ export class RbacController {
 
   @Patch("roles/:id")
   @RequirePermissions("rbac:role:write")
+  @ApiBody({ type: UpdateRoleDto })
+  @ApiOkResponse({ type: RoleDto })
   async updateRole(
     @Req() req: Request,
     @Param("id") id: string,
@@ -65,32 +92,41 @@ export class RbacController {
 
   @Get("permissions")
   @RequirePermissions("rbac:permission:read")
+  @ApiOkResponse({ type: PermissionDto, isArray: true })
   async listPermissions() {
     return this.rbacService.listPermissions();
   }
 
   @Post("permissions")
   @RequirePermissions("rbac:permission:write")
-  async createPermission(@Body() body: unknown) {
+  @ApiBody({ type: CreatePermissionDto })
+  @ApiCreatedResponse({ type: PermissionDto })
+  async createPermission(@Req() req: Request, @Body() body: unknown) {
+    const ctx = getRequestContext(req);
     const input = CreatePermissionInputSchema.parse(body);
-    return this.rbacService.createPermission(input);
+    return this.rbacService.createPermission(ctx, input);
   }
 
   @Get("permissions/:id")
   @RequirePermissions("rbac:permission:read")
+  @ApiOkResponse({ type: PermissionDto })
   async getPermission(@Param("id") id: string) {
     return this.rbacService.getPermission(id);
   }
 
   @Patch("permissions/:id")
   @RequirePermissions("rbac:permission:write")
-  async updatePermission(@Param("id") id: string, @Body() body: unknown) {
+  @ApiBody({ type: UpdatePermissionDto })
+  @ApiOkResponse({ type: PermissionDto })
+  async updatePermission(@Req() req: Request, @Param("id") id: string, @Body() body: unknown) {
+    const ctx = getRequestContext(req);
     const input = UpdatePermissionInputSchema.parse(body);
-    return this.rbacService.updatePermission(id, input);
+    return this.rbacService.updatePermission(ctx, id, input);
   }
 
   @Get("roles/:id/permissions")
   @RequirePermissions("rbac:role:read")
+  @ApiOkResponse({ type: RolePermissionDto, isArray: true })
   async listRolePermissions(@Req() req: Request, @Param("id") id: string) {
     const ctx = getRequestContext(req);
     return this.rbacService.listRolePermissions(ctx, id);
@@ -98,6 +134,8 @@ export class RbacController {
 
   @Post("roles/:id/permissions")
   @RequirePermissions("rbac:role:write")
+  @ApiBody({ type: AssignPermissionDto })
+  @ApiOkResponse({ type: RolePermissionDto })
   async addRolePermission(
     @Req() req: Request,
     @Param("id") id: string,

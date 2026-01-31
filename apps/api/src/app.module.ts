@@ -10,6 +10,9 @@ import { OrgUnitsModule } from "./modules/org-units/org-units.module";
 import { RbacModule } from "./modules/rbac/rbac.module";
 import { TenantsModule } from "./modules/tenants/tenants.module";
 import { UsersModule } from "./modules/users/users.module";
+import { NumberRangesModule } from "./modules/number-ranges/number-ranges.module";
+import { WorkflowsModule } from "./modules/workflows/workflows.module";
+import { FieldsModule } from "./modules/fields/fields.module";
 import { TenantMiddleware } from "./common/middleware/tenant.middleware";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
@@ -26,7 +29,10 @@ import { AppService } from "./app.service";
     ContactsModule,
     LeadsModule,
     OpportunitiesModule,
-    ActivitiesModule
+    ActivitiesModule,
+    NumberRangesModule,
+    WorkflowsModule,
+    FieldsModule
   ],
   controllers: [AppController],
   providers: [AppService]

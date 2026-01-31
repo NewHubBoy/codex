@@ -3,10 +3,16 @@ import type { CreateUserInput, UpdateUserInput } from "@crm/shared";
 import { PrismaService } from "../../prisma/prisma.service";
 import type { RequestContext } from "../../common/request-context";
 import { hashPassword } from "../../common/security/password";
+import { AuditLogService } from "../../common/services/audit-log.service";
+import { OutboxService } from "../../common/services/outbox.service";
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditLogService,
+    private readonly outbox: OutboxService
+  ) {}
 
   health() {
     return { status: "ok", module: "users" };
@@ -29,7 +35,7 @@ export class UsersService {
   }
 
   async create(ctx: RequestContext, input: CreateUserInput) {
-    return this.prisma.user.create({
+    const user = await this.prisma.user.create({
       data: {
         tenantId: ctx.tenantId,
         email: input.email,
@@ -38,11 +44,14 @@ export class UsersService {
         status: input.status ?? "ACTIVE"
       }
     });
+    await this.audit.log(ctx, "create", "User", user.id, `Created ${user.email}`);
+    await this.outbox.enqueue(ctx, "User", user.id, "user.created", { email: user.email });
+    return user;
   }
 
   async update(ctx: RequestContext, id: string, input: UpdateUserInput) {
     await this.get(ctx, id);
-    return this.prisma.user.update({
+    const user = await this.prisma.user.update({
       where: { id },
       data: {
         email: input.email,
@@ -51,6 +60,9 @@ export class UsersService {
         passwordHash: input.password ? hashPassword(input.password) : undefined
       }
     });
+    await this.audit.log(ctx, "update", "User", user.id, `Updated ${user.email}`);
+    await this.outbox.enqueue(ctx, "User", user.id, "user.updated", { email: user.email });
+    return user;
   }
 
   async listRoles(ctx: RequestContext, userId: string) {
@@ -72,7 +84,7 @@ export class UsersService {
     if (!role) {
       throw new NotFoundException("Role not found");
     }
-    return this.prisma.userRole.upsert({
+    const assignment = await this.prisma.userRole.upsert({
       where: {
         userId_roleId: {
           userId,
@@ -85,11 +97,14 @@ export class UsersService {
         roleId
       }
     });
+    await this.audit.log(ctx, "update", "UserRole", `${userId}:${roleId}`, "Assigned role");
+    await this.outbox.enqueue(ctx, "User", userId, "user.role.assigned", { roleId });
+    return assignment;
   }
 
   async removeRole(ctx: RequestContext, userId: string, roleId: string) {
     await this.get(ctx, userId);
-    return this.prisma.userRole.delete({
+    const removal = await this.prisma.userRole.delete({
       where: {
         userId_roleId: {
           userId,
@@ -97,5 +112,8 @@ export class UsersService {
         }
       }
     });
+    await this.audit.log(ctx, "delete", "UserRole", `${userId}:${roleId}`, "Removed role");
+    await this.outbox.enqueue(ctx, "User", userId, "user.role.removed", { roleId });
+    return removal;
   }
 }

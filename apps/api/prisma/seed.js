@@ -1,6 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
 
 const { randomBytes, scryptSync } = require("node:crypto");
+const defaultPermissions = require("./default-permissions");
 
 const prisma = new PrismaClient();
 
@@ -70,7 +71,13 @@ async function main() {
 
   const role = await prisma.role.upsert({
     where: { id: ids.role },
-    update: {},
+    update: {
+      tenantId: tenant.id,
+      code: "ADMIN",
+      name: "Admin",
+      dataScope: "ALL",
+      status: "ACTIVE",
+    },
     create: {
       id: ids.role,
       tenantId: tenant.id,
@@ -81,31 +88,40 @@ async function main() {
     },
   });
 
-  const permission = await prisma.permission.upsert({
-    where: { id: ids.permission },
-    update: {},
-    create: {
-      id: ids.permission,
-      code: "crm:full_access",
-      name: "CRM Full Access",
-      type: "ACTION",
-      description: "Full access to CRM modules",
-    },
-  });
+  const permissionRecords = [];
+  for (const permission of defaultPermissions) {
+    const record = await prisma.permission.upsert({
+      where: { code: permission.code },
+      update: {
+        name: permission.name,
+        type: permission.type ?? "ACTION",
+        description: permission.description ?? null,
+      },
+      create: {
+        code: permission.code,
+        name: permission.name,
+        type: permission.type ?? "ACTION",
+        description: permission.description ?? null,
+      },
+    });
+    permissionRecords.push(record);
+  }
 
-  await prisma.rolePermission.upsert({
-    where: {
-      roleId_permissionId: {
+  for (const permission of permissionRecords) {
+    await prisma.rolePermission.upsert({
+      where: {
+        roleId_permissionId: {
+          roleId: role.id,
+          permissionId: permission.id,
+        },
+      },
+      update: {},
+      create: {
         roleId: role.id,
         permissionId: permission.id,
       },
-    },
-    update: {},
-    create: {
-      roleId: role.id,
-      permissionId: permission.id,
-    },
-  });
+    });
+  }
 
   await prisma.userRole.upsert({
     where: {

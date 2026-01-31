@@ -16,7 +16,7 @@ export class AuthService {
     const user = await this.prisma.user.findFirst({
       where: { tenantId, email }
     });
-    if (!user || !hasPasswordHash(user.passwordHash)) {
+    if (!user || !user.passwordHash || !hasPasswordHash(user.passwordHash)) {
       throw new UnauthorizedException("Invalid credentials");
     }
     const ok = verifyPassword(password, user.passwordHash);
