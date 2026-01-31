@@ -4,6 +4,8 @@ import type { RequestContext } from "../../common/request-context";
 import { PrismaService } from "../../prisma/prisma.service";
 import { AuditLogService } from "../../common/services/audit-log.service";
 import { OutboxService } from "../../common/services/outbox.service";
+import type { ListQuery } from "../../common/list-query";
+import { parseSort } from "../../common/list-query";
 
 @Injectable()
 export class NumberRangesService {
@@ -13,10 +15,29 @@ export class NumberRangesService {
     private readonly outbox: OutboxService
   ) {}
 
-  async list(ctx: RequestContext) {
-    return this.prisma.numberRange.findMany({
-      where: { tenantId: ctx.tenantId }
-    });
+  async list(ctx: RequestContext, query: ListQuery) {
+    const orderBy = parseSort(query.sort, ["createdAt", "updatedAt", "objectType"]);
+    const where = {
+      tenantId: ctx.tenantId,
+      ...(query.q
+        ? { objectType: { contains: query.q, mode: "insensitive" as const } }
+        : {})
+    };
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.numberRange.findMany({
+        where,
+        orderBy,
+        skip: query.skip,
+        take: query.take
+      }),
+      this.prisma.numberRange.count({ where })
+    ]);
+    return {
+      data,
+      page: query.page,
+      pageSize: query.pageSize,
+      total
+    };
   }
 
   async get(ctx: RequestContext, id: string) {

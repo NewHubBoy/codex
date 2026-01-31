@@ -31,3 +31,13 @@ This document defines the default permission codes used by the API.
 | `opportunity:write` | Opportunity Write | ACTION |  |
 | `activity:read` | Activity Read | ACTION |  |
 | `activity:write` | Activity Write | ACTION |  |
+| `product:read` | Product Read | ACTION |  |
+| `product:write` | Product Write | ACTION |  |
+| `quote:read` | Quote Read | ACTION |  |
+| `quote:write` | Quote Write | ACTION |  |
+| `order:read` | Order Read | ACTION |  |
+| `order:write` | Order Write | ACTION |  |
+| `delivery:read` | Delivery Read | ACTION |  |
+| `delivery:write` | Delivery Write | ACTION |  |
+| `ticket:read` | Ticket Read | ACTION |  |
+| `ticket:write` | Ticket Write | ACTION |  |

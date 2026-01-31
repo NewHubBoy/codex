@@ -10,6 +10,8 @@ import { PrismaService } from "../../prisma/prisma.service";
 import { Prisma } from "@prisma/client";
 import { AuditLogService } from "../../common/services/audit-log.service";
 import { OutboxService } from "../../common/services/outbox.service";
+import type { ListQuery } from "../../common/list-query";
+import { parseSort } from "../../common/list-query";
 
 @Injectable()
 export class FieldsService {
@@ -19,13 +21,35 @@ export class FieldsService {
     private readonly outbox: OutboxService
   ) {}
 
-  async listDefinitions(ctx: RequestContext, entityType?: string) {
-    return this.prisma.fieldDefinition.findMany({
-      where: {
-        tenantId: ctx.tenantId,
-        entityType: entityType ?? undefined
-      }
-    });
+  async listDefinitions(ctx: RequestContext, query: ListQuery, entityType?: string) {
+    const orderBy = parseSort(query.sort, ["createdAt", "updatedAt", "fieldKey", "label"]);
+    const where = {
+      tenantId: ctx.tenantId,
+      entityType: entityType ?? undefined,
+      ...(query.q
+        ? {
+            OR: [
+              { fieldKey: { contains: query.q, mode: "insensitive" as const } },
+              { label: { contains: query.q, mode: "insensitive" as const } }
+            ]
+          }
+        : {})
+    };
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.fieldDefinition.findMany({
+        where,
+        orderBy,
+        skip: query.skip,
+        take: query.take
+      }),
+      this.prisma.fieldDefinition.count({ where })
+    ]);
+    return {
+      data,
+      page: query.page,
+      pageSize: query.pageSize,
+      total
+    };
   }
 
   async createDefinition(ctx: RequestContext, input: CreateFieldDefinitionInput) {
@@ -76,10 +100,30 @@ export class FieldsService {
     return field;
   }
 
-  async listGroups(ctx: RequestContext, entityType?: string) {
-    return this.prisma.fieldGroup.findMany({
-      where: { tenantId: ctx.tenantId, entityType: entityType ?? undefined }
-    });
+  async listGroups(ctx: RequestContext, query: ListQuery, entityType?: string) {
+    const orderBy = parseSort(query.sort, ["createdAt", "updatedAt", "groupName", "sortOrder"]);
+    const where = {
+      tenantId: ctx.tenantId,
+      entityType: entityType ?? undefined,
+      ...(query.q
+        ? { groupName: { contains: query.q, mode: "insensitive" as const } }
+        : {})
+    };
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.fieldGroup.findMany({
+        where,
+        orderBy,
+        skip: query.skip,
+        take: query.take
+      }),
+      this.prisma.fieldGroup.count({ where })
+    ]);
+    return {
+      data,
+      page: query.page,
+      pageSize: query.pageSize,
+      total
+    };
   }
 
   async createGroup(ctx: RequestContext, input: CreateFieldGroupInput) {

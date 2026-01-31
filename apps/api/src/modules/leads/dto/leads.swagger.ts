@@ -54,3 +54,29 @@ export class CreateLeadDto {
   @ApiProperty({ required: false })
   description?: string;
 }
+
+export class UpdateLeadDto {
+  @ApiProperty({ required: false })
+  name?: string;
+
+  @ApiProperty({ required: false })
+  source?: string;
+
+  @ApiProperty({ required: false })
+  rating?: string;
+
+  @ApiProperty({ required: false })
+  expectedValue?: number;
+
+  @ApiProperty({ required: false })
+  accountId?: string | null;
+
+  @ApiProperty({ required: false })
+  contactId?: string | null;
+
+  @ApiProperty({ required: false })
+  description?: string;
+
+  @ApiProperty({ required: false })
+  status?: string;
+}

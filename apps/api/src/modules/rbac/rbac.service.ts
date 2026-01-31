@@ -9,6 +9,9 @@ import type { RequestContext } from "../../common/request-context";
 import { PrismaService } from "../../prisma/prisma.service";
 import { AuditLogService } from "../../common/services/audit-log.service";
 import { OutboxService } from "../../common/services/outbox.service";
+import type { ListQuery } from "../../common/list-query";
+import { parseSort } from "../../common/list-query";
+import type { RoleStatus } from "@prisma/client";
 
 @Injectable()
 export class RbacService {
@@ -22,10 +25,38 @@ export class RbacService {
     return { status: "ok", module: "rbac" };
   }
 
-  async listRoles(ctx: RequestContext) {
-    return this.prisma.role.findMany({
-      where: { tenantId: ctx.tenantId }
-    });
+  async listRoles(ctx: RequestContext, query: ListQuery) {
+    const orderBy = parseSort(query.sort, ["createdAt", "updatedAt", "code", "name"]);
+    const status = query.status && ["ACTIVE", "INACTIVE"].includes(query.status)
+      ? (query.status as RoleStatus)
+      : undefined;
+    const where = {
+      tenantId: ctx.tenantId,
+      status,
+      ...(query.q
+        ? {
+            OR: [
+              { code: { contains: query.q, mode: "insensitive" as const } },
+              { name: { contains: query.q, mode: "insensitive" as const } }
+            ]
+          }
+        : {})
+    };
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.role.findMany({
+        where,
+        orderBy,
+        skip: query.skip,
+        take: query.take
+      }),
+      this.prisma.role.count({ where })
+    ]);
+    return {
+      data,
+      page: query.page,
+      pageSize: query.pageSize,
+      total
+    };
   }
 
   async getRole(ctx: RequestContext, id: string) {
@@ -69,8 +100,31 @@ export class RbacService {
     return role;
   }
 
-  async listPermissions() {
-    return this.prisma.permission.findMany();
+  async listPermissions(query: ListQuery) {
+    const orderBy = parseSort(query.sort, ["code", "name", "type"], "code");
+    const where = query.q
+      ? {
+          OR: [
+            { code: { contains: query.q, mode: "insensitive" as const } },
+            { name: { contains: query.q, mode: "insensitive" as const } }
+          ]
+        }
+      : {};
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.permission.findMany({
+        where,
+        orderBy,
+        skip: query.skip,
+        take: query.take
+      }),
+      this.prisma.permission.count({ where })
+    ]);
+    return {
+      data,
+      page: query.page,
+      pageSize: query.pageSize,
+      total
+    };
   }
 
   async getPermission(id: string) {

@@ -51,3 +51,26 @@ export class CreateAccountDto {
   @ApiProperty({ required: false })
   bpId?: string | null;
 }
+
+export class UpdateAccountDto {
+  @ApiProperty({ required: false })
+  name?: string;
+
+  @ApiProperty({ required: false })
+  type?: string;
+
+  @ApiProperty({ required: false })
+  industry?: string;
+
+  @ApiProperty({ required: false })
+  rating?: string;
+
+  @ApiProperty({ required: false })
+  lifecycleStatus?: string;
+
+  @ApiProperty({ required: false })
+  parentId?: string | null;
+
+  @ApiProperty({ required: false })
+  bpId?: string | null;
+}

@@ -1,10 +1,12 @@
-import { Injectable } from "@nestjs/common";
-import type { CreateActivityInput } from "@crm/shared";
+import { Injectable, NotFoundException } from "@nestjs/common";
+import type { CreateActivityInput, UpdateActivityInput } from "@crm/shared";
 import { PrismaService } from "../../prisma/prisma.service";
 import type { RequestContext } from "../../common/request-context";
 import { DataScopeService } from "../../common/services/data-scope.service";
 import { AuditLogService } from "../../common/services/audit-log.service";
 import { OutboxService } from "../../common/services/outbox.service";
+import type { ListQuery } from "../../common/list-query";
+import { parseSort } from "../../common/list-query";
 
 @Injectable()
 export class ActivitiesService {
@@ -43,10 +45,93 @@ export class ActivitiesService {
     return activity;
   }
 
-  async list(ctx: RequestContext) {
+  async list(ctx: RequestContext, query: ListQuery) {
     const scopeFilter = await this.dataScope.buildOrgScopeFilter(ctx);
-    return this.prisma.activity.findMany({
-      where: { tenantId: ctx.tenantId, ...scopeFilter }
+    const orderBy = parseSort(query.sort, ["createdAt", "updatedAt", "dueAt", "completedAt"]);
+    const where = {
+      tenantId: ctx.tenantId,
+      ...scopeFilter,
+      status: query.status,
+      ownerId: query.ownerId,
+      orgUnitId: query.orgUnitId,
+      ...(query.q
+        ? {
+            OR: [
+              { subject: { contains: query.q, mode: "insensitive" as const } },
+              { type: { contains: query.q, mode: "insensitive" as const } }
+            ]
+          }
+        : {})
+    };
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.activity.findMany({
+        where,
+        orderBy,
+        skip: query.skip,
+        take: query.take
+      }),
+      this.prisma.activity.count({ where })
+    ]);
+    return {
+      data,
+      page: query.page,
+      pageSize: query.pageSize,
+      total
+    };
+  }
+
+  async get(ctx: RequestContext, id: string) {
+    const scopeFilter = await this.dataScope.buildOrgScopeFilter(ctx);
+    const activity = await this.prisma.activity.findFirst({
+      where: { id, tenantId: ctx.tenantId, ...scopeFilter }
     });
+    if (!activity) {
+      throw new NotFoundException("Activity not found");
+    }
+    return activity;
+  }
+
+  async update(ctx: RequestContext, id: string, input: UpdateActivityInput) {
+    await this.get(ctx, id);
+    const activity = await this.prisma.activity.update({
+      where: { id },
+      data: {
+        type: input.type,
+        subject: input.subject,
+        relatedType: input.relatedType,
+        relatedId: input.relatedId,
+        dueAt: input.dueAt ? new Date(input.dueAt) : undefined,
+        completedAt: input.completedAt ? new Date(input.completedAt) : undefined,
+        outcome: input.outcome,
+        status: input.status
+      }
+    });
+    await this.audit.log(
+      ctx,
+      "update",
+      "Activity",
+      activity.id,
+      `Updated ${activity.subject ?? "activity"}`
+    );
+    await this.outbox.enqueue(ctx, "Activity", activity.id, "activity.updated", {
+      subject: activity.subject
+    });
+    return activity;
+  }
+
+  async remove(ctx: RequestContext, id: string) {
+    await this.get(ctx, id);
+    const activity = await this.prisma.activity.delete({ where: { id } });
+    await this.audit.log(
+      ctx,
+      "delete",
+      "Activity",
+      activity.id,
+      `Deleted ${activity.subject ?? "activity"}`
+    );
+    await this.outbox.enqueue(ctx, "Activity", activity.id, "activity.deleted", {
+      subject: activity.subject
+    });
+    return activity;
   }
 }

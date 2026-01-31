@@ -6,6 +6,7 @@ export const CreateActivityInputSchema = z.object({
   subject: z.string().optional(),
   relatedType: z.string().optional(),
   relatedId: z.string().optional(),
+  status: z.string().optional(),
   dueAt: DateTimeSchema.optional(),
   completedAt: DateTimeSchema.optional(),
   outcome: z.string().optional()

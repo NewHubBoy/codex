@@ -30,5 +30,15 @@ module.exports = [
   { code: "opportunity:read", name: "Opportunity Read", type: "ACTION" },
   { code: "opportunity:write", name: "Opportunity Write", type: "ACTION" },
   { code: "activity:read", name: "Activity Read", type: "ACTION" },
-  { code: "activity:write", name: "Activity Write", type: "ACTION" }
+  { code: "activity:write", name: "Activity Write", type: "ACTION" },
+  { code: "product:read", name: "Product Read", type: "ACTION" },
+  { code: "product:write", name: "Product Write", type: "ACTION" },
+  { code: "quote:read", name: "Quote Read", type: "ACTION" },
+  { code: "quote:write", name: "Quote Write", type: "ACTION" },
+  { code: "order:read", name: "Order Read", type: "ACTION" },
+  { code: "order:write", name: "Order Write", type: "ACTION" },
+  { code: "delivery:read", name: "Delivery Read", type: "ACTION" },
+  { code: "delivery:write", name: "Delivery Write", type: "ACTION" },
+  { code: "ticket:read", name: "Ticket Read", type: "ACTION" },
+  { code: "ticket:write", name: "Ticket Write", type: "ACTION" }
 ];

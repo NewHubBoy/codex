@@ -6,6 +6,7 @@ export const CreateOpportunityInputSchema = z.object({
   stage: z.string().optional(),
   amount: z.number().optional(),
   currency: z.string().optional(),
+  status: z.string().optional(),
   expectedCloseDate: DateTimeSchema.optional(),
   probability: z.number().optional(),
   accountId: IdSchema.nullish(),

@@ -5,6 +5,9 @@ import type { RequestContext } from "../../common/request-context";
 import { hashPassword } from "../../common/security/password";
 import { AuditLogService } from "../../common/services/audit-log.service";
 import { OutboxService } from "../../common/services/outbox.service";
+import type { ListQuery } from "../../common/list-query";
+import { parseSort } from "../../common/list-query";
+import type { UserStatus } from "@prisma/client";
 
 @Injectable()
 export class UsersService {
@@ -18,10 +21,39 @@ export class UsersService {
     return { status: "ok", module: "users" };
   }
 
-  async list(ctx: RequestContext) {
-    return this.prisma.user.findMany({
-      where: { tenantId: ctx.tenantId }
-    });
+  async list(ctx: RequestContext, query: ListQuery) {
+    const orderBy = parseSort(query.sort, ["createdAt", "updatedAt", "email", "name"]);
+    const status =
+      query.status && ["ACTIVE", "INACTIVE", "INVITED"].includes(query.status)
+        ? (query.status as UserStatus)
+        : undefined;
+    const where = {
+      tenantId: ctx.tenantId,
+      status,
+      ...(query.q
+        ? {
+            OR: [
+              { email: { contains: query.q, mode: "insensitive" as const } },
+              { name: { contains: query.q, mode: "insensitive" as const } }
+            ]
+          }
+        : {})
+    };
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.user.findMany({
+        where,
+        orderBy,
+        skip: query.skip,
+        take: query.take
+      }),
+      this.prisma.user.count({ where })
+    ]);
+    return {
+      data,
+      page: query.page,
+      pageSize: query.pageSize,
+      total
+    };
   }
 
   async get(ctx: RequestContext, id: string) {

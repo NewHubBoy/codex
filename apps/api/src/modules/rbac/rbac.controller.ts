@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards
 } from "@nestjs/common";
@@ -14,9 +15,11 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiCreatedResponse,
+  ApiExtraModels,
   ApiOkResponse,
   ApiSecurity,
-  ApiTags
+  ApiTags,
+  getSchemaPath
 } from "@nestjs/swagger";
 import {
   AssignPermissionInputSchema,
@@ -25,11 +28,13 @@ import {
   UpdatePermissionInputSchema,
   UpdateRoleInputSchema
 } from "@crm/shared";
+import { parseListQuery } from "../../common/list-query";
 import { getRequestContext } from "../../common/request-context";
 import { Public } from "../../common/decorators/public.decorator";
 import { RequirePermissions } from "../../common/decorators/permissions.decorator";
 import { AuthGuard } from "../../common/guards/auth.guard";
 import { PermissionsGuard } from "../../common/guards/permissions.guard";
+import { PaginatedResponseDto } from "../../common/swagger/pagination";
 import { RbacService } from "./rbac.service";
 import {
   AssignPermissionDto,
@@ -45,6 +50,7 @@ import {
 @ApiTags("rbac")
 @ApiBearerAuth()
 @ApiSecurity("tenant")
+@ApiExtraModels(PaginatedResponseDto, RoleDto, PermissionDto)
 @UseGuards(AuthGuard, PermissionsGuard)
 @Controller("rbac")
 export class RbacController {
@@ -52,10 +58,25 @@ export class RbacController {
 
   @Get("roles")
   @RequirePermissions("rbac:role:read")
-  @ApiOkResponse({ type: RoleDto, isArray: true })
-  async listRoles(@Req() req: Request) {
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(PaginatedResponseDto) },
+        {
+          properties: {
+            data: {
+              type: "array",
+              items: { $ref: getSchemaPath(RoleDto) }
+            }
+          }
+        }
+      ]
+    }
+  })
+  async listRoles(@Req() req: Request, @Query() query: Record<string, string>) {
     const ctx = getRequestContext(req);
-    return this.rbacService.listRoles(ctx);
+    const listQuery = parseListQuery(query);
+    return this.rbacService.listRoles(ctx, listQuery);
   }
 
   @Post("roles")
@@ -92,9 +113,24 @@ export class RbacController {
 
   @Get("permissions")
   @RequirePermissions("rbac:permission:read")
-  @ApiOkResponse({ type: PermissionDto, isArray: true })
-  async listPermissions() {
-    return this.rbacService.listPermissions();
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(PaginatedResponseDto) },
+        {
+          properties: {
+            data: {
+              type: "array",
+              items: { $ref: getSchemaPath(PermissionDto) }
+            }
+          }
+        }
+      ]
+    }
+  })
+  async listPermissions(@Query() query: Record<string, string>) {
+    const listQuery = parseListQuery(query);
+    return this.rbacService.listPermissions(listQuery);
   }
 
   @Post("permissions")

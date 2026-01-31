@@ -4,6 +4,9 @@ import type { RequestContext } from "../../common/request-context";
 import { PrismaService } from "../../prisma/prisma.service";
 import { AuditLogService } from "../../common/services/audit-log.service";
 import { OutboxService } from "../../common/services/outbox.service";
+import type { ListQuery } from "../../common/list-query";
+import { parseSort } from "../../common/list-query";
+import type { OrgUnitStatus } from "@prisma/client";
 
 @Injectable()
 export class OrgUnitsService {
@@ -17,10 +20,33 @@ export class OrgUnitsService {
     return { status: "ok", module: "org-units" };
   }
 
-  async list(ctx: RequestContext) {
-    return this.prisma.orgUnit.findMany({
-      where: { tenantId: ctx.tenantId }
-    });
+  async list(ctx: RequestContext, query: ListQuery) {
+    const orderBy = parseSort(query.sort, ["createdAt", "updatedAt", "name", "code"]);
+    const status = query.status && ["ACTIVE", "INACTIVE"].includes(query.status)
+      ? (query.status as OrgUnitStatus)
+      : undefined;
+    const where = {
+      tenantId: ctx.tenantId,
+      status,
+      ...(query.q
+        ? { name: { contains: query.q, mode: "insensitive" as const } }
+        : {})
+    };
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.orgUnit.findMany({
+        where,
+        orderBy,
+        skip: query.skip,
+        take: query.take
+      }),
+      this.prisma.orgUnit.count({ where })
+    ]);
+    return {
+      data,
+      page: query.page,
+      pageSize: query.pageSize,
+      total
+    };
   }
 
   async get(ctx: RequestContext, id: string) {

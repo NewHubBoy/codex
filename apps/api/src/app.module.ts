@@ -6,6 +6,11 @@ import { ContactsModule } from "./modules/contacts/contacts.module";
 import { LeadsModule } from "./modules/leads/leads.module";
 import { OpportunitiesModule } from "./modules/opportunities/opportunities.module";
 import { ActivitiesModule } from "./modules/activities/activities.module";
+import { ProductsModule } from "./modules/products/products.module";
+import { QuotesModule } from "./modules/quotes/quotes.module";
+import { OrdersModule } from "./modules/orders/orders.module";
+import { DeliveriesModule } from "./modules/deliveries/deliveries.module";
+import { TicketsModule } from "./modules/tickets/tickets.module";
 import { OrgUnitsModule } from "./modules/org-units/org-units.module";
 import { RbacModule } from "./modules/rbac/rbac.module";
 import { TenantsModule } from "./modules/tenants/tenants.module";
@@ -30,6 +35,11 @@ import { AppService } from "./app.service";
     LeadsModule,
     OpportunitiesModule,
     ActivitiesModule,
+    ProductsModule,
+    QuotesModule,
+    OrdersModule,
+    DeliveriesModule,
+    TicketsModule,
     NumberRangesModule,
     WorkflowsModule,
     FieldsModule

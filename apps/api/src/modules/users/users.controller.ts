@@ -1,23 +1,38 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards
+} from "@nestjs/common";
 import type { Request } from "express";
 import {
   ApiBearerAuth,
   ApiBody,
   ApiCreatedResponse,
+  ApiExtraModels,
   ApiOkResponse,
   ApiSecurity,
-  ApiTags
+  ApiTags,
+  getSchemaPath
 } from "@nestjs/swagger";
 import {
   AssignRoleInputSchema,
   CreateUserInputSchema,
   UpdateUserInputSchema
 } from "@crm/shared";
+import { parseListQuery } from "../../common/list-query";
 import { getRequestContext } from "../../common/request-context";
 import { Public } from "../../common/decorators/public.decorator";
 import { RequirePermissions } from "../../common/decorators/permissions.decorator";
 import { AuthGuard } from "../../common/guards/auth.guard";
 import { PermissionsGuard } from "../../common/guards/permissions.guard";
+import { PaginatedResponseDto } from "../../common/swagger/pagination";
 import { UsersService } from "./users.service";
 import {
   AssignRoleDto,
@@ -30,6 +45,7 @@ import {
 @ApiTags("users")
 @ApiBearerAuth()
 @ApiSecurity("tenant")
+@ApiExtraModels(PaginatedResponseDto, UserDto)
 @UseGuards(AuthGuard, PermissionsGuard)
 @Controller("users")
 export class UsersController {
@@ -43,10 +59,25 @@ export class UsersController {
 
   @Get()
   @RequirePermissions("user:read")
-  @ApiOkResponse({ type: UserDto, isArray: true })
-  async list(@Req() req: Request) {
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(PaginatedResponseDto) },
+        {
+          properties: {
+            data: {
+              type: "array",
+              items: { $ref: getSchemaPath(UserDto) }
+            }
+          }
+        }
+      ]
+    }
+  })
+  async list(@Req() req: Request, @Query() query: Record<string, string>) {
     const ctx = getRequestContext(req);
-    return this.usersService.list(ctx);
+    const listQuery = parseListQuery(query);
+    return this.usersService.list(ctx, listQuery);
   }
 
   @Post()

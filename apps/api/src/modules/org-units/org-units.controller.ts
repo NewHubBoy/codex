@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards
 } from "@nestjs/common";
@@ -14,20 +15,24 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiCreatedResponse,
+  ApiExtraModels,
   ApiOkResponse,
   ApiSecurity,
-  ApiTags
+  ApiTags,
+  getSchemaPath
 } from "@nestjs/swagger";
 import {
   AddOrgMemberInputSchema,
   CreateOrgUnitInputSchema,
   UpdateOrgUnitInputSchema
 } from "@crm/shared";
+import { parseListQuery } from "../../common/list-query";
 import { getRequestContext } from "../../common/request-context";
 import { Public } from "../../common/decorators/public.decorator";
 import { RequirePermissions } from "../../common/decorators/permissions.decorator";
 import { AuthGuard } from "../../common/guards/auth.guard";
 import { PermissionsGuard } from "../../common/guards/permissions.guard";
+import { PaginatedResponseDto } from "../../common/swagger/pagination";
 import { OrgUnitsService } from "./org-units.service";
 import {
   AddOrgMemberDto,
@@ -40,6 +45,7 @@ import {
 @ApiTags("org-units")
 @ApiBearerAuth()
 @ApiSecurity("tenant")
+@ApiExtraModels(PaginatedResponseDto, OrgUnitDto)
 @UseGuards(AuthGuard, PermissionsGuard)
 @Controller("org-units")
 export class OrgUnitsController {
@@ -53,10 +59,25 @@ export class OrgUnitsController {
 
   @Get()
   @RequirePermissions("orgunit:read")
-  @ApiOkResponse({ type: OrgUnitDto, isArray: true })
-  async list(@Req() req: Request) {
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(PaginatedResponseDto) },
+        {
+          properties: {
+            data: {
+              type: "array",
+              items: { $ref: getSchemaPath(OrgUnitDto) }
+            }
+          }
+        }
+      ]
+    }
+  })
+  async list(@Req() req: Request, @Query() query: Record<string, string>) {
     const ctx = getRequestContext(req);
-    return this.orgUnitsService.list(ctx);
+    const listQuery = parseListQuery(query);
+    return this.orgUnitsService.list(ctx, listQuery);
   }
 
   @Post()

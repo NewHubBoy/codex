@@ -20,15 +20,19 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiCreatedResponse,
+  ApiExtraModels,
   ApiOkResponse,
   ApiSecurity,
-  ApiTags
+  ApiTags,
+  getSchemaPath
 } from "@nestjs/swagger";
+import { parseListQuery } from "../../common/list-query";
 import { getRequestContext } from "../../common/request-context";
 import { Public } from "../../common/decorators/public.decorator";
 import { RequirePermissions } from "../../common/decorators/permissions.decorator";
 import { AuthGuard } from "../../common/guards/auth.guard";
 import { PermissionsGuard } from "../../common/guards/permissions.guard";
+import { PaginatedResponseDto } from "../../common/swagger/pagination";
 import { FieldsService } from "./fields.service";
 import {
   CreateFieldDefinitionDto,
@@ -42,6 +46,7 @@ import {
 @ApiTags("fields")
 @ApiBearerAuth()
 @ApiSecurity("tenant")
+@ApiExtraModels(PaginatedResponseDto, FieldDefinitionDto, FieldGroupDto)
 @UseGuards(AuthGuard, PermissionsGuard)
 @Controller("config/fields")
 export class FieldsController {
@@ -55,10 +60,29 @@ export class FieldsController {
 
   @Get()
   @RequirePermissions("config:field:read")
-  @ApiOkResponse({ type: FieldDefinitionDto, isArray: true })
-  async list(@Req() req: Request, @Query("entityType") entityType?: string) {
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(PaginatedResponseDto) },
+        {
+          properties: {
+            data: {
+              type: "array",
+              items: { $ref: getSchemaPath(FieldDefinitionDto) }
+            }
+          }
+        }
+      ]
+    }
+  })
+  async list(@Req() req: Request, @Query() query: Record<string, string>) {
     const ctx = getRequestContext(req);
-    return this.fieldsService.listDefinitions(ctx, entityType);
+    const listQuery = parseListQuery(query);
+    const entityType =
+      typeof query.entityType === "string" && query.entityType.trim()
+        ? query.entityType.trim()
+        : undefined;
+    return this.fieldsService.listDefinitions(ctx, listQuery, entityType);
   }
 
   @Post()
@@ -83,10 +107,29 @@ export class FieldsController {
 
   @Get("groups")
   @RequirePermissions("config:field:read")
-  @ApiOkResponse({ type: FieldGroupDto, isArray: true })
-  async listGroups(@Req() req: Request, @Query("entityType") entityType?: string) {
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(PaginatedResponseDto) },
+        {
+          properties: {
+            data: {
+              type: "array",
+              items: { $ref: getSchemaPath(FieldGroupDto) }
+            }
+          }
+        }
+      ]
+    }
+  })
+  async listGroups(@Req() req: Request, @Query() query: Record<string, string>) {
     const ctx = getRequestContext(req);
-    return this.fieldsService.listGroups(ctx, entityType);
+    const listQuery = parseListQuery(query);
+    const entityType =
+      typeof query.entityType === "string" && query.entityType.trim()
+        ? query.entityType.trim()
+        : undefined;
+    return this.fieldsService.listGroups(ctx, listQuery, entityType);
   }
 
   @Post("groups")

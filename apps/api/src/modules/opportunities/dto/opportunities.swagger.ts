@@ -63,3 +63,38 @@ export class CreateOpportunityDto {
   @ApiProperty({ required: false })
   reasonLost?: string | null;
 }
+
+export class UpdateOpportunityDto {
+  @ApiProperty({ required: false })
+  name?: string;
+
+  @ApiProperty({ required: false })
+  stage?: string;
+
+  @ApiProperty({ required: false })
+  amount?: number;
+
+  @ApiProperty({ required: false })
+  currency?: string;
+
+  @ApiProperty({ required: false })
+  expectedCloseDate?: string;
+
+  @ApiProperty({ required: false })
+  probability?: number;
+
+  @ApiProperty({ required: false })
+  accountId?: string | null;
+
+  @ApiProperty({ required: false })
+  contactId?: string | null;
+
+  @ApiProperty({ required: false })
+  leadId?: string | null;
+
+  @ApiProperty({ required: false })
+  reasonLost?: string | null;
+
+  @ApiProperty({ required: false })
+  status?: string;
+}

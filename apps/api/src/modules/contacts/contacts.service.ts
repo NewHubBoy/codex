@@ -1,10 +1,12 @@
-import { Injectable } from "@nestjs/common";
-import type { CreateContactInput } from "@crm/shared";
+import { Injectable, NotFoundException } from "@nestjs/common";
+import type { CreateContactInput, UpdateContactInput } from "@crm/shared";
 import { PrismaService } from "../../prisma/prisma.service";
 import type { RequestContext } from "../../common/request-context";
 import { DataScopeService } from "../../common/services/data-scope.service";
 import { AuditLogService } from "../../common/services/audit-log.service";
 import { OutboxService } from "../../common/services/outbox.service";
+import type { ListQuery } from "../../common/list-query";
+import { parseSort } from "../../common/list-query";
 
 @Injectable()
 export class ContactsService {
@@ -37,10 +39,81 @@ export class ContactsService {
     return contact;
   }
 
-  async list(ctx: RequestContext) {
+  async list(ctx: RequestContext, query: ListQuery) {
     const scopeFilter = await this.dataScope.buildOrgScopeFilter(ctx);
-    return this.prisma.contact.findMany({
-      where: { tenantId: ctx.tenantId, ...scopeFilter }
+    const orderBy = parseSort(query.sort, ["createdAt", "updatedAt", "name"]);
+    const where = {
+      tenantId: ctx.tenantId,
+      ...scopeFilter,
+      status: query.status,
+      ownerId: query.ownerId,
+      orgUnitId: query.orgUnitId,
+      ...(query.q
+        ? {
+            OR: [
+              { name: { contains: query.q, mode: "insensitive" as const } },
+              { email: { contains: query.q, mode: "insensitive" as const } },
+              { phone: { contains: query.q, mode: "insensitive" as const } }
+            ]
+          }
+        : {})
+    };
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.contact.findMany({
+        where,
+        orderBy,
+        skip: query.skip,
+        take: query.take
+      }),
+      this.prisma.contact.count({ where })
+    ]);
+    return {
+      data,
+      page: query.page,
+      pageSize: query.pageSize,
+      total
+    };
+  }
+
+  async get(ctx: RequestContext, id: string) {
+    const scopeFilter = await this.dataScope.buildOrgScopeFilter(ctx);
+    const contact = await this.prisma.contact.findFirst({
+      where: { id, tenantId: ctx.tenantId, ...scopeFilter }
     });
+    if (!contact) {
+      throw new NotFoundException("Contact not found");
+    }
+    return contact;
+  }
+
+  async update(ctx: RequestContext, id: string, input: UpdateContactInput) {
+    await this.get(ctx, id);
+    const contact = await this.prisma.contact.update({
+      where: { id },
+      data: {
+        accountId: input.accountId ?? undefined,
+        name: input.name,
+        title: input.title,
+        email: input.email,
+        phone: input.phone,
+        role: input.role,
+        bpId: input.bpId ?? undefined
+      }
+    });
+    await this.audit.log(ctx, "update", "Contact", contact.id, `Updated ${contact.name}`);
+    await this.outbox.enqueue(ctx, "Contact", contact.id, "contact.updated", {
+      name: contact.name
+    });
+    return contact;
+  }
+
+  async remove(ctx: RequestContext, id: string) {
+    await this.get(ctx, id);
+    const contact = await this.prisma.contact.delete({ where: { id } });
+    await this.audit.log(ctx, "delete", "Contact", contact.id, `Deleted ${contact.name}`);
+    await this.outbox.enqueue(ctx, "Contact", contact.id, "contact.deleted", {
+      name: contact.name
+    });
+    return contact;
   }
 }

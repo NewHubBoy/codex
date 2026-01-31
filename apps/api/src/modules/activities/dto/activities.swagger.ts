@@ -57,3 +57,29 @@ export class CreateActivityDto {
   @ApiProperty({ required: false })
   outcome?: string;
 }
+
+export class UpdateActivityDto {
+  @ApiProperty({ required: false })
+  type?: string;
+
+  @ApiProperty({ required: false })
+  subject?: string;
+
+  @ApiProperty({ required: false })
+  relatedType?: string;
+
+  @ApiProperty({ required: false })
+  relatedId?: string;
+
+  @ApiProperty({ required: false })
+  dueAt?: string;
+
+  @ApiProperty({ required: false })
+  completedAt?: string;
+
+  @ApiProperty({ required: false })
+  outcome?: string;
+
+  @ApiProperty({ required: false })
+  status?: string;
+}

@@ -9,6 +9,8 @@ import type { RequestContext } from "../../common/request-context";
 import { PrismaService } from "../../prisma/prisma.service";
 import { AuditLogService } from "../../common/services/audit-log.service";
 import { OutboxService } from "../../common/services/outbox.service";
+import type { ListQuery } from "../../common/list-query";
+import { parseSort } from "../../common/list-query";
 
 @Injectable()
 export class WorkflowsService {
@@ -18,11 +20,30 @@ export class WorkflowsService {
     private readonly outbox: OutboxService
   ) {}
 
-  async list(ctx: RequestContext) {
-    return this.prisma.processDefinition.findMany({
-      where: { tenantId: ctx.tenantId },
-      include: { states: true, transitions: true }
-    });
+  async list(ctx: RequestContext, query: ListQuery) {
+    const orderBy = parseSort(query.sort, ["createdAt", "updatedAt", "name", "entityType"]);
+    const where = {
+      tenantId: ctx.tenantId,
+      ...(query.q
+        ? { name: { contains: query.q, mode: "insensitive" as const } }
+        : {})
+    };
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.processDefinition.findMany({
+        where,
+        orderBy,
+        include: { states: true, transitions: true },
+        skip: query.skip,
+        take: query.take
+      }),
+      this.prisma.processDefinition.count({ where })
+    ]);
+    return {
+      data,
+      page: query.page,
+      pageSize: query.pageSize,
+      total
+    };
   }
 
   async get(ctx: RequestContext, id: string) {

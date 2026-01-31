@@ -54,3 +54,26 @@ export class CreateContactDto {
   @ApiProperty({ required: false })
   bpId?: string | null;
 }
+
+export class UpdateContactDto {
+  @ApiProperty({ required: false })
+  accountId?: string;
+
+  @ApiProperty({ required: false })
+  name?: string;
+
+  @ApiProperty({ required: false })
+  title?: string;
+
+  @ApiProperty({ required: false })
+  email?: string;
+
+  @ApiProperty({ required: false })
+  phone?: string;
+
+  @ApiProperty({ required: false })
+  role?: string;
+
+  @ApiProperty({ required: false })
+  bpId?: string | null;
+}

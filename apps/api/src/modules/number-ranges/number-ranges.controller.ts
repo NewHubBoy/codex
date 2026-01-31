@@ -5,6 +5,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards
 } from "@nestjs/common";
@@ -14,15 +15,19 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiCreatedResponse,
+  ApiExtraModels,
   ApiOkResponse,
   ApiSecurity,
-  ApiTags
+  ApiTags,
+  getSchemaPath
 } from "@nestjs/swagger";
+import { parseListQuery } from "../../common/list-query";
 import { getRequestContext } from "../../common/request-context";
 import { Public } from "../../common/decorators/public.decorator";
 import { RequirePermissions } from "../../common/decorators/permissions.decorator";
 import { AuthGuard } from "../../common/guards/auth.guard";
 import { PermissionsGuard } from "../../common/guards/permissions.guard";
+import { PaginatedResponseDto } from "../../common/swagger/pagination";
 import { NumberRangesService } from "./number-ranges.service";
 import {
   CreateNumberRangeDto,
@@ -34,6 +39,7 @@ import {
 @ApiTags("number-ranges")
 @ApiBearerAuth()
 @ApiSecurity("tenant")
+@ApiExtraModels(PaginatedResponseDto, NumberRangeDto)
 @UseGuards(AuthGuard, PermissionsGuard)
 @Controller("number-ranges")
 export class NumberRangesController {
@@ -47,10 +53,25 @@ export class NumberRangesController {
 
   @Get()
   @RequirePermissions("numberrange:read")
-  @ApiOkResponse({ type: NumberRangeDto, isArray: true })
-  async list(@Req() req: Request) {
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(PaginatedResponseDto) },
+        {
+          properties: {
+            data: {
+              type: "array",
+              items: { $ref: getSchemaPath(NumberRangeDto) }
+            }
+          }
+        }
+      ]
+    }
+  })
+  async list(@Req() req: Request, @Query() query: Record<string, string>) {
     const ctx = getRequestContext(req);
-    return this.numberRangesService.list(ctx);
+    const listQuery = parseListQuery(query);
+    return this.numberRangesService.list(ctx, listQuery);
   }
 
   @Post()

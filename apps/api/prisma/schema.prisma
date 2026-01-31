@@ -27,6 +27,11 @@ model Tenant {
   leads         Lead[]
   opportunities Opportunity[]
   activities    Activity[]
+  products     Product[]
+  quotes       Quote[]
+  orders       Order[]
+  deliveries   Delivery[]
+  tickets      Ticket[]
 }
 
 model OrgUnit {
@@ -153,6 +158,9 @@ model Account {
   contacts Contact[]
   leads    Lead[]
   opportunities Opportunity[]
+  quotes   Quote[]
+  orders   Order[]
+  tickets  Ticket[]
 
   @@index([tenantId])
   @@index([parentId])
@@ -179,6 +187,9 @@ model Contact {
   account Account @relation(fields: [accountId], references: [id])
   leads   Lead[]
   opportunities Opportunity[]
+  quotes  Quote[]
+  orders  Order[]
+  tickets Ticket[]
 
   @@index([tenantId])
   @@index([accountId])
@@ -237,6 +248,8 @@ model Opportunity {
   account Account? @relation(fields: [accountId], references: [id])
   contact Contact? @relation(fields: [contactId], references: [id])
   lead     Lead?   @relation(fields: [leadId], references: [id])
+  quotes   Quote[]
+  orders   Order[]
 
   @@index([tenantId])
   @@index([ownerId])
@@ -266,6 +279,182 @@ model Activity {
   @@index([tenantId])
   @@index([ownerId])
   @@index([relatedType, relatedId])
+}
+
+model Product {
+  id        String   @id @default(uuid())
+  tenantId  String
+  orgUnitId String?
+  ownerId   String?
+  status    String   @default("ACTIVE")
+  sku       String?
+  name      String
+  category  String?
+  listPrice Float?
+  currency  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant     Tenant     @relation(fields: [tenantId], references: [id])
+  quoteItems QuoteItem[]
+  orderItems OrderItem[]
+
+  @@index([tenantId])
+  @@index([ownerId])
+  @@unique([tenantId, sku])
+}
+
+model Quote {
+  id            String   @id @default(uuid())
+  tenantId      String
+  orgUnitId     String?
+  ownerId       String?
+  status        String   @default("DRAFT")
+  number        String
+  version       Int      @default(1)
+  validFrom     DateTime?
+  validTo       DateTime?
+  totalAmount   Float?
+  currency      String?
+  opportunityId String?
+  accountId     String?
+  contactId     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id])
+  opportunity Opportunity? @relation(fields: [opportunityId], references: [id])
+  account     Account?     @relation(fields: [accountId], references: [id])
+  contact     Contact?     @relation(fields: [contactId], references: [id])
+  items       QuoteItem[]
+
+  @@index([tenantId])
+  @@index([ownerId])
+  @@index([accountId])
+  @@index([contactId])
+  @@index([opportunityId])
+  @@unique([tenantId, number])
+}
+
+model QuoteItem {
+  id        String   @id @default(uuid())
+  quoteId   String
+  productId String?
+  qty       Float?
+  unitPrice Float?
+  discount  Float?
+  tax       Float?
+  lineTotal Float?
+  createdAt DateTime @default(now())
+
+  quote   Quote    @relation(fields: [quoteId], references: [id])
+  product Product? @relation(fields: [productId], references: [id])
+
+  @@index([quoteId])
+  @@index([productId])
+}
+
+model Order {
+  id            String   @id @default(uuid())
+  tenantId      String
+  orgUnitId     String?
+  ownerId       String?
+  status        String   @default("DRAFT")
+  number        String
+  orderDate     DateTime?
+  totalAmount   Float?
+  currency      String?
+  accountId     String?
+  contactId     String?
+  opportunityId String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id])
+  account     Account?     @relation(fields: [accountId], references: [id])
+  contact     Contact?     @relation(fields: [contactId], references: [id])
+  opportunity Opportunity? @relation(fields: [opportunityId], references: [id])
+  items       OrderItem[]
+  deliveries  Delivery[]
+  tickets     Ticket[]
+
+  @@index([tenantId])
+  @@index([ownerId])
+  @@index([accountId])
+  @@index([contactId])
+  @@index([opportunityId])
+  @@unique([tenantId, number])
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  orderId   String
+  productId String?
+  qty       Float?
+  unitPrice Float?
+  discount  Float?
+  tax       Float?
+  lineTotal Float?
+  createdAt DateTime @default(now())
+
+  order   Order    @relation(fields: [orderId], references: [id])
+  product Product? @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model Delivery {
+  id           String   @id @default(uuid())
+  tenantId     String
+  orgUnitId    String?
+  ownerId      String?
+  status       String   @default("PLANNED")
+  number       String
+  orderId      String?
+  deliveredAt  DateTime?
+  deliveryNotes String?
+  deliveredQty Float?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  order  Order? @relation(fields: [orderId], references: [id])
+
+  @@index([tenantId])
+  @@index([ownerId])
+  @@index([orderId])
+  @@unique([tenantId, number])
+}
+
+model Ticket {
+  id        String   @id @default(uuid())
+  tenantId  String
+  orgUnitId String?
+  ownerId   String?
+  status    String   @default("NEW")
+  number    String
+  type      String?
+  priority  String?
+  subject   String?
+  slaDueAt  DateTime?
+  accountId String?
+  contactId String?
+  orderId   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
+  account Account? @relation(fields: [accountId], references: [id])
+  contact Contact? @relation(fields: [contactId], references: [id])
+  order   Order?  @relation(fields: [orderId], references: [id])
+
+  @@index([tenantId])
+  @@index([ownerId])
+  @@index([accountId])
+  @@index([contactId])
+  @@index([orderId])
+  @@unique([tenantId, number])
 }
 
 model NumberRange {

@@ -5,6 +5,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards
 } from "@nestjs/common";
@@ -19,15 +20,19 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiCreatedResponse,
+  ApiExtraModels,
   ApiOkResponse,
   ApiSecurity,
-  ApiTags
+  ApiTags,
+  getSchemaPath
 } from "@nestjs/swagger";
+import { parseListQuery } from "../../common/list-query";
 import { getRequestContext } from "../../common/request-context";
 import { Public } from "../../common/decorators/public.decorator";
 import { RequirePermissions } from "../../common/decorators/permissions.decorator";
 import { AuthGuard } from "../../common/guards/auth.guard";
 import { PermissionsGuard } from "../../common/guards/permissions.guard";
+import { PaginatedResponseDto } from "../../common/swagger/pagination";
 import { WorkflowsService } from "./workflows.service";
 import {
   CreateStateDto,
@@ -42,6 +47,7 @@ import {
 @ApiTags("workflows")
 @ApiBearerAuth()
 @ApiSecurity("tenant")
+@ApiExtraModels(PaginatedResponseDto, WorkflowDto)
 @UseGuards(AuthGuard, PermissionsGuard)
 @Controller("config/workflows")
 export class WorkflowsController {
@@ -55,10 +61,25 @@ export class WorkflowsController {
 
   @Get()
   @RequirePermissions("config:workflow:read")
-  @ApiOkResponse({ type: WorkflowDto, isArray: true })
-  async list(@Req() req: Request) {
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(PaginatedResponseDto) },
+        {
+          properties: {
+            data: {
+              type: "array",
+              items: { $ref: getSchemaPath(WorkflowDto) }
+            }
+          }
+        }
+      ]
+    }
+  })
+  async list(@Req() req: Request, @Query() query: Record<string, string>) {
     const ctx = getRequestContext(req);
-    return this.workflowsService.list(ctx);
+    const listQuery = parseListQuery(query);
+    return this.workflowsService.list(ctx, listQuery);
   }
 
   @Post()
