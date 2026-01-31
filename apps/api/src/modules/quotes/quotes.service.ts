@@ -1,5 +1,10 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
-import type { CreateQuoteInput, UpdateQuoteInput } from "@crm/shared";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import type {
+  CreateQuoteInput,
+  CreateQuoteItemInput,
+  UpdateQuoteInput,
+  UpdateQuoteItemInput
+} from "@crm/shared";
 import { PrismaService } from "../../prisma/prisma.service";
 import type { RequestContext } from "../../common/request-context";
 import { DataScopeService } from "../../common/services/data-scope.service";
@@ -84,6 +89,161 @@ export class QuotesService {
       throw new NotFoundException("Quote not found");
     }
     return quote;
+  }
+
+  async listItems(ctx: RequestContext, quoteId: string, query: ListQuery) {
+    await this.get(ctx, quoteId);
+    const orderBy = parseSort(query.sort, ["createdAt", "unitPrice", "qty"]);
+    const where = { quoteId };
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.quoteItem.findMany({
+        where,
+        orderBy,
+        skip: query.skip,
+        take: query.take
+      }),
+      this.prisma.quoteItem.count({ where })
+    ]);
+    return {
+      data,
+      page: query.page,
+      pageSize: query.pageSize,
+      total
+    };
+  }
+
+  async addItem(ctx: RequestContext, quoteId: string, input: CreateQuoteItemInput) {
+    await this.get(ctx, quoteId);
+    const values = this.normalizeItemInput(input);
+    const item = await this.prisma.quoteItem.create({
+      data: {
+        quoteId,
+        productId: input.productId ?? undefined,
+        qty: values.qty,
+        unitPrice: values.unitPrice,
+        discount: values.discount,
+        tax: values.tax,
+        lineTotal: values.lineTotal
+      }
+    });
+    await this.audit.log(ctx, "create", "QuoteItem", item.id, `Added to ${quoteId}`);
+    await this.outbox.enqueue(ctx, "Quote", quoteId, "quote.item.created", {
+      itemId: item.id
+    });
+    return item;
+  }
+
+  async updateItem(
+    ctx: RequestContext,
+    quoteId: string,
+    itemId: string,
+    input: UpdateQuoteItemInput
+  ) {
+    await this.get(ctx, quoteId);
+    const existing = await this.prisma.quoteItem.findFirst({
+      where: { id: itemId, quoteId }
+    });
+    if (!existing) {
+      throw new NotFoundException("Quote item not found");
+    }
+    const values = this.normalizeItemInput(input, existing);
+    const item = await this.prisma.quoteItem.update({
+      where: { id: itemId },
+      data: {
+        productId: input.productId ?? undefined,
+        qty: values.qty,
+        unitPrice: values.unitPrice,
+        discount: values.discount,
+        tax: values.tax,
+        lineTotal: values.lineTotal
+      }
+    });
+    await this.audit.log(ctx, "update", "QuoteItem", item.id, `Updated ${item.id}`);
+    await this.outbox.enqueue(ctx, "Quote", quoteId, "quote.item.updated", {
+      itemId: item.id
+    });
+    return item;
+  }
+
+  async removeItem(ctx: RequestContext, quoteId: string, itemId: string) {
+    await this.get(ctx, quoteId);
+    const existing = await this.prisma.quoteItem.findFirst({
+      where: { id: itemId, quoteId }
+    });
+    if (!existing) {
+      throw new NotFoundException("Quote item not found");
+    }
+    const item = await this.prisma.quoteItem.delete({ where: { id: itemId } });
+    await this.audit.log(ctx, "delete", "QuoteItem", item.id, `Removed ${item.id}`);
+    await this.outbox.enqueue(ctx, "Quote", quoteId, "quote.item.deleted", {
+      itemId: item.id
+    });
+    return item;
+  }
+
+  private normalizeItemInput(
+    input: {
+      qty?: number;
+      unitPrice?: number;
+      discount?: number;
+      tax?: number;
+      lineTotal?: number;
+    },
+    existing?: {
+      qty: number | null;
+      unitPrice: number | null;
+      discount: number | null;
+      tax: number | null;
+      lineTotal: number | null;
+    }
+  ) {
+    this.assertNonNegative(input.qty, "qty");
+    this.assertNonNegative(input.unitPrice, "unitPrice");
+    this.assertNonNegative(input.discount, "discount");
+    this.assertNonNegative(input.tax, "tax");
+    this.assertNonNegative(input.lineTotal, "lineTotal");
+
+    const merged = {
+      qty: input.qty ?? existing?.qty ?? undefined,
+      unitPrice: input.unitPrice ?? existing?.unitPrice ?? undefined,
+      discount: input.discount ?? existing?.discount ?? undefined,
+      tax: input.tax ?? existing?.tax ?? undefined
+    };
+    const shouldCompute =
+      input.lineTotal === undefined &&
+      (input.qty !== undefined ||
+        input.unitPrice !== undefined ||
+        input.discount !== undefined ||
+        input.tax !== undefined);
+    const computed = shouldCompute
+      ? this.computeLineTotal(merged.qty, merged.unitPrice, merged.discount, merged.tax)
+      : undefined;
+    return {
+      qty: input.qty,
+      unitPrice: input.unitPrice,
+      discount: input.discount,
+      tax: input.tax,
+      lineTotal: input.lineTotal ?? computed
+    };
+  }
+
+  private computeLineTotal(
+    qty?: number | null,
+    unitPrice?: number | null,
+    discount?: number | null,
+    tax?: number | null
+  ) {
+    const baseQty = qty ?? 0;
+    const baseUnit = unitPrice ?? 0;
+    const baseDiscount = discount ?? 0;
+    const baseTax = tax ?? 0;
+    return baseQty * baseUnit - baseDiscount + baseTax;
+  }
+
+  private assertNonNegative(value: number | undefined, field: string) {
+    if (value !== undefined && value < 0) {
+      throw new BadRequestException(`${field} must be >= 0`);
+    }
   }
 
   async update(ctx: RequestContext, id: string, input: UpdateQuoteInput) {

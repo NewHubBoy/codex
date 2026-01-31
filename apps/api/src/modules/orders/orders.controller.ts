@@ -11,7 +11,12 @@ import {
   UseGuards
 } from "@nestjs/common";
 import type { Request } from "express";
-import { CreateOrderInputSchema, UpdateOrderInputSchema } from "@crm/shared";
+import {
+  CreateOrderInputSchema,
+  CreateOrderItemInputSchema,
+  UpdateOrderInputSchema,
+  UpdateOrderItemInputSchema
+} from "@crm/shared";
 import { parseListQuery } from "../../common/list-query";
 import { getRequestContext } from "../../common/request-context";
 import { RequirePermissions } from "../../common/decorators/permissions.decorator";
@@ -30,11 +35,16 @@ import {
 import { OrdersService } from "./orders.service";
 import { CreateOrderDto, OrderDto, UpdateOrderDto } from "./dto/orders.swagger";
 import { PaginatedResponseDto } from "../../common/swagger/pagination";
+import {
+  CreateOrderItemDto,
+  OrderItemDto,
+  UpdateOrderItemDto
+} from "./dto/order-items.swagger";
 
 @ApiTags("orders")
 @ApiBearerAuth()
 @ApiSecurity("tenant")
-@ApiExtraModels(PaginatedResponseDto, OrderDto)
+@ApiExtraModels(PaginatedResponseDto, OrderDto, OrderItemDto)
 @UseGuards(AuthGuard, PermissionsGuard)
 @Controller("orders")
 export class OrdersController {
@@ -97,5 +107,73 @@ export class OrdersController {
   async remove(@Req() req: Request, @Param("id") id: string) {
     const ctx = getRequestContext(req);
     return this.ordersService.remove(ctx, id);
+  }
+
+  @Get(":id/items")
+  @RequirePermissions("order:read")
+  @ApiOkResponse({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(PaginatedResponseDto) },
+        {
+          properties: {
+            data: {
+              type: "array",
+              items: { $ref: getSchemaPath(OrderItemDto) }
+            }
+          }
+        }
+      ]
+    }
+  })
+  async listItems(
+    @Req() req: Request,
+    @Param("id") id: string,
+    @Query() query: Record<string, string>
+  ) {
+    const ctx = getRequestContext(req);
+    const listQuery = parseListQuery(query);
+    return this.ordersService.listItems(ctx, id, listQuery);
+  }
+
+  @Post(":id/items")
+  @RequirePermissions("order:write")
+  @ApiBody({ type: CreateOrderItemDto })
+  @ApiCreatedResponse({ type: OrderItemDto })
+  async addItem(
+    @Req() req: Request,
+    @Param("id") id: string,
+    @Body() body: unknown
+  ) {
+    const ctx = getRequestContext(req);
+    const input = CreateOrderItemInputSchema.parse(body);
+    return this.ordersService.addItem(ctx, id, input);
+  }
+
+  @Patch(":id/items/:itemId")
+  @RequirePermissions("order:write")
+  @ApiBody({ type: UpdateOrderItemDto })
+  @ApiOkResponse({ type: OrderItemDto })
+  async updateItem(
+    @Req() req: Request,
+    @Param("id") id: string,
+    @Param("itemId") itemId: string,
+    @Body() body: unknown
+  ) {
+    const ctx = getRequestContext(req);
+    const input = UpdateOrderItemInputSchema.parse(body);
+    return this.ordersService.updateItem(ctx, id, itemId, input);
+  }
+
+  @Delete(":id/items/:itemId")
+  @RequirePermissions("order:write")
+  @ApiOkResponse({ type: OrderItemDto })
+  async removeItem(
+    @Req() req: Request,
+    @Param("id") id: string,
+    @Param("itemId") itemId: string
+  ) {
+    const ctx = getRequestContext(req);
+    return this.ordersService.removeItem(ctx, id, itemId);
   }
 }
