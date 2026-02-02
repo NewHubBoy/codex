@@ -14,6 +14,7 @@ import type { Request } from "express";
 import {
   CreateQuoteInputSchema,
   CreateQuoteItemInputSchema,
+  BulkQuoteItemsInputSchema,
   UpdateQuoteInputSchema,
   UpdateQuoteItemInputSchema
 } from "@crm/shared";
@@ -37,6 +38,7 @@ import { CreateQuoteDto, QuoteDto, UpdateQuoteDto } from "./dto/quotes.swagger";
 import { PaginatedResponseDto } from "../../common/swagger/pagination";
 import {
   CreateQuoteItemDto,
+  BulkQuoteItemsDto,
   QuoteItemDto,
   UpdateQuoteItemDto
 } from "./dto/quote-items.swagger";
@@ -148,6 +150,20 @@ export class QuotesController {
     const ctx = getRequestContext(req);
     const input = CreateQuoteItemInputSchema.parse(body);
     return this.quotesService.addItem(ctx, id, input);
+  }
+
+  @Post(":id/items/bulk")
+  @RequirePermissions("quote:write")
+  @ApiBody({ type: BulkQuoteItemsDto })
+  @ApiCreatedResponse({ type: QuoteItemDto, isArray: true })
+  async addItemsBulk(
+    @Req() req: Request,
+    @Param("id") id: string,
+    @Body() body: unknown
+  ) {
+    const ctx = getRequestContext(req);
+    const input = BulkQuoteItemsInputSchema.parse(body);
+    return this.quotesService.addItemsBulk(ctx, id, input);
   }
 
   @Patch(":id/items/:itemId")

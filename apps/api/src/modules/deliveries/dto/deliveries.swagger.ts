@@ -1,5 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
 
+const DELIVERY_STATUSES = ["PLANNED", "IN_TRANSIT", "DELIVERED", "COMPLETED"] as const;
+
 export class DeliveryDto {
   @ApiProperty()
   id!: string;
@@ -30,35 +32,43 @@ export class DeliveryDto {
 }
 
 export class CreateDeliveryDto {
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    required: false,
+    enum: DELIVERY_STATUSES,
+    description: "DELIVERED/COMPLETED require orderId, deliveredAt, deliveredQty."
+  })
   status?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, description: "Required for DELIVERED/COMPLETED." })
   orderId?: string | null;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, description: "Required for DELIVERED/COMPLETED." })
   deliveredAt?: string;
 
   @ApiProperty({ required: false })
   deliveryNotes?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, description: "Required for DELIVERED/COMPLETED." })
   deliveredQty?: number;
 }
 
 export class UpdateDeliveryDto {
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    required: false,
+    enum: DELIVERY_STATUSES,
+    description: "DELIVERED/COMPLETED require orderId, deliveredAt, deliveredQty."
+  })
   status?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, description: "Required for DELIVERED/COMPLETED." })
   orderId?: string | null;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, description: "Required for DELIVERED/COMPLETED." })
   deliveredAt?: string;
 
   @ApiProperty({ required: false })
   deliveryNotes?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, description: "Required for DELIVERED/COMPLETED." })
   deliveredQty?: number;
 }

@@ -65,3 +65,11 @@ export class UpdateQuoteItemDto {
   @ApiProperty({ required: false })
   lineTotal?: number;
 }
+
+export class BulkQuoteItemsDto {
+  @ApiProperty({ required: false, enum: ["append", "replace"] })
+  mode?: "append" | "replace";
+
+  @ApiProperty({ type: [CreateQuoteItemDto] })
+  items!: CreateQuoteItemDto[];
+}

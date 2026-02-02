@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import type { CreateOpportunityInput, UpdateOpportunityInput } from "@crm/shared";
 import { PrismaService } from "../../prisma/prisma.service";
 import type { RequestContext } from "../../common/request-context";
@@ -7,6 +7,7 @@ import { AuditLogService } from "../../common/services/audit-log.service";
 import { OutboxService } from "../../common/services/outbox.service";
 import type { ListQuery } from "../../common/list-query";
 import { parseSort } from "../../common/list-query";
+import { assertTransition } from "../../common/status-transitions";
 
 @Injectable()
 export class OpportunitiesService {
@@ -23,6 +24,7 @@ export class OpportunitiesService {
         tenantId: ctx.tenantId,
         orgUnitId: ctx.orgUnitId,
         ownerId: ctx.userId,
+        status: input.status ?? undefined,
         name: input.name,
         stage: input.stage ?? "Qualification",
         amount: input.amount,
@@ -92,7 +94,26 @@ export class OpportunitiesService {
   }
 
   async update(ctx: RequestContext, id: string, input: UpdateOpportunityInput) {
-    await this.get(ctx, id);
+    const existing = await this.get(ctx, id);
+    if (input.status) {
+      assertTransition("Opportunity", existing.status, input.status);
+      if (input.status === "WON") {
+        const amount = input.amount ?? existing.amount;
+        const closeDate = input.expectedCloseDate ?? existing.expectedCloseDate?.toISOString();
+        if (amount === undefined || amount === null) {
+          throw new BadRequestException("amount is required when status is WON");
+        }
+        if (!closeDate) {
+          throw new BadRequestException("expectedCloseDate is required when status is WON");
+        }
+      }
+      if (input.status === "LOST") {
+        const reasonLost = input.reasonLost ?? existing.reasonLost;
+        if (!reasonLost) {
+          throw new BadRequestException("reasonLost is required when status is LOST");
+        }
+      }
+    }
     const opportunity = await this.prisma.opportunity.update({
       where: { id },
       data: {

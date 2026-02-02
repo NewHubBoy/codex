@@ -12,5 +12,11 @@ export const CreateQuoteItemInputSchema = z.object({
 
 export const UpdateQuoteItemInputSchema = CreateQuoteItemInputSchema.partial();
 
+export const BulkQuoteItemsInputSchema = z.object({
+  mode: z.enum(["append", "replace"]).optional(),
+  items: z.array(CreateQuoteItemInputSchema).min(1)
+});
+
 export type CreateQuoteItemInput = z.infer<typeof CreateQuoteItemInputSchema>;
 export type UpdateQuoteItemInput = z.infer<typeof UpdateQuoteItemInputSchema>;
+export type BulkQuoteItemsInput = z.infer<typeof BulkQuoteItemsInputSchema>;

@@ -1,5 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
 
+const PRODUCT_STATUSES = ["ACTIVE", "INACTIVE"] as const;
+
 export class ProductDto {
   @ApiProperty()
   id!: string;
@@ -45,7 +47,7 @@ export class CreateProductDto {
   @ApiProperty({ required: false })
   currency?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, enum: PRODUCT_STATUSES })
   status?: string;
 }
 
@@ -65,6 +67,6 @@ export class UpdateProductDto {
   @ApiProperty({ required: false })
   currency?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, enum: PRODUCT_STATUSES })
   status?: string;
 }

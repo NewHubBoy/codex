@@ -1,5 +1,15 @@
 import { ApiProperty } from "@nestjs/swagger";
 
+const ORDER_STATUSES = [
+  "DRAFT",
+  "CONFIRMED",
+  "IN_FULFILLMENT",
+  "PARTIALLY_DELIVERED",
+  "DELIVERED",
+  "CLOSED",
+  "CANCELLED"
+] as const;
+
 export class OrderDto {
   @ApiProperty()
   id!: string;
@@ -36,19 +46,37 @@ export class OrderDto {
 }
 
 export class CreateOrderDto {
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    required: false,
+    enum: ORDER_STATUSES,
+    description:
+      "CONFIRMED/IN_FULFILLMENT/PARTIALLY_DELIVERED/DELIVERED/CLOSED require accountId, orderDate, totalAmount, currency."
+  })
   status?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    required: false,
+    description: "Required for CONFIRMED/IN_FULFILLMENT/PARTIALLY_DELIVERED/DELIVERED/CLOSED."
+  })
   orderDate?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    required: false,
+    description:
+      "If omitted, totalAmount is recomputed from items. Required for CONFIRMED/IN_FULFILLMENT/PARTIALLY_DELIVERED/DELIVERED/CLOSED."
+  })
   totalAmount?: number;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    required: false,
+    description: "Required for CONFIRMED/IN_FULFILLMENT/PARTIALLY_DELIVERED/DELIVERED/CLOSED."
+  })
   currency?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    required: false,
+    description: "Required for CONFIRMED/IN_FULFILLMENT/PARTIALLY_DELIVERED/DELIVERED/CLOSED."
+  })
   accountId?: string | null;
 
   @ApiProperty({ required: false })
@@ -59,19 +87,37 @@ export class CreateOrderDto {
 }
 
 export class UpdateOrderDto {
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    required: false,
+    enum: ORDER_STATUSES,
+    description:
+      "CONFIRMED/IN_FULFILLMENT/PARTIALLY_DELIVERED/DELIVERED/CLOSED require accountId, orderDate, totalAmount, currency."
+  })
   status?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    required: false,
+    description: "Required for CONFIRMED/IN_FULFILLMENT/PARTIALLY_DELIVERED/DELIVERED/CLOSED."
+  })
   orderDate?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    required: false,
+    description:
+      "If omitted, totalAmount is recomputed from items. Required for CONFIRMED/IN_FULFILLMENT/PARTIALLY_DELIVERED/DELIVERED/CLOSED."
+  })
   totalAmount?: number;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    required: false,
+    description: "Required for CONFIRMED/IN_FULFILLMENT/PARTIALLY_DELIVERED/DELIVERED/CLOSED."
+  })
   currency?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    required: false,
+    description: "Required for CONFIRMED/IN_FULFILLMENT/PARTIALLY_DELIVERED/DELIVERED/CLOSED."
+  })
   accountId?: string | null;
 
   @ApiProperty({ required: false })

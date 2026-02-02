@@ -1,5 +1,15 @@
 import { ApiProperty } from "@nestjs/swagger";
 
+const QUOTE_STATUSES = [
+  "DRAFT",
+  "IN_REVIEW",
+  "APPROVED",
+  "SENT",
+  "ACCEPTED",
+  "REJECTED",
+  "EXPIRED"
+] as const;
+
 export class QuoteDto {
   @ApiProperty()
   id!: string;
@@ -42,7 +52,12 @@ export class QuoteDto {
 }
 
 export class CreateQuoteDto {
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    required: false,
+    enum: QUOTE_STATUSES,
+    description:
+      "APPROVED/SENT/ACCEPTED require totalAmount & currency; SENT/ACCEPTED require validTo; ACCEPTED requires accountId."
+  })
   status?: string;
 
   @ApiProperty({ required: false })
@@ -51,19 +66,23 @@ export class CreateQuoteDto {
   @ApiProperty({ required: false })
   validFrom?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, description: "Required for SENT/ACCEPTED." })
   validTo?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    required: false,
+    description:
+      "If omitted, totalAmount is recomputed from items. Required for APPROVED/SENT/ACCEPTED."
+  })
   totalAmount?: number;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, description: "Required for APPROVED/SENT/ACCEPTED." })
   currency?: string;
 
   @ApiProperty({ required: false })
   opportunityId?: string | null;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, description: "Required when status=ACCEPTED." })
   accountId?: string | null;
 
   @ApiProperty({ required: false })
@@ -71,7 +90,12 @@ export class CreateQuoteDto {
 }
 
 export class UpdateQuoteDto {
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    required: false,
+    enum: QUOTE_STATUSES,
+    description:
+      "APPROVED/SENT/ACCEPTED require totalAmount & currency; SENT/ACCEPTED require validTo; ACCEPTED requires accountId."
+  })
   status?: string;
 
   @ApiProperty({ required: false })
@@ -80,19 +104,23 @@ export class UpdateQuoteDto {
   @ApiProperty({ required: false })
   validFrom?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, description: "Required for SENT/ACCEPTED." })
   validTo?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    required: false,
+    description:
+      "If omitted, totalAmount is recomputed from items. Required for APPROVED/SENT/ACCEPTED."
+  })
   totalAmount?: number;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, description: "Required for APPROVED/SENT/ACCEPTED." })
   currency?: string;
 
   @ApiProperty({ required: false })
   opportunityId?: string | null;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, description: "Required when status=ACCEPTED." })
   accountId?: string | null;
 
   @ApiProperty({ required: false })

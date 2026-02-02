@@ -1,4 +1,25 @@
-# 现代化 CRM / 轻量 ERP（对标 SAP C4C）优化版计划 v1.1
+# 现代化 CRM （对标 SAP C4C）优化版计划 v1.1
+
+## TODO（后续补细节）
+- 状态流校验规则进一步细化（按业务配置、支持可配置流程）
+- 状态变更的必填字段校验补齐（如 Quote/Order/Delivery/Ticket 各阶段）
+- 统一状态常量与前后端共享（避免魔法字符串）
+
+## 当前进度（自动记录）
+### 已完成
+- M2 主对象：Products / Quotes / Orders / Deliveries / Tickets（模型 + CRUD + 分页 + Swagger + 审计/Outbox + 编号）
+- QuoteItem / OrderItem：单条 + 批量写入（append/replace）、校验 & lineTotal 自动计算
+- Quote/Order 总额自动汇总（items 变化、主表更新不传 totalAmount 时）
+- 状态枚举与校验（shared zod + 服务端状态流校验）
+- 状态必填字段校验（Lead/Opportunity/Quote/Order/Delivery/Ticket/Activity）
+- Swagger 必填说明已补充
+- 批量状态接口：Lead / Ticket（含 dryRun）
+- 最小回归脚本：`pnpm -C apps/api status:regress`
+
+### 待完成（可选）
+- 扩展批量状态到其他对象（Opportunity/Quote/Order/Delivery/Activity）
+- 状态流与流程配置联动（基于 ProcessDefinition/Transition 动态校验）
+- 更完整回归脚本 / 测试
 
 ## 1. 目标与范围
 - 定位：面向 B2B 的现代化 CRM + 轻量 ERP 前端系统

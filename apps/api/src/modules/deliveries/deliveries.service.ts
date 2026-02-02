@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import type { CreateDeliveryInput, UpdateDeliveryInput } from "@crm/shared";
 import { PrismaService } from "../../prisma/prisma.service";
 import type { RequestContext } from "../../common/request-context";
@@ -8,6 +8,7 @@ import { OutboxService } from "../../common/services/outbox.service";
 import { NumberingService } from "../../common/services/numbering.service";
 import type { ListQuery } from "../../common/list-query";
 import { parseSort } from "../../common/list-query";
+import { assertTransition } from "../../common/status-transitions";
 
 @Injectable()
 export class DeliveriesService {
@@ -83,7 +84,26 @@ export class DeliveriesService {
   }
 
   async update(ctx: RequestContext, id: string, input: UpdateDeliveryInput) {
-    await this.get(ctx, id);
+    const existing = await this.get(ctx, id);
+    if (input.status) {
+      assertTransition("Delivery", existing.status, input.status);
+      const deliveredAt =
+        input.deliveredAt ??
+        (existing.deliveredAt ? existing.deliveredAt.toISOString() : undefined);
+      const deliveredQty = input.deliveredQty ?? existing.deliveredQty;
+      const orderId = input.orderId ?? existing.orderId;
+      if (["DELIVERED", "COMPLETED"].includes(input.status)) {
+        if (!orderId) {
+          throw new BadRequestException("orderId is required for this status");
+        }
+        if (!deliveredAt) {
+          throw new BadRequestException("deliveredAt is required for this status");
+        }
+        if (deliveredQty === undefined || deliveredQty === null) {
+          throw new BadRequestException("deliveredQty is required for this status");
+        }
+      }
+    }
     const delivery = await this.prisma.delivery.update({
       where: { id },
       data: {

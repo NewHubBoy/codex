@@ -12,5 +12,11 @@ export const CreateOrderItemInputSchema = z.object({
 
 export const UpdateOrderItemInputSchema = CreateOrderItemInputSchema.partial();
 
+export const BulkOrderItemsInputSchema = z.object({
+  mode: z.enum(["append", "replace"]).optional(),
+  items: z.array(CreateOrderItemInputSchema).min(1)
+});
+
 export type CreateOrderItemInput = z.infer<typeof CreateOrderItemInputSchema>;
 export type UpdateOrderItemInput = z.infer<typeof UpdateOrderItemInputSchema>;
+export type BulkOrderItemsInput = z.infer<typeof BulkOrderItemsInputSchema>;

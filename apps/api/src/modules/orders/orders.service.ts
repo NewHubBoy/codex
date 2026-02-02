@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import type {
   CreateOrderInput,
   CreateOrderItemInput,
+  BulkOrderItemsInput,
   UpdateOrderInput,
   UpdateOrderItemInput
 } from "@crm/shared";
@@ -13,6 +14,7 @@ import { OutboxService } from "../../common/services/outbox.service";
 import { NumberingService } from "../../common/services/numbering.service";
 import type { ListQuery } from "../../common/list-query";
 import { parseSort } from "../../common/list-query";
+import { assertTransition } from "../../common/status-transitions";
 
 @Injectable()
 export class OrdersService {
@@ -113,22 +115,54 @@ export class OrdersService {
   async addItem(ctx: RequestContext, orderId: string, input: CreateOrderItemInput) {
     await this.get(ctx, orderId);
     const values = this.normalizeItemInput(input);
-    const item = await this.prisma.orderItem.create({
-      data: {
-        orderId,
-        productId: input.productId ?? undefined,
-        qty: values.qty,
-        unitPrice: values.unitPrice,
-        discount: values.discount,
-        tax: values.tax,
-        lineTotal: values.lineTotal
-      }
+    const item = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.orderItem.create({
+        data: {
+          orderId,
+          productId: input.productId ?? undefined,
+          qty: values.qty,
+          unitPrice: values.unitPrice,
+          discount: values.discount,
+          tax: values.tax,
+          lineTotal: values.lineTotal
+        }
+      });
+      await this.recomputeTotal(tx, orderId);
+      return created;
     });
     await this.audit.log(ctx, "create", "OrderItem", item.id, `Added to ${orderId}`);
     await this.outbox.enqueue(ctx, "Order", orderId, "order.item.created", {
       itemId: item.id
     });
     return item;
+  }
+
+  async addItemsBulk(ctx: RequestContext, orderId: string, input: BulkOrderItemsInput) {
+    await this.get(ctx, orderId);
+    const items = input.items.map((item) => {
+      const values = this.normalizeItemInput(item);
+      return {
+        orderId,
+        productId: item.productId ?? undefined,
+        qty: values.qty,
+        unitPrice: values.unitPrice,
+        discount: values.discount,
+        tax: values.tax,
+        lineTotal: values.lineTotal
+      };
+    });
+    const result = await this.prisma.$transaction(async (tx) => {
+      if (input.mode === "replace") {
+        await tx.orderItem.deleteMany({ where: { orderId } });
+      }
+      await tx.orderItem.createMany({ data: items });
+      await this.recomputeTotal(tx, orderId);
+      return tx.orderItem.findMany({ where: { orderId }, orderBy: { createdAt: "asc" } });
+    });
+    const action = input.mode === "replace" ? "order.items.replaced" : "order.items.added";
+    await this.audit.log(ctx, "update", "Order", orderId, `Upserted ${items.length} items`);
+    await this.outbox.enqueue(ctx, "Order", orderId, action, { count: items.length });
+    return result;
   }
 
   async updateItem(
@@ -145,16 +179,20 @@ export class OrdersService {
       throw new NotFoundException("Order item not found");
     }
     const values = this.normalizeItemInput(input, existing);
-    const item = await this.prisma.orderItem.update({
-      where: { id: itemId },
-      data: {
-        productId: input.productId ?? undefined,
-        qty: values.qty,
-        unitPrice: values.unitPrice,
-        discount: values.discount,
-        tax: values.tax,
-        lineTotal: values.lineTotal
-      }
+    const item = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.orderItem.update({
+        where: { id: itemId },
+        data: {
+          productId: input.productId ?? undefined,
+          qty: values.qty,
+          unitPrice: values.unitPrice,
+          discount: values.discount,
+          tax: values.tax,
+          lineTotal: values.lineTotal
+        }
+      });
+      await this.recomputeTotal(tx, orderId);
+      return updated;
     });
     await this.audit.log(ctx, "update", "OrderItem", item.id, `Updated ${item.id}`);
     await this.outbox.enqueue(ctx, "Order", orderId, "order.item.updated", {
@@ -171,12 +209,43 @@ export class OrdersService {
     if (!existing) {
       throw new NotFoundException("Order item not found");
     }
-    const item = await this.prisma.orderItem.delete({ where: { id: itemId } });
+    const item = await this.prisma.$transaction(async (tx) => {
+      const deleted = await tx.orderItem.delete({ where: { id: itemId } });
+      await this.recomputeTotal(tx, orderId);
+      return deleted;
+    });
     await this.audit.log(ctx, "delete", "OrderItem", item.id, `Removed ${item.id}`);
     await this.outbox.enqueue(ctx, "Order", orderId, "order.item.deleted", {
       itemId: item.id
     });
     return item;
+  }
+
+  private async recomputeTotal(
+    tx: {
+      orderItem: { aggregate: Function };
+      order: { update: Function };
+    },
+    orderId: string
+  ) {
+    const total = await this.computeTotal(tx, orderId);
+    await tx.order.update({
+      where: { id: orderId },
+      data: { totalAmount: total }
+    });
+  }
+
+  private async computeTotal(
+    tx: {
+      orderItem: { aggregate: Function };
+    },
+    orderId: string
+  ) {
+    const aggregate = await tx.orderItem.aggregate({
+      where: { orderId },
+      _sum: { lineTotal: true }
+    });
+    return aggregate._sum.lineTotal ?? 0;
   }
 
   private normalizeItemInput(
@@ -216,6 +285,9 @@ export class OrdersService {
     const computed = shouldCompute
       ? this.computeLineTotal(merged.qty, merged.unitPrice, merged.discount, merged.tax)
       : undefined;
+    if (computed !== undefined && computed < 0) {
+      throw new BadRequestException("lineTotal must be >= 0");
+    }
     return {
       qty: input.qty,
       unitPrice: input.unitPrice,
@@ -245,18 +317,52 @@ export class OrdersService {
   }
 
   async update(ctx: RequestContext, id: string, input: UpdateOrderInput) {
-    await this.get(ctx, id);
-    const order = await this.prisma.order.update({
-      where: { id },
-      data: {
-        status: input.status,
-        orderDate: input.orderDate ?? undefined,
-        totalAmount: input.totalAmount ?? undefined,
-        currency: input.currency ?? undefined,
-        accountId: input.accountId ?? undefined,
-        contactId: input.contactId ?? undefined,
-        opportunityId: input.opportunityId ?? undefined
+    const existing = await this.get(ctx, id);
+    if (input.status) {
+      assertTransition("Order", existing.status, input.status);
+      const accountId = input.accountId ?? existing.accountId;
+      const orderDate =
+        input.orderDate ?? (existing.orderDate ? existing.orderDate.toISOString() : undefined);
+      const totalAmount = input.totalAmount ?? existing.totalAmount;
+      const currency = input.currency ?? existing.currency;
+      if (
+        [
+          "CONFIRMED",
+          "IN_FULFILLMENT",
+          "PARTIALLY_DELIVERED",
+          "DELIVERED",
+          "CLOSED"
+        ].includes(input.status)
+      ) {
+        if (!accountId) {
+          throw new BadRequestException("accountId is required for this status");
+        }
+        if (!orderDate) {
+          throw new BadRequestException("orderDate is required for this status");
+        }
+        if (totalAmount === undefined || totalAmount === null) {
+          throw new BadRequestException("totalAmount is required for this status");
+        }
+        if (!currency) {
+          throw new BadRequestException("currency is required for this status");
+        }
       }
+    }
+    const order = await this.prisma.$transaction(async (tx) => {
+      const total =
+        input.totalAmount === undefined ? await this.computeTotal(tx, id) : input.totalAmount;
+      return tx.order.update({
+        where: { id },
+        data: {
+          status: input.status,
+          orderDate: input.orderDate ?? undefined,
+          totalAmount: total,
+          currency: input.currency ?? undefined,
+          accountId: input.accountId ?? undefined,
+          contactId: input.contactId ?? undefined,
+          opportunityId: input.opportunityId ?? undefined
+        }
+      });
     });
     await this.audit.log(ctx, "update", "Order", order.id, `Updated ${order.number}`);
     await this.outbox.enqueue(ctx, "Order", order.id, "order.updated", {

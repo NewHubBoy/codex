@@ -1,5 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
 
+const ACTIVITY_STATUSES = ["OPEN", "COMPLETED", "CANCELLED"] as const;
+
 export class ActivityDto {
   @ApiProperty()
   id!: string;
@@ -51,11 +53,18 @@ export class CreateActivityDto {
   @ApiProperty({ required: false })
   dueAt?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, description: "Required when status=COMPLETED." })
   completedAt?: string;
 
   @ApiProperty({ required: false })
   outcome?: string;
+
+  @ApiProperty({
+    required: false,
+    enum: ACTIVITY_STATUSES,
+    description: "COMPLETED requires completedAt."
+  })
+  status?: string;
 }
 
 export class UpdateActivityDto {
@@ -74,12 +83,16 @@ export class UpdateActivityDto {
   @ApiProperty({ required: false })
   dueAt?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, description: "Required when status=COMPLETED." })
   completedAt?: string;
 
   @ApiProperty({ required: false })
   outcome?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    required: false,
+    enum: ACTIVITY_STATUSES,
+    description: "COMPLETED requires completedAt."
+  })
   status?: string;
 }

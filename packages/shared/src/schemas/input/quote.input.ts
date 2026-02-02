@@ -1,8 +1,11 @@
 import { z } from "zod";
 import { DateTimeSchema, IdSchema } from "../base";
+import { QUOTE_STATUSES } from "../../statuses";
+
+const QuoteStatusSchema = z.enum(QUOTE_STATUSES);
 
 export const CreateQuoteInputSchema = z.object({
-  status: z.string().optional(),
+  status: QuoteStatusSchema.optional(),
   version: z.number().optional(),
   validFrom: DateTimeSchema.optional(),
   validTo: DateTimeSchema.optional(),

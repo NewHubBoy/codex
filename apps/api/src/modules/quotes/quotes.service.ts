@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import type {
   CreateQuoteInput,
   CreateQuoteItemInput,
+  BulkQuoteItemsInput,
   UpdateQuoteInput,
   UpdateQuoteItemInput
 } from "@crm/shared";
@@ -13,6 +14,7 @@ import { OutboxService } from "../../common/services/outbox.service";
 import { NumberingService } from "../../common/services/numbering.service";
 import type { ListQuery } from "../../common/list-query";
 import { parseSort } from "../../common/list-query";
+import { assertTransition } from "../../common/status-transitions";
 
 @Injectable()
 export class QuotesService {
@@ -115,22 +117,54 @@ export class QuotesService {
   async addItem(ctx: RequestContext, quoteId: string, input: CreateQuoteItemInput) {
     await this.get(ctx, quoteId);
     const values = this.normalizeItemInput(input);
-    const item = await this.prisma.quoteItem.create({
-      data: {
-        quoteId,
-        productId: input.productId ?? undefined,
-        qty: values.qty,
-        unitPrice: values.unitPrice,
-        discount: values.discount,
-        tax: values.tax,
-        lineTotal: values.lineTotal
-      }
+    const item = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.quoteItem.create({
+        data: {
+          quoteId,
+          productId: input.productId ?? undefined,
+          qty: values.qty,
+          unitPrice: values.unitPrice,
+          discount: values.discount,
+          tax: values.tax,
+          lineTotal: values.lineTotal
+        }
+      });
+      await this.recomputeTotal(tx, quoteId);
+      return created;
     });
     await this.audit.log(ctx, "create", "QuoteItem", item.id, `Added to ${quoteId}`);
     await this.outbox.enqueue(ctx, "Quote", quoteId, "quote.item.created", {
       itemId: item.id
     });
     return item;
+  }
+
+  async addItemsBulk(ctx: RequestContext, quoteId: string, input: BulkQuoteItemsInput) {
+    await this.get(ctx, quoteId);
+    const items = input.items.map((item) => {
+      const values = this.normalizeItemInput(item);
+      return {
+        quoteId,
+        productId: item.productId ?? undefined,
+        qty: values.qty,
+        unitPrice: values.unitPrice,
+        discount: values.discount,
+        tax: values.tax,
+        lineTotal: values.lineTotal
+      };
+    });
+    const result = await this.prisma.$transaction(async (tx) => {
+      if (input.mode === "replace") {
+        await tx.quoteItem.deleteMany({ where: { quoteId } });
+      }
+      await tx.quoteItem.createMany({ data: items });
+      await this.recomputeTotal(tx, quoteId);
+      return tx.quoteItem.findMany({ where: { quoteId }, orderBy: { createdAt: "asc" } });
+    });
+    const action = input.mode === "replace" ? "quote.items.replaced" : "quote.items.added";
+    await this.audit.log(ctx, "update", "Quote", quoteId, `Upserted ${items.length} items`);
+    await this.outbox.enqueue(ctx, "Quote", quoteId, action, { count: items.length });
+    return result;
   }
 
   async updateItem(
@@ -147,16 +181,20 @@ export class QuotesService {
       throw new NotFoundException("Quote item not found");
     }
     const values = this.normalizeItemInput(input, existing);
-    const item = await this.prisma.quoteItem.update({
-      where: { id: itemId },
-      data: {
-        productId: input.productId ?? undefined,
-        qty: values.qty,
-        unitPrice: values.unitPrice,
-        discount: values.discount,
-        tax: values.tax,
-        lineTotal: values.lineTotal
-      }
+    const item = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.quoteItem.update({
+        where: { id: itemId },
+        data: {
+          productId: input.productId ?? undefined,
+          qty: values.qty,
+          unitPrice: values.unitPrice,
+          discount: values.discount,
+          tax: values.tax,
+          lineTotal: values.lineTotal
+        }
+      });
+      await this.recomputeTotal(tx, quoteId);
+      return updated;
     });
     await this.audit.log(ctx, "update", "QuoteItem", item.id, `Updated ${item.id}`);
     await this.outbox.enqueue(ctx, "Quote", quoteId, "quote.item.updated", {
@@ -173,12 +211,43 @@ export class QuotesService {
     if (!existing) {
       throw new NotFoundException("Quote item not found");
     }
-    const item = await this.prisma.quoteItem.delete({ where: { id: itemId } });
+    const item = await this.prisma.$transaction(async (tx) => {
+      const deleted = await tx.quoteItem.delete({ where: { id: itemId } });
+      await this.recomputeTotal(tx, quoteId);
+      return deleted;
+    });
     await this.audit.log(ctx, "delete", "QuoteItem", item.id, `Removed ${item.id}`);
     await this.outbox.enqueue(ctx, "Quote", quoteId, "quote.item.deleted", {
       itemId: item.id
     });
     return item;
+  }
+
+  private async recomputeTotal(
+    tx: {
+      quoteItem: { aggregate: Function };
+      quote: { update: Function };
+    },
+    quoteId: string
+  ) {
+    const total = await this.computeTotal(tx, quoteId);
+    await tx.quote.update({
+      where: { id: quoteId },
+      data: { totalAmount: total }
+    });
+  }
+
+  private async computeTotal(
+    tx: {
+      quoteItem: { aggregate: Function };
+    },
+    quoteId: string
+  ) {
+    const aggregate = await tx.quoteItem.aggregate({
+      where: { quoteId },
+      _sum: { lineTotal: true }
+    });
+    return aggregate._sum.lineTotal ?? 0;
   }
 
   private normalizeItemInput(
@@ -218,6 +287,9 @@ export class QuotesService {
     const computed = shouldCompute
       ? this.computeLineTotal(merged.qty, merged.unitPrice, merged.discount, merged.tax)
       : undefined;
+    if (computed !== undefined && computed < 0) {
+      throw new BadRequestException("lineTotal must be >= 0");
+    }
     return {
       qty: input.qty,
       unitPrice: input.unitPrice,
@@ -247,20 +319,48 @@ export class QuotesService {
   }
 
   async update(ctx: RequestContext, id: string, input: UpdateQuoteInput) {
-    await this.get(ctx, id);
-    const quote = await this.prisma.quote.update({
-      where: { id },
-      data: {
-        status: input.status,
-        version: input.version,
-        validFrom: input.validFrom ?? undefined,
-        validTo: input.validTo ?? undefined,
-        totalAmount: input.totalAmount ?? undefined,
-        currency: input.currency ?? undefined,
-        opportunityId: input.opportunityId ?? undefined,
-        accountId: input.accountId ?? undefined,
-        contactId: input.contactId ?? undefined
+    const existing = await this.get(ctx, id);
+    if (input.status) {
+      assertTransition("Quote", existing.status, input.status);
+      const totalAmount = input.totalAmount ?? existing.totalAmount;
+      const currency = input.currency ?? existing.currency;
+      const validTo =
+        input.validTo ?? (existing.validTo ? existing.validTo.toISOString() : undefined);
+      const accountId = input.accountId ?? existing.accountId;
+      if (["APPROVED", "SENT", "ACCEPTED"].includes(input.status)) {
+        if (totalAmount === undefined || totalAmount === null) {
+          throw new BadRequestException("totalAmount is required for this status");
+        }
+        if (!currency) {
+          throw new BadRequestException("currency is required for this status");
+        }
       }
+      if (["SENT", "ACCEPTED"].includes(input.status)) {
+        if (!validTo) {
+          throw new BadRequestException("validTo is required when status is SENT or ACCEPTED");
+        }
+      }
+      if (input.status === "ACCEPTED" && !accountId) {
+        throw new BadRequestException("accountId is required when status is ACCEPTED");
+      }
+    }
+    const quote = await this.prisma.$transaction(async (tx) => {
+      const total =
+        input.totalAmount === undefined ? await this.computeTotal(tx, id) : input.totalAmount;
+      return tx.quote.update({
+        where: { id },
+        data: {
+          status: input.status,
+          version: input.version,
+          validFrom: input.validFrom ?? undefined,
+          validTo: input.validTo ?? undefined,
+          totalAmount: total,
+          currency: input.currency ?? undefined,
+          opportunityId: input.opportunityId ?? undefined,
+          accountId: input.accountId ?? undefined,
+          contactId: input.contactId ?? undefined
+        }
+      });
     });
     await this.audit.log(ctx, "update", "Quote", quote.id, `Updated ${quote.number}`);
     await this.outbox.enqueue(ctx, "Quote", quote.id, "quote.updated", {

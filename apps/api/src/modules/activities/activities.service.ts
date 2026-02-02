@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import type { CreateActivityInput, UpdateActivityInput } from "@crm/shared";
 import { PrismaService } from "../../prisma/prisma.service";
 import type { RequestContext } from "../../common/request-context";
@@ -7,6 +7,7 @@ import { AuditLogService } from "../../common/services/audit-log.service";
 import { OutboxService } from "../../common/services/outbox.service";
 import type { ListQuery } from "../../common/list-query";
 import { parseSort } from "../../common/list-query";
+import { assertTransition } from "../../common/status-transitions";
 
 @Injectable()
 export class ActivitiesService {
@@ -23,6 +24,7 @@ export class ActivitiesService {
         tenantId: ctx.tenantId,
         orgUnitId: ctx.orgUnitId,
         ownerId: ctx.userId,
+        status: input.status ?? undefined,
         type: input.type,
         subject: input.subject,
         relatedType: input.relatedType,
@@ -92,7 +94,18 @@ export class ActivitiesService {
   }
 
   async update(ctx: RequestContext, id: string, input: UpdateActivityInput) {
-    await this.get(ctx, id);
+    const existing = await this.get(ctx, id);
+    if (input.status) {
+      assertTransition("Activity", existing.status, input.status);
+      if (input.status === "COMPLETED") {
+        const completedAt =
+          input.completedAt ??
+          (existing.completedAt ? existing.completedAt.toISOString() : undefined);
+        if (!completedAt) {
+          throw new BadRequestException("completedAt is required when status is COMPLETED");
+        }
+      }
+    }
     const activity = await this.prisma.activity.update({
       where: { id },
       data: {

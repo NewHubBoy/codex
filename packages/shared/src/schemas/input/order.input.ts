@@ -1,8 +1,11 @@
 import { z } from "zod";
 import { DateTimeSchema, IdSchema } from "../base";
+import { ORDER_STATUSES } from "../../statuses";
+
+const OrderStatusSchema = z.enum(ORDER_STATUSES);
 
 export const CreateOrderInputSchema = z.object({
-  status: z.string().optional(),
+  status: OrderStatusSchema.optional(),
   orderDate: DateTimeSchema.optional(),
   totalAmount: z.number().optional(),
   currency: z.string().optional(),

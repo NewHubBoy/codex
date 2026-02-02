@@ -1,5 +1,15 @@
 import { ApiProperty } from "@nestjs/swagger";
 
+const TICKET_STATUSES = [
+  "NEW",
+  "ASSIGNED",
+  "IN_PROGRESS",
+  "WAITING_CUSTOMER",
+  "RESOLVED",
+  "CLOSED",
+  "CANCELLED"
+] as const;
+
 export class TicketDto {
   @ApiProperty()
   id!: string;
@@ -45,10 +55,14 @@ export class CreateTicketDto {
   @ApiProperty({ required: false })
   priority?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, description: "Required for RESOLVED/CLOSED." })
   subject?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    required: false,
+    enum: TICKET_STATUSES,
+    description: "RESOLVED/CLOSED require subject."
+  })
   status?: string;
 
   @ApiProperty({ required: false })
@@ -71,10 +85,14 @@ export class UpdateTicketDto {
   @ApiProperty({ required: false })
   priority?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, description: "Required for RESOLVED/CLOSED." })
   subject?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    required: false,
+    enum: TICKET_STATUSES,
+    description: "RESOLVED/CLOSED require subject."
+  })
   status?: string;
 
   @ApiProperty({ required: false })

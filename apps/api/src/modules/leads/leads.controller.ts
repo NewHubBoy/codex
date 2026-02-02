@@ -11,7 +11,11 @@ import {
   UseGuards
 } from "@nestjs/common";
 import type { Request } from "express";
-import { CreateLeadInputSchema, UpdateLeadInputSchema } from "@crm/shared";
+import {
+  BulkLeadStatusInputSchema,
+  CreateLeadInputSchema,
+  UpdateLeadInputSchema
+} from "@crm/shared";
 import { parseListQuery } from "../../common/list-query";
 import { getRequestContext } from "../../common/request-context";
 import { RequirePermissions } from "../../common/decorators/permissions.decorator";
@@ -30,6 +34,8 @@ import {
 import { LeadsService } from "./leads.service";
 import { CreateLeadDto, LeadDto, UpdateLeadDto } from "./dto/leads.swagger";
 import { PaginatedResponseDto } from "../../common/swagger/pagination";
+import { BulkStatusResultDto } from "../../common/swagger/bulk-status.swagger";
+import { BulkLeadStatusDto } from "./dto/leads-bulk.swagger";
 
 @ApiTags("leads")
 @ApiBearerAuth()
@@ -97,5 +103,35 @@ export class LeadsController {
   async remove(@Req() req: Request, @Param("id") id: string) {
     const ctx = getRequestContext(req);
     return this.leadsService.remove(ctx, id);
+  }
+
+  @Post("bulk/status")
+  @RequirePermissions("lead:write")
+  @ApiBody({
+    type: BulkLeadStatusDto,
+    examples: {
+      updateStatus: {
+        summary: "批量更新状态",
+        value: {
+          ids: ["00000000-0000-0000-0000-000000000008"],
+          status: "QUALIFIED"
+        }
+      },
+      dryRun: {
+        summary: "只校验不写（dryRun）",
+        value: {
+          ids: ["00000000-0000-0000-0000-000000000008"],
+          status: "CONVERTED",
+          accountId: "00000000-0000-0000-0000-000000000006",
+          dryRun: true
+        }
+      }
+    }
+  })
+  @ApiOkResponse({ type: BulkStatusResultDto })
+  async bulkStatus(@Req() req: Request, @Body() body: unknown) {
+    const ctx = getRequestContext(req);
+    const input = BulkLeadStatusInputSchema.parse(body);
+    return this.leadsService.bulkUpdateStatus(ctx, input);
   }
 }

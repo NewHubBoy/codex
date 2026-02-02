@@ -65,3 +65,11 @@ export class UpdateOrderItemDto {
   @ApiProperty({ required: false })
   lineTotal?: number;
 }
+
+export class BulkOrderItemsDto {
+  @ApiProperty({ required: false, enum: ["append", "replace"] })
+  mode?: "append" | "replace";
+
+  @ApiProperty({ type: [CreateOrderItemDto] })
+  items!: CreateOrderItemDto[];
+}

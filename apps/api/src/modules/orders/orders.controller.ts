@@ -14,6 +14,7 @@ import type { Request } from "express";
 import {
   CreateOrderInputSchema,
   CreateOrderItemInputSchema,
+  BulkOrderItemsInputSchema,
   UpdateOrderInputSchema,
   UpdateOrderItemInputSchema
 } from "@crm/shared";
@@ -37,6 +38,7 @@ import { CreateOrderDto, OrderDto, UpdateOrderDto } from "./dto/orders.swagger";
 import { PaginatedResponseDto } from "../../common/swagger/pagination";
 import {
   CreateOrderItemDto,
+  BulkOrderItemsDto,
   OrderItemDto,
   UpdateOrderItemDto
 } from "./dto/order-items.swagger";
@@ -148,6 +150,20 @@ export class OrdersController {
     const ctx = getRequestContext(req);
     const input = CreateOrderItemInputSchema.parse(body);
     return this.ordersService.addItem(ctx, id, input);
+  }
+
+  @Post(":id/items/bulk")
+  @RequirePermissions("order:write")
+  @ApiBody({ type: BulkOrderItemsDto })
+  @ApiCreatedResponse({ type: OrderItemDto, isArray: true })
+  async addItemsBulk(
+    @Req() req: Request,
+    @Param("id") id: string,
+    @Body() body: unknown
+  ) {
+    const ctx = getRequestContext(req);
+    const input = BulkOrderItemsInputSchema.parse(body);
+    return this.ordersService.addItemsBulk(ctx, id, input);
   }
 
   @Patch(":id/items/:itemId")

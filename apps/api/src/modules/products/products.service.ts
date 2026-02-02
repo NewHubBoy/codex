@@ -7,6 +7,7 @@ import { AuditLogService } from "../../common/services/audit-log.service";
 import { OutboxService } from "../../common/services/outbox.service";
 import type { ListQuery } from "../../common/list-query";
 import { parseSort } from "../../common/list-query";
+import { assertTransition } from "../../common/status-transitions";
 
 @Injectable()
 export class ProductsService {
@@ -85,7 +86,10 @@ export class ProductsService {
   }
 
   async update(ctx: RequestContext, id: string, input: UpdateProductInput) {
-    await this.get(ctx, id);
+    const existing = await this.get(ctx, id);
+    if (input.status) {
+      assertTransition("Product", existing.status, input.status);
+    }
     const product = await this.prisma.product.update({
       where: { id },
       data: {

@@ -11,7 +11,11 @@ import {
   UseGuards
 } from "@nestjs/common";
 import type { Request } from "express";
-import { CreateTicketInputSchema, UpdateTicketInputSchema } from "@crm/shared";
+import {
+  BulkTicketStatusInputSchema,
+  CreateTicketInputSchema,
+  UpdateTicketInputSchema
+} from "@crm/shared";
 import { parseListQuery } from "../../common/list-query";
 import { getRequestContext } from "../../common/request-context";
 import { RequirePermissions } from "../../common/decorators/permissions.decorator";
@@ -30,6 +34,8 @@ import {
 import { TicketsService } from "./tickets.service";
 import { CreateTicketDto, TicketDto, UpdateTicketDto } from "./dto/tickets.swagger";
 import { PaginatedResponseDto } from "../../common/swagger/pagination";
+import { BulkStatusResultDto } from "../../common/swagger/bulk-status.swagger";
+import { BulkTicketStatusDto } from "./dto/tickets-bulk.swagger";
 
 @ApiTags("tickets")
 @ApiBearerAuth()
@@ -97,5 +103,34 @@ export class TicketsController {
   async remove(@Req() req: Request, @Param("id") id: string) {
     const ctx = getRequestContext(req);
     return this.ticketsService.remove(ctx, id);
+  }
+
+  @Post("bulk/status")
+  @RequirePermissions("ticket:write")
+  @ApiBody({
+    type: BulkTicketStatusDto,
+    examples: {
+      updateStatus: {
+        summary: "批量更新状态",
+        value: {
+          ids: ["00000000-0000-0000-0000-000000000010"],
+          status: "ASSIGNED"
+        }
+      },
+      dryRun: {
+        summary: "只校验不写（dryRun）",
+        value: {
+          ids: ["00000000-0000-0000-0000-000000000010"],
+          status: "CLOSED",
+          dryRun: true
+        }
+      }
+    }
+  })
+  @ApiOkResponse({ type: BulkStatusResultDto })
+  async bulkStatus(@Req() req: Request, @Body() body: unknown) {
+    const ctx = getRequestContext(req);
+    const input = BulkTicketStatusInputSchema.parse(body);
+    return this.ticketsService.bulkUpdateStatus(ctx, input);
   }
 }

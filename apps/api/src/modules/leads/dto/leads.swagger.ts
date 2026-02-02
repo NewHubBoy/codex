@@ -1,5 +1,14 @@
 import { ApiProperty } from "@nestjs/swagger";
 
+const LEAD_STATUSES = [
+  "NEW",
+  "ASSIGNED",
+  "WORKING",
+  "QUALIFIED",
+  "CONVERTED",
+  "DISQUALIFIED"
+] as const;
+
 export class LeadDto {
   @ApiProperty()
   id!: string;
@@ -53,6 +62,13 @@ export class CreateLeadDto {
 
   @ApiProperty({ required: false })
   description?: string;
+
+  @ApiProperty({
+    required: false,
+    enum: LEAD_STATUSES,
+    description: "When status=CONVERTED, accountId or contactId is required."
+  })
+  status?: string;
 }
 
 export class UpdateLeadDto {
@@ -68,15 +84,25 @@ export class UpdateLeadDto {
   @ApiProperty({ required: false })
   expectedValue?: number;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    required: false,
+    description: "Required when status=CONVERTED if contactId is not provided."
+  })
   accountId?: string | null;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    required: false,
+    description: "Required when status=CONVERTED if accountId is not provided."
+  })
   contactId?: string | null;
 
   @ApiProperty({ required: false })
   description?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    required: false,
+    enum: LEAD_STATUSES,
+    description: "When status=CONVERTED, accountId or contactId is required."
+  })
   status?: string;
 }

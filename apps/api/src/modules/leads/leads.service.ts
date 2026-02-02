@@ -1,5 +1,5 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
-import type { CreateLeadInput, UpdateLeadInput } from "@crm/shared";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import type { BulkLeadStatusInput, CreateLeadInput, UpdateLeadInput } from "@crm/shared";
 import { PrismaService } from "../../prisma/prisma.service";
 import type { RequestContext } from "../../common/request-context";
 import { DataScopeService } from "../../common/services/data-scope.service";
@@ -7,6 +7,7 @@ import { AuditLogService } from "../../common/services/audit-log.service";
 import { OutboxService } from "../../common/services/outbox.service";
 import type { ListQuery } from "../../common/list-query";
 import { parseSort } from "../../common/list-query";
+import { assertTransition } from "../../common/status-transitions";
 
 @Injectable()
 export class LeadsService {
@@ -23,6 +24,7 @@ export class LeadsService {
         tenantId: ctx.tenantId,
         orgUnitId: ctx.orgUnitId,
         ownerId: ctx.userId,
+        status: input.status ?? undefined,
         name: input.name,
         source: input.source,
         rating: input.rating,
@@ -79,7 +81,19 @@ export class LeadsService {
   }
 
   async update(ctx: RequestContext, id: string, input: UpdateLeadInput) {
-    await this.get(ctx, id);
+    const existing = await this.get(ctx, id);
+    if (input.status) {
+      assertTransition("Lead", existing.status, input.status);
+      if (input.status === "CONVERTED") {
+        const accountId = input.accountId ?? existing.accountId;
+        const contactId = input.contactId ?? existing.contactId;
+        if (!accountId && !contactId) {
+          throw new BadRequestException(
+            "accountId or contactId is required when status is CONVERTED"
+          );
+        }
+      }
+    }
     const lead = await this.prisma.lead.update({
       where: { id },
       data: {
@@ -104,5 +118,68 @@ export class LeadsService {
     await this.audit.log(ctx, "delete", "Lead", lead.id, `Deleted ${lead.name}`);
     await this.outbox.enqueue(ctx, "Lead", lead.id, "lead.deleted", { name: lead.name });
     return lead;
+  }
+
+  async bulkUpdateStatus(ctx: RequestContext, input: BulkLeadStatusInput) {
+    const scopeFilter = await this.dataScope.buildOrgScopeFilter(ctx);
+    const leads = await this.prisma.lead.findMany({
+      where: {
+        tenantId: ctx.tenantId,
+        id: { in: input.ids },
+        ...scopeFilter
+      }
+    });
+    if (leads.length !== input.ids.length) {
+      const found = new Set(leads.map((lead) => lead.id));
+      const missing = input.ids.filter((id) => !found.has(id));
+      throw new NotFoundException(`Leads not found: ${missing.join(", ")}`);
+    }
+    if (input.dryRun) {
+      for (const lead of leads) {
+        assertTransition("Lead", lead.status, input.status);
+        if (input.status === "CONVERTED") {
+          const accountId = input.accountId ?? lead.accountId;
+          const contactId = input.contactId ?? lead.contactId;
+          if (!accountId && !contactId) {
+            throw new BadRequestException(
+              "accountId or contactId is required when status is CONVERTED"
+            );
+          }
+        }
+      }
+      return { updated: leads.length, ids: leads.map((lead) => lead.id) };
+    }
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const results = [];
+      for (const lead of leads) {
+        assertTransition("Lead", lead.status, input.status);
+        if (input.status === "CONVERTED") {
+          const accountId = input.accountId ?? lead.accountId;
+          const contactId = input.contactId ?? lead.contactId;
+          if (!accountId && !contactId) {
+            throw new BadRequestException(
+              "accountId or contactId is required when status is CONVERTED"
+            );
+          }
+        }
+        const row = await tx.lead.update({
+          where: { id: lead.id },
+          data: {
+            status: input.status,
+            accountId: input.accountId ?? undefined,
+            contactId: input.contactId ?? undefined
+          }
+        });
+        results.push(row);
+      }
+      return results;
+    });
+    for (const lead of updated) {
+      await this.audit.log(ctx, "update", "Lead", lead.id, `Status -> ${input.status}`);
+      await this.outbox.enqueue(ctx, "Lead", lead.id, "lead.status.bulk", {
+        status: input.status
+      });
+    }
+    return { updated: updated.length, ids: updated.map((lead) => lead.id) };
   }
 }

@@ -15,6 +15,8 @@ export * from "./quote.input";
 export * from "./quote-item.input";
 export * from "./order.input";
 export * from "./order-item.input";
+export * from "./bulk-lead-status.input";
+export * from "./bulk-ticket-status.input";
 export * from "./ticket.input";
 export * from "./delivery.input";
 export * from "./product.input";

@@ -1,12 +1,15 @@
 import { z } from "zod";
 import { DateTimeSchema, IdSchema } from "../base";
+import { OPPORTUNITY_STATUSES } from "../../statuses";
+
+const OpportunityStatusSchema = z.enum(OPPORTUNITY_STATUSES);
 
 export const CreateOpportunityInputSchema = z.object({
   name: z.string().min(1),
   stage: z.string().optional(),
   amount: z.number().optional(),
   currency: z.string().optional(),
-  status: z.string().optional(),
+  status: OpportunityStatusSchema.optional(),
   expectedCloseDate: DateTimeSchema.optional(),
   probability: z.number().optional(),
   accountId: IdSchema.nullish(),

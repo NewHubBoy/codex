@@ -11,7 +11,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "prisma db seed",
-    "rbac:init": "node scripts/init-rbac.js"
+    "rbac:init": "node scripts/init-rbac.js",
+    "status:regress": "node scripts/status-regression.js"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
