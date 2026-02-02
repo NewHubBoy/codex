@@ -42,26 +42,21 @@ export default function OrdersPage() {
   const columns = [
     {
       title: "订单号",
-      dataIndex: "code",
-      key: "code",
+      dataIndex: "number",
+      key: "number",
       render: (text: string, record: any) => (
         <a href={`/crm/orders/${record.id}`}>{text}</a>
       ),
     },
     {
       title: "客户",
-      dataIndex: ["account", "name"],
-      key: "account",
-    },
-    {
-      title: "报价单",
-      dataIndex: ["quote", "code"],
-      key: "quote",
+      dataIndex: "accountId",
+      key: "accountId",
     },
     {
       title: "金额",
-      dataIndex: "total_amount",
-      key: "total_amount",
+      dataIndex: "totalAmount",
+      key: "totalAmount",
       render: (val: number) => `¥${val?.toLocaleString() || 0}`,
     },
     {
@@ -76,18 +71,18 @@ export default function OrdersPage() {
     },
     {
       title: "订单日期",
-      dataIndex: "order_date",
-      key: "order_date",
+      dataIndex: "orderDate",
+      key: "orderDate",
     },
     {
       title: "负责人",
-      dataIndex: ["owner", "name"],
-      key: "owner",
+      dataIndex: "ownerId",
+      key: "ownerId",
     },
     {
       title: "创建时间",
-      dataIndex: "created_at",
-      key: "created_at",
+      dataIndex: "createdAt",
+      key: "createdAt",
     },
   ];
 
@@ -131,7 +126,7 @@ export default function OrdersPage() {
 
         <Table
           columns={columns}
-          dataSource={data?.list}
+          dataSource={data?.data}
           rowKey="id"
           loading={isLoading}
           pagination={{

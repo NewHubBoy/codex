@@ -44,26 +44,26 @@ export default function QuotesPage() {
   const columns = [
     {
       title: "报价单号",
-      dataIndex: "code",
-      key: "code",
+      dataIndex: "number",
+      key: "number",
       render: (text: string, record: any) => (
         <a href={`/crm/quotes/${record.id}`}>{text}</a>
       ),
     },
     {
       title: "客户",
-      dataIndex: ["account", "name"],
-      key: "account",
+      dataIndex: "accountId",
+      key: "accountId",
     },
     {
       title: "商机",
-      dataIndex: ["opportunity", "name"],
-      key: "opportunity",
+      dataIndex: "opportunityId",
+      key: "opportunityId",
     },
     {
       title: "金额",
-      dataIndex: "total_amount",
-      key: "total_amount",
+      dataIndex: "totalAmount",
+      key: "totalAmount",
       render: (val: number) => `¥${val?.toLocaleString() || 0}`,
     },
     {
@@ -78,18 +78,18 @@ export default function QuotesPage() {
     },
     {
       title: "有效日期",
-      dataIndex: "valid_until",
-      key: "valid_until",
+      dataIndex: "validTo",
+      key: "validTo",
     },
     {
       title: "负责人",
-      dataIndex: ["owner", "name"],
-      key: "owner",
+      dataIndex: "ownerId",
+      key: "ownerId",
     },
     {
       title: "创建时间",
-      dataIndex: "created_at",
-      key: "created_at",
+      dataIndex: "createdAt",
+      key: "createdAt",
     },
   ];
 
@@ -133,7 +133,7 @@ export default function QuotesPage() {
 
         <Table
           columns={columns}
-          dataSource={data?.list}
+          dataSource={data?.data}
           rowKey="id"
           loading={isLoading}
           pagination={{

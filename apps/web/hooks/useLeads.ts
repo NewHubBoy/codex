@@ -9,7 +9,6 @@ import {
   deleteLead,
   bulkUpdateStatus,
   LeadListParams,
-  Lead,
   CreateLeadParams,
   UpdateLeadParams,
 } from "@/services/leads";

@@ -1,15 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { CreateOrderInput, UpdateOrderInput } from "@crm/shared";
 import { orders } from "@/services/orders";
-import type { Order } from "@/services/orders";
 
 export function useOrders(params?: {
   page?: number;
   pageSize?: number;
   q?: string;
   status?: string;
-  account_id?: string;
-  quote_id?: string;
-  owner_id?: string;
+  accountId?: string;
+  opportunityId?: string;
+  ownerId?: string;
+  orgUnitId?: string;
 }) {
   return useQuery({
     queryKey: ["orders", params],
@@ -29,7 +30,7 @@ export function useCreateOrder() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (body: Partial<Order>) => orders.create(body),
+    mutationFn: (body: CreateOrderInput) => orders.create(body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
     },
@@ -40,7 +41,7 @@ export function useUpdateOrder() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: Partial<Order> }) =>
+    mutationFn: ({ id, body }: { id: string; body: UpdateOrderInput }) =>
       orders.update(id, body),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });

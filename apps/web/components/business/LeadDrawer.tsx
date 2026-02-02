@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { Drawer, Form, Input, Select, InputNumber, Button, Space, message } from "antd";
+import { Drawer, Form, Input, Select, InputNumber, Button, Space, App } from "antd";
 import { useCreateLead, useUpdateLead } from "@/hooks/useLeads";
 import type { Lead, LeadStatus } from "@/services/leads";
 import { LeadSource, LeadRating } from "@/services/leads";
@@ -16,6 +16,7 @@ interface LeadDrawerProps {
 export function LeadDrawer({ open, lead, onClose, onSuccess }: LeadDrawerProps) {
   const [form] = Form.useForm();
   const isEditing = !!lead;
+  const { message } = App.useApp();
 
   // 创建线索
   const createLead = useCreateLead();

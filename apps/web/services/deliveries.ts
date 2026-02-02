@@ -1,32 +1,14 @@
+import type { DeliveryDTO, CreateDeliveryInput, UpdateDeliveryInput } from "@crm/shared";
 import { api } from "./api";
+import type { PaginatedResponse } from "./types";
 
-// 类型定义
-export interface Delivery {
-  id: string;
-  tenant_id: string;
-  org_unit_id: string;
-  owner_id: string;
-  order_id: string;
-  status: string;
-  code: string;
-  carrier?: string;
-  tracking_number?: string;
-  estimated_delivery?: string;
-  actual_delivery?: string;
-  notes?: string;
-  created_at: string;
-  updated_at: string;
-  order?: { id: string; code: string };
-  account?: { id: string; name: string };
+export type Delivery = DeliveryDTO & {
+  number?: string;
+  order?: { id: string; number: string };
   owner?: { id: string; name: string; email: string };
-}
+};
 
-export interface DeliveryListResponse {
-  list: Delivery[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
+export type DeliveryListResponse = PaginatedResponse<Delivery>;
 
 export const deliveries = {
   list: async (params?: {
@@ -34,8 +16,9 @@ export const deliveries = {
     pageSize?: number;
     q?: string;
     status?: string;
-    order_id?: string;
-    owner_id?: string;
+    orderId?: string;
+    ownerId?: string;
+    orgUnitId?: string;
   }): Promise<DeliveryListResponse> => {
     return api.get("/deliveries", { params });
   },
@@ -44,12 +27,12 @@ export const deliveries = {
     return api.get(`/deliveries/${id}`);
   },
 
-  create: async (body: Partial<Delivery>): Promise<Delivery> => {
+  create: async (body: CreateDeliveryInput): Promise<Delivery> => {
     return api.post("/deliveries", body);
   },
 
-  update: async (id: string, body: Partial<Delivery>): Promise<Delivery> => {
-    return api.put(`/deliveries/${id}`, body);
+  update: async (id: string, body: UpdateDeliveryInput): Promise<Delivery> => {
+    return api.patch(`/deliveries/${id}`, body);
   },
 
   delete: async (id: string): Promise<void> => {

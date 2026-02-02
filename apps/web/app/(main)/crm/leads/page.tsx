@@ -11,7 +11,7 @@ import {
   Select,
   Card,
   Typography,
-  message,
+  App,
   Popconfirm,
   Drawer,
 } from "antd";
@@ -38,6 +38,7 @@ export default function LeadsPage() {
   const [pagination, setPagination] = useState({ current: 1, pageSize: 20 });
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
+  const { message } = App.useApp();
 
   // 查询线索列表
   const { data, isLoading, refetch } = useLeads({
@@ -267,7 +268,7 @@ export default function LeadsPage() {
         {/* 数据表格 */}
         <Table
           columns={columns}
-          dataSource={data?.list || []}
+          dataSource={data?.data || []}
           rowKey="id"
           loading={isLoading}
           pagination={{

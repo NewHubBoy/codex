@@ -1,29 +1,12 @@
+import type { AccountDTO, CreateAccountInput, UpdateAccountInput } from "@crm/shared";
 import { api } from "./api";
+import type { PaginatedResponse } from "./types";
 
-// 类型定义
-export interface Account {
-  id: string;
-  tenant_id: string;
-  org_unit_id: string;
-  owner_id: string;
-  status: string;
-  name: string;
-  industry?: string;
-  contact_name?: string;
-  phone?: string;
-  email?: string;
-  address?: string;
-  created_at: string;
-  updated_at: string;
+export type Account = AccountDTO & {
   owner?: { id: string; name: string; email: string };
-}
+};
 
-export interface AccountListResponse {
-  list: Account[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
+export type AccountListResponse = PaginatedResponse<Account>;
 
 export const accounts = {
   list: async (params?: {
@@ -31,7 +14,8 @@ export const accounts = {
     pageSize?: number;
     q?: string;
     status?: string;
-    owner_id?: string;
+    ownerId?: string;
+    orgUnitId?: string;
   }): Promise<AccountListResponse> => {
     return api.get("/accounts", { params });
   },
@@ -40,12 +24,12 @@ export const accounts = {
     return api.get(`/accounts/${id}`);
   },
 
-  create: async (body: Partial<Account>): Promise<Account> => {
+  create: async (body: CreateAccountInput): Promise<Account> => {
     return api.post("/accounts", body);
   },
 
-  update: async (id: string, body: Partial<Account>): Promise<Account> => {
-    return api.put(`/accounts/${id}`, body);
+  update: async (id: string, body: UpdateAccountInput): Promise<Account> => {
+    return api.patch(`/accounts/${id}`, body);
   },
 
   delete: async (id: string): Promise<void> => {

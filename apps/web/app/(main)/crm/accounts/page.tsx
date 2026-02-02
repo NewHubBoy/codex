@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Table, Button, Space, Tag, Input, Select, Card, message } from "antd";
+import { Table, Button, Space, Tag, Input, Select, Card } from "antd";
 import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useAccounts } from "@/hooks/useAccounts";
@@ -43,14 +43,14 @@ export default function AccountsPage() {
       key: "industry",
     },
     {
-      title: "联系人",
-      dataIndex: "contact_name",
-      key: "contact_name",
+      title: "类型",
+      dataIndex: "type",
+      key: "type",
     },
     {
-      title: "电话",
-      dataIndex: "phone",
-      key: "phone",
+      title: "生命周期",
+      dataIndex: "lifecycleStatus",
+      key: "lifecycleStatus",
     },
     {
       title: "状态",
@@ -64,13 +64,13 @@ export default function AccountsPage() {
     },
     {
       title: "负责人",
-      dataIndex: ["owner", "name"],
-      key: "owner",
+      dataIndex: "ownerId",
+      key: "ownerId",
     },
     {
       title: "创建时间",
-      dataIndex: "created_at",
-      key: "created_at",
+      dataIndex: "createdAt",
+      key: "createdAt",
     },
   ];
 
@@ -112,7 +112,7 @@ export default function AccountsPage() {
 
         <Table
           columns={columns}
-          dataSource={data?.list}
+          dataSource={data?.data}
           rowKey="id"
           loading={isLoading}
           pagination={{

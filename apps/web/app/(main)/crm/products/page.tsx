@@ -30,8 +30,8 @@ export default function ProductsPage() {
   const columns = [
     {
       title: "产品编码",
-      dataIndex: "code",
-      key: "code",
+      dataIndex: "sku",
+      key: "sku",
       render: (text: string, record: any) => (
         <a href={`/crm/products/${record.id}`}>{text}</a>
       ),
@@ -47,21 +47,10 @@ export default function ProductsPage() {
       key: "category",
     },
     {
-      title: "规格",
-      dataIndex: "specification",
-      key: "specification",
-      ellipsis: true,
-    },
-    {
       title: "单价",
-      dataIndex: "price",
-      key: "price",
+      dataIndex: "listPrice",
+      key: "listPrice",
       render: (val: number) => `¥${val?.toLocaleString() || 0}`,
-    },
-    {
-      title: "单位",
-      dataIndex: "unit",
-      key: "unit",
     },
     {
       title: "状态",
@@ -74,14 +63,9 @@ export default function ProductsPage() {
       ),
     },
     {
-      title: "库存",
-      dataIndex: "stock",
-      key: "stock",
-    },
-    {
       title: "创建时间",
-      dataIndex: "created_at",
-      key: "created_at",
+      dataIndex: "createdAt",
+      key: "createdAt",
     },
   ];
 
@@ -122,7 +106,7 @@ export default function ProductsPage() {
 
         <Table
           columns={columns}
-          dataSource={data?.list}
+          dataSource={data?.data}
           rowKey="id"
           loading={isLoading}
           pagination={{

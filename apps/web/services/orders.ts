@@ -1,31 +1,13 @@
+import type { OrderDTO, CreateOrderInput, UpdateOrderInput } from "@crm/shared";
 import { api } from "./api";
+import type { PaginatedResponse } from "./types";
 
-// 类型定义
-export interface Order {
-  id: string;
-  tenant_id: string;
-  org_unit_id: string;
-  owner_id: string;
-  account_id: string;
-  quote_id?: string;
-  status: string;
-  code: string;
-  total_amount?: number;
-  order_date?: string;
-  description?: string;
-  created_at: string;
-  updated_at: string;
+export type Order = OrderDTO & {
   account?: { id: string; name: string };
-  quote?: { id: string; code: string };
   owner?: { id: string; name: string; email: string };
-}
+};
 
-export interface OrderListResponse {
-  list: Order[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
+export type OrderListResponse = PaginatedResponse<Order>;
 
 export const orders = {
   list: async (params?: {
@@ -33,9 +15,10 @@ export const orders = {
     pageSize?: number;
     q?: string;
     status?: string;
-    account_id?: string;
-    quote_id?: string;
-    owner_id?: string;
+    accountId?: string;
+    opportunityId?: string;
+    ownerId?: string;
+    orgUnitId?: string;
   }): Promise<OrderListResponse> => {
     return api.get("/orders", { params });
   },
@@ -44,12 +27,12 @@ export const orders = {
     return api.get(`/orders/${id}`);
   },
 
-  create: async (body: Partial<Order>): Promise<Order> => {
+  create: async (body: CreateOrderInput): Promise<Order> => {
     return api.post("/orders", body);
   },
 
-  update: async (id: string, body: Partial<Order>): Promise<Order> => {
-    return api.put(`/orders/${id}`, body);
+  update: async (id: string, body: UpdateOrderInput): Promise<Order> => {
+    return api.patch(`/orders/${id}`, body);
   },
 
   delete: async (id: string): Promise<void> => {

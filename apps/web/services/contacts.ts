@@ -1,38 +1,23 @@
+import type { ContactDTO, CreateContactInput, UpdateContactInput } from "@crm/shared";
 import { api } from "./api";
+import type { PaginatedResponse } from "./types";
 
-// 类型定义
-export interface Contact {
-  id: string;
-  tenant_id: string;
-  org_unit_id: string;
-  owner_id: string;
-  account_id: string;
-  status: string;
-  name: string;
-  job_title?: string;
-  phone?: string;
-  email?: string;
-  created_at: string;
-  updated_at: string;
+export type Contact = ContactDTO & {
   account?: { id: string; name: string };
   owner?: { id: string; name: string; email: string };
-}
+};
 
-export interface ContactListResponse {
-  list: Contact[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
+export type ContactListResponse = PaginatedResponse<Contact>;
 
 export const contacts = {
   list: async (params?: {
     page?: number;
     pageSize?: number;
     q?: string;
-    account_id?: string;
+    accountId?: string;
     status?: string;
-    owner_id?: string;
+    ownerId?: string;
+    orgUnitId?: string;
   }): Promise<ContactListResponse> => {
     return api.get("/contacts", { params });
   },
@@ -41,12 +26,12 @@ export const contacts = {
     return api.get(`/contacts/${id}`);
   },
 
-  create: async (body: Partial<Contact>): Promise<Contact> => {
+  create: async (body: CreateContactInput): Promise<Contact> => {
     return api.post("/contacts", body);
   },
 
-  update: async (id: string, body: Partial<Contact>): Promise<Contact> => {
-    return api.put(`/contacts/${id}`, body);
+  update: async (id: string, body: UpdateContactInput): Promise<Contact> => {
+    return api.patch(`/contacts/${id}`, body);
   },
 
   delete: async (id: string): Promise<void> => {

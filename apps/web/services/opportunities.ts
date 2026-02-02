@@ -1,32 +1,18 @@
+import type {
+  OpportunityDTO,
+  CreateOpportunityInput,
+  UpdateOpportunityInput
+} from "@crm/shared";
 import { api } from "./api";
+import type { PaginatedResponse } from "./types";
 
-// 类型定义
-export interface Opportunity {
-  id: string;
-  tenant_id: string;
-  org_unit_id: string;
-  owner_id: string;
-  account_id: string;
-  lead_id?: string;
-  status: string;
-  stage: string;
-  name: string;
-  amount?: number;
-  expected_close_date?: string;
-  description?: string;
-  created_at: string;
-  updated_at: string;
+export type Opportunity = OpportunityDTO & {
   account?: { id: string; name: string };
   lead?: { id: string; name: string };
   owner?: { id: string; name: string; email: string };
-}
+};
 
-export interface OpportunityListResponse {
-  list: Opportunity[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
+export type OpportunityListResponse = PaginatedResponse<Opportunity>;
 
 export const opportunities = {
   list: async (params?: {
@@ -34,9 +20,10 @@ export const opportunities = {
     pageSize?: number;
     q?: string;
     status?: string;
-    account_id?: string;
-    lead_id?: string;
-    owner_id?: string;
+    accountId?: string;
+    leadId?: string;
+    ownerId?: string;
+    orgUnitId?: string;
   }): Promise<OpportunityListResponse> => {
     return api.get("/opportunities", { params });
   },
@@ -45,12 +32,12 @@ export const opportunities = {
     return api.get(`/opportunities/${id}`);
   },
 
-  create: async (body: Partial<Opportunity>): Promise<Opportunity> => {
+  create: async (body: CreateOpportunityInput): Promise<Opportunity> => {
     return api.post("/opportunities", body);
   },
 
-  update: async (id: string, body: Partial<Opportunity>): Promise<Opportunity> => {
-    return api.put(`/opportunities/${id}`, body);
+  update: async (id: string, body: UpdateOpportunityInput): Promise<Opportunity> => {
+    return api.patch(`/opportunities/${id}`, body);
   },
 
   delete: async (id: string): Promise<void> => {

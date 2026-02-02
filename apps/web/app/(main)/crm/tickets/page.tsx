@@ -56,22 +56,22 @@ export default function TicketsPage() {
   const columns = [
     {
       title: "工单号",
-      dataIndex: "code",
-      key: "code",
+      dataIndex: "number",
+      key: "number",
       render: (text: string, record: any) => (
         <a href={`/crm/tickets/${record.id}`}>{text}</a>
       ),
     },
     {
       title: "标题",
-      dataIndex: "title",
-      key: "title",
+      dataIndex: "subject",
+      key: "subject",
       ellipsis: true,
     },
     {
       title: "客户",
-      dataIndex: ["account", "name"],
-      key: "account",
+      dataIndex: "accountId",
+      key: "accountId",
     },
     {
       title: "优先级",
@@ -95,13 +95,13 @@ export default function TicketsPage() {
     },
     {
       title: "负责人",
-      dataIndex: ["owner", "name"],
-      key: "owner",
+      dataIndex: "ownerId",
+      key: "ownerId",
     },
     {
       title: "创建时间",
-      dataIndex: "created_at",
-      key: "created_at",
+      dataIndex: "createdAt",
+      key: "createdAt",
     },
   ];
 
@@ -157,7 +157,7 @@ export default function TicketsPage() {
 
         <Table
           columns={columns}
-          dataSource={data?.list}
+          dataSource={data?.data}
           rowKey="id"
           loading={isLoading}
           pagination={{

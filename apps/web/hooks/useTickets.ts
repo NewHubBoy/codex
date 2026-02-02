@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { CreateTicketInput, UpdateTicketInput } from "@crm/shared";
 import { tickets } from "@/services/tickets";
-import type { Ticket } from "@/services/tickets";
 
 export function useTickets(params?: {
   page?: number;
@@ -8,8 +8,9 @@ export function useTickets(params?: {
   q?: string;
   status?: string;
   priority?: string;
-  account_id?: string;
-  owner_id?: string;
+  accountId?: string;
+  ownerId?: string;
+  orgUnitId?: string;
 }) {
   return useQuery({
     queryKey: ["tickets", params],
@@ -29,7 +30,7 @@ export function useCreateTicket() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (body: Partial<Ticket>) => tickets.create(body),
+    mutationFn: (body: CreateTicketInput) => tickets.create(body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
     },
@@ -40,7 +41,7 @@ export function useUpdateTicket() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: Partial<Ticket> }) =>
+    mutationFn: ({ id, body }: { id: string; body: UpdateTicketInput }) =>
       tickets.update(id, body),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
@@ -64,8 +65,8 @@ export function useAssignTicket() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, owner_id }: { id: string; owner_id: string }) =>
-      tickets.assign(id, owner_id),
+    mutationFn: ({ id, ownerId }: { id: string; ownerId: string }) =>
+      tickets.assign(id, ownerId),
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
       queryClient.invalidateQueries({ queryKey: ["ticket", id] });

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { CreateUserInput, UpdateUserInput } from "@crm/shared";
 import { users, roles, orgUnits } from "@/services/system";
-import type { User, Role } from "@/services/system";
+import type { Role } from "@/services/system";
 
 // Users
 export function useUsers(params?: {
@@ -8,8 +9,8 @@ export function useUsers(params?: {
   pageSize?: number;
   q?: string;
   status?: string;
-  org_unit_id?: string;
-  role_id?: string;
+  orgUnitId?: string;
+  roleId?: string;
 }) {
   return useQuery({
     queryKey: ["users", params],
@@ -36,7 +37,7 @@ export function useCreateUser() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (body: Partial<User>) => users.create(body),
+    mutationFn: (body: CreateUserInput) => users.create(body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
     },
@@ -47,7 +48,7 @@ export function useUpdateUser() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: Partial<User> }) =>
+    mutationFn: ({ id, body }: { id: string; body: UpdateUserInput }) =>
       users.update(id, body),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["users"] });

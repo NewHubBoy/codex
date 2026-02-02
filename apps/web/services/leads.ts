@@ -1,16 +1,24 @@
+import {
+  LEAD_STATUSES,
+  type LeadDTO,
+  type CreateLeadInput,
+  type UpdateLeadInput,
+  type BulkLeadStatusInput,
+  type LeadStatus as SharedLeadStatus
+} from "@crm/shared";
 import { api } from "./api";
+import type { PaginatedResponse } from "./types";
 
 // 线索状态枚举
-export const LeadStatus = {
-  NEW: "NEW",
-  ASSIGNED: "ASSIGNED",
-  WORKING: "WORKING",
-  QUALIFIED: "QUALIFIED",
-  CONVERTED: "CONVERTED",
-  DISQUALIFIED: "DISQUALIFIED",
-} as const;
+export const LeadStatus = LEAD_STATUSES.reduce(
+  (acc, status) => {
+    acc[status] = status;
+    return acc;
+  },
+  {} as Record<SharedLeadStatus, SharedLeadStatus>
+);
 
-export type LeadStatusType = (typeof LeadStatus)[keyof typeof LeadStatus];
+export type LeadStatusType = SharedLeadStatus;
 
 // 线索来源
 export const LeadSource = {
@@ -49,72 +57,47 @@ export interface LeadListParams {
 }
 
 // 线索列表响应
-export interface LeadListResponse {
-  list: Lead[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
+export type LeadListResponse = PaginatedResponse<Lead>;
 
 // 线索详情
-export interface Lead {
-  id: string;
-  tenantId: string;
-  orgUnitId: string;
-  ownerId: string;
-  status: LeadStatusType;
-  source: LeadSourceType;
-  rating: LeadRatingType;
-  name: string;
+export type Lead = LeadDTO & {
+  source?: LeadSourceType;
+  rating?: LeadRatingType;
   company?: string;
   email?: string;
   phone?: string;
-  expectedValue?: number;
-  description?: string;
-  convertedOpportunityId?: string;
-  createdAt: string;
-  updatedAt: string;
-  createdBy: string;
-  updatedBy: string;
   owner?: {
     id: string;
     name: string;
     email: string;
   };
-}
+};
 
 // 创建线索参数
-export interface CreateLeadParams {
-  name: string;
+export type CreateLeadParams = CreateLeadInput & {
+  source?: LeadSourceType;
+  rating?: LeadRatingType;
   company?: string;
   email?: string;
   phone?: string;
-  source?: LeadSourceType;
-  rating?: LeadRatingType;
-  expectedValue?: number;
-  description?: string;
   ownerId?: string;
-}
+};
 
 // 更新线索参数
-export interface UpdateLeadParams extends Partial<CreateLeadParams> {
-  status?: LeadStatusType;
-}
+export type UpdateLeadParams = UpdateLeadInput &
+  Partial<Pick<CreateLeadParams, "company" | "email" | "phone" | "ownerId">> & {
+    status?: LeadStatusType;
+    source?: LeadSourceType;
+    rating?: LeadRatingType;
+  };
 
 // 批量更新状态参数
-export interface BulkUpdateStatusParams {
-  ids: string[];
-  status: LeadStatusType;
-  dryRun?: boolean;
-}
+export type BulkUpdateStatusParams = BulkLeadStatusInput;
 
 // 批量更新状态响应
 export interface BulkUpdateStatusResponse {
-  success: boolean;
   updated: number;
-  skipped: number;
-  errors: Array<{ id: string; message: string }>;
-  dryRun?: boolean;
+  ids: string[];
 }
 
 // 线索列表

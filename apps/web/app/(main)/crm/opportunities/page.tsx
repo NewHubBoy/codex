@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Table, Button, Space, Tag, Input, Select, Card, message } from "antd";
+import { Table, Button, Space, Tag, Input, Select, Card } from "antd";
 import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useOpportunities } from "@/hooks/useOpportunities";
@@ -41,8 +41,8 @@ export default function OpportunitiesPage() {
     },
     {
       title: "客户",
-      dataIndex: ["account", "name"],
-      key: "account",
+      dataIndex: "accountId",
+      key: "accountId",
     },
     {
       title: "金额",
@@ -60,18 +60,18 @@ export default function OpportunitiesPage() {
     },
     {
       title: "预计成交日期",
-      dataIndex: "expected_close_date",
-      key: "expected_close_date",
+      dataIndex: "expectedCloseDate",
+      key: "expectedCloseDate",
     },
     {
       title: "负责人",
-      dataIndex: ["owner", "name"],
-      key: "owner",
+      dataIndex: "ownerId",
+      key: "ownerId",
     },
     {
       title: "创建时间",
-      dataIndex: "created_at",
-      key: "created_at",
+      dataIndex: "createdAt",
+      key: "createdAt",
     },
   ];
 
@@ -115,7 +115,7 @@ export default function OpportunitiesPage() {
 
         <Table
           columns={columns}
-          dataSource={data?.list}
+          dataSource={data?.data}
           rowKey="id"
           loading={isLoading}
           pagination={{

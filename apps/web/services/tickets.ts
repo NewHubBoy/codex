@@ -1,30 +1,13 @@
+import type { TicketDTO, CreateTicketInput, UpdateTicketInput } from "@crm/shared";
 import { api } from "./api";
+import type { PaginatedResponse } from "./types";
 
-// 类型定义
-export interface Ticket {
-  id: string;
-  tenant_id: string;
-  org_unit_id: string;
-  owner_id: string;
-  account_id?: string;
-  status: string;
-  priority: string;
-  code: string;
-  title: string;
-  description?: string;
-  resolution?: string;
-  created_at: string;
-  updated_at: string;
+export type Ticket = TicketDTO & {
   account?: { id: string; name: string };
   owner?: { id: string; name: string; email: string };
-}
+};
 
-export interface TicketListResponse {
-  list: Ticket[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
+export type TicketListResponse = PaginatedResponse<Ticket>;
 
 export const tickets = {
   list: async (params?: {
@@ -33,8 +16,9 @@ export const tickets = {
     q?: string;
     status?: string;
     priority?: string;
-    account_id?: string;
-    owner_id?: string;
+    accountId?: string;
+    ownerId?: string;
+    orgUnitId?: string;
   }): Promise<TicketListResponse> => {
     return api.get("/tickets", { params });
   },
@@ -43,12 +27,12 @@ export const tickets = {
     return api.get(`/tickets/${id}`);
   },
 
-  create: async (body: Partial<Ticket>): Promise<Ticket> => {
+  create: async (body: CreateTicketInput): Promise<Ticket> => {
     return api.post("/tickets", body);
   },
 
-  update: async (id: string, body: Partial<Ticket>): Promise<Ticket> => {
-    return api.put(`/tickets/${id}`, body);
+  update: async (id: string, body: UpdateTicketInput): Promise<Ticket> => {
+    return api.patch(`/tickets/${id}`, body);
   },
 
   delete: async (id: string): Promise<void> => {
@@ -56,8 +40,8 @@ export const tickets = {
   },
 
   // 分配
-  assign: async (id: string, owner_id: string): Promise<Ticket> => {
-    return api.post(`/tickets/${id}/assign`, { owner_id });
+  assign: async (id: string, ownerId: string): Promise<Ticket> => {
+    return api.post(`/tickets/${id}/assign`, { ownerId });
   },
 
   // 解决

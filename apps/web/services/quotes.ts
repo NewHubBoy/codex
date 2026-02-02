@@ -1,31 +1,14 @@
+import type { QuoteDTO, CreateQuoteInput, UpdateQuoteInput } from "@crm/shared";
 import { api } from "./api";
+import type { PaginatedResponse } from "./types";
 
-// 类型定义
-export interface Quote {
-  id: string;
-  tenant_id: string;
-  org_unit_id: string;
-  owner_id: string;
-  account_id: string;
-  opportunity_id?: string;
-  status: string;
-  code: string;
-  total_amount?: number;
-  valid_until?: string;
-  description?: string;
-  created_at: string;
-  updated_at: string;
+export type Quote = QuoteDTO & {
   account?: { id: string; name: string };
   opportunity?: { id: string; name: string };
   owner?: { id: string; name: string; email: string };
-}
+};
 
-export interface QuoteListResponse {
-  list: Quote[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
+export type QuoteListResponse = PaginatedResponse<Quote>;
 
 export const quotes = {
   list: async (params?: {
@@ -33,9 +16,10 @@ export const quotes = {
     pageSize?: number;
     q?: string;
     status?: string;
-    account_id?: string;
-    opportunity_id?: string;
-    owner_id?: string;
+    accountId?: string;
+    opportunityId?: string;
+    ownerId?: string;
+    orgUnitId?: string;
   }): Promise<QuoteListResponse> => {
     return api.get("/quotes", { params });
   },
@@ -44,12 +28,12 @@ export const quotes = {
     return api.get(`/quotes/${id}`);
   },
 
-  create: async (body: Partial<Quote>): Promise<Quote> => {
+  create: async (body: CreateQuoteInput): Promise<Quote> => {
     return api.post("/quotes", body);
   },
 
-  update: async (id: string, body: Partial<Quote>): Promise<Quote> => {
-    return api.put(`/quotes/${id}`, body);
+  update: async (id: string, body: UpdateQuoteInput): Promise<Quote> => {
+    return api.patch(`/quotes/${id}`, body);
   },
 
   delete: async (id: string): Promise<void> => {

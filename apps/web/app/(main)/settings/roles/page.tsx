@@ -1,19 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { Table, Button, Space, Tag, Card, Modal, message, Checkbox } from "antd";
-import { PlusOutlined, EditOutlined, DeleteOutlined, SettingOutlined } from "@ant-design/icons";
+import { Table, Button, Space, Tag, Card, Modal, App } from "antd";
+import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
-import { useRoles, usePermissions, useCreateRole, useDeleteRole } from "@/hooks/useSystem";
+import { useRoles, useDeleteRole } from "@/hooks/useSystem";
 
 export default function RolesPage() {
   const { data: roles, isLoading } = useRoles();
-  const { data: permissions } = usePermissions();
-  const createRole = useCreateRole();
   const deleteRole = useDeleteRole();
-
-  const [permissionModalOpen, setPermissionModalOpen] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<any>(null);
+  const { message } = App.useApp();
 
   const columns = [
     {
@@ -57,14 +52,6 @@ export default function RolesPage() {
         <Space>
           <Button
             type="text"
-            icon={<SettingOutlined />}
-            onClick={() => {
-              setSelectedRole(record);
-              setPermissionModalOpen(true);
-            }}
-          />
-          <Button
-            type="text"
             icon={<EditOutlined />}
             onClick={() => message.info("编辑功能开发中")}
           />
@@ -106,29 +93,6 @@ export default function RolesPage() {
           pagination={false}
         />
       </Card>
-
-      <Modal
-        title={`权限配置 - ${selectedRole?.name}`}
-        open={permissionModalOpen}
-        onCancel={() => setPermissionModalOpen(false)}
-        footer={null}
-        width={600}
-      >
-        <div style={{ maxHeight: 400, overflow: "auto" }}>
-          {permissions?.map((group: any) => (
-            <div key={group.module} style={{ marginBottom: 16 }}>
-              <h4>{group.module}</h4>
-              <Checkbox.Group
-                options={group.permissions.map((p: any) => ({
-                  label: p.description,
-                  value: p.code,
-                }))}
-                defaultValue={selectedRole?.permissions?.map((p: any) => p.code)}
-              />
-            </div>
-          ))}
-        </div>
-      </Modal>
     </div>
   );
 }

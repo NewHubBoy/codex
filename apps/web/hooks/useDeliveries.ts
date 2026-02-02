@@ -1,14 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { CreateDeliveryInput, UpdateDeliveryInput } from "@crm/shared";
 import { deliveries } from "@/services/deliveries";
-import type { Delivery } from "@/services/deliveries";
 
 export function useDeliveries(params?: {
   page?: number;
   pageSize?: number;
   q?: string;
   status?: string;
-  order_id?: string;
-  owner_id?: string;
+  orderId?: string;
+  ownerId?: string;
+  orgUnitId?: string;
 }) {
   return useQuery({
     queryKey: ["deliveries", params],
@@ -28,7 +29,7 @@ export function useCreateDelivery() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (body: Partial<Delivery>) => deliveries.create(body),
+    mutationFn: (body: CreateDeliveryInput) => deliveries.create(body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["deliveries"] });
     },
@@ -39,7 +40,7 @@ export function useUpdateDelivery() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: Partial<Delivery> }) =>
+    mutationFn: ({ id, body }: { id: string; body: UpdateDeliveryInput }) =>
       deliveries.update(id, body),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["deliveries"] });

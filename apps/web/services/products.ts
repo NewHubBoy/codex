@@ -1,27 +1,10 @@
+import type { ProductDTO, CreateProductInput, UpdateProductInput } from "@crm/shared";
 import { api } from "./api";
+import type { PaginatedResponse } from "./types";
 
-// 类型定义
-export interface Product {
-  id: string;
-  code: string;
-  name: string;
-  category: string;
-  specification?: string;
-  price: number;
-  unit?: string;
-  status: string;
-  stock?: number;
-  description?: string;
-  created_at: string;
-  updated_at: string;
-}
+export type Product = ProductDTO;
 
-export interface ProductListResponse {
-  list: Product[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
+export type ProductListResponse = PaginatedResponse<Product>;
 
 export const products = {
   list: async (params?: {
@@ -38,12 +21,12 @@ export const products = {
     return api.get(`/products/${id}`);
   },
 
-  create: async (body: Partial<Product>): Promise<Product> => {
+  create: async (body: CreateProductInput): Promise<Product> => {
     return api.post("/products", body);
   },
 
-  update: async (id: string, body: Partial<Product>): Promise<Product> => {
-    return api.put(`/products/${id}`, body);
+  update: async (id: string, body: UpdateProductInput): Promise<Product> => {
+    return api.patch(`/products/${id}`, body);
   },
 
   delete: async (id: string): Promise<void> => {

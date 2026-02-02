@@ -1,15 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { CreateOpportunityInput, UpdateOpportunityInput } from "@crm/shared";
 import { opportunities } from "@/services/opportunities";
-import type { Opportunity } from "@/services/opportunities";
 
 export function useOpportunities(params?: {
   page?: number;
   pageSize?: number;
   q?: string;
   status?: string;
-  account_id?: string;
-  lead_id?: string;
-  owner_id?: string;
+  accountId?: string;
+  leadId?: string;
+  ownerId?: string;
+  orgUnitId?: string;
 }) {
   return useQuery({
     queryKey: ["opportunities", params],
@@ -29,7 +30,7 @@ export function useCreateOpportunity() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (body: Partial<Opportunity>) => opportunities.create(body),
+    mutationFn: (body: CreateOpportunityInput) => opportunities.create(body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["opportunities"] });
     },
@@ -40,7 +41,7 @@ export function useUpdateOpportunity() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: Partial<Opportunity> }) =>
+    mutationFn: ({ id, body }: { id: string; body: UpdateOpportunityInput }) =>
       opportunities.update(id, body),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["opportunities"] });

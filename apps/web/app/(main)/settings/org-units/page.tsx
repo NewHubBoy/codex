@@ -1,30 +1,32 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Tree, Button, Space, Card, Modal, Form, Input, message, Select } from "antd";
-import { PlusOutlined, EditOutlined, DeleteOutlined, TeamOutlined } from "@ant-design/icons";
-import { Tag } from "antd";
-import { PageHeader } from "@/components/common/PageHeader";
-import { useOrgUnits } from "@/hooks/useSystem";
+import { useState } from 'react';
+import { Tree, Button, Space, Card, Modal, Form, Input, App, Select } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, TeamOutlined } from '@ant-design/icons';
+import { Tag } from 'antd';
+import { PageHeader } from '@/components/common/PageHeader';
+import { useOrgUnits } from '@/hooks/useSystem';
 
 export default function OrgUnitsPage() {
   const { data: orgUnits, isLoading } = useOrgUnits();
   const [form] = Form.useForm();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingNode, setEditingNode] = useState<any>(null);
+  const { message } = App.useApp();
 
   // 构建树形数据
   const buildTreeData = (items: any[]): any[] => {
     const map = new Map();
     const roots: any[] = [];
+    console.log(items);
 
-    items.forEach((item) => {
+    items?.data.forEach((item) => {
       map.set(item.id, { ...item, key: item.id, title: item.name, children: [] });
     });
 
-    items.forEach((item) => {
-      if (item.parent_id && map.has(item.parent_id)) {
-        map.get(item.parent_id).children.push(map.get(item.id));
+    items?.data.forEach((item) => {
+      if (item.parentId && map.has(item.parentId)) {
+        map.get(item.parentId).children.push(map.get(item.id));
       } else {
         roots.push(map.get(item.id));
       }
@@ -34,6 +36,8 @@ export default function OrgUnitsPage() {
   };
 
   const treeData = orgUnits ? buildTreeData(orgUnits) : [];
+
+  console.log(treeData, orgUnits);
 
   const handleAdd = () => {
     setEditingNode(null);
@@ -54,15 +58,15 @@ export default function OrgUnitsPage() {
 
   const handleDelete = (node: any) => {
     Modal.confirm({
-      title: "确认删除",
+      title: '确认删除',
       content: `确定要删除部门 ${node.name} 吗？子部门也将被删除。`,
-      onOk: () => message.success("删除成功"),
+      onOk: () => message.success('删除成功'),
     });
   };
 
   const handleSubmit = async () => {
     await form.validateFields();
-    message.success("保存成功");
+    message.success('保存成功');
     setModalOpen(false);
   };
 
@@ -98,19 +102,8 @@ export default function OrgUnitsPage() {
                     setModalOpen(true);
                   }}
                 />
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<EditOutlined />}
-                  onClick={() => handleEdit(nodeData)}
-                />
-                <Button
-                  type="text"
-                  size="small"
-                  danger
-                  icon={<DeleteOutlined />}
-                  onClick={() => handleDelete(nodeData)}
-                />
+                <Button type="text" size="small" icon={<EditOutlined />} onClick={() => handleEdit(nodeData)} />
+                <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(nodeData)} />
               </Space>
             </Space>
           )}
@@ -118,34 +111,21 @@ export default function OrgUnitsPage() {
         />
       </Card>
 
-      <Modal
-        title={editingNode ? "编辑部门" : "新建部门"}
-        open={modalOpen}
-        onCancel={() => setModalOpen(false)}
-        onOk={handleSubmit}
-      >
+      <Modal title={editingNode ? '编辑部门' : '新建部门'} open={modalOpen} onCancel={() => setModalOpen(false)} onOk={handleSubmit}>
         <Form form={form} layout="vertical">
-          <Form.Item
-            name="name"
-            label="部门名称"
-            rules={[{ required: true, message: "请输入部门名称" }]}
-          >
+          <Form.Item name="name" label="部门名称" rules={[{ required: true, message: '请输入部门名称' }]}>
             <Input />
           </Form.Item>
-          <Form.Item
-            name="code"
-            label="部门编码"
-            rules={[{ required: true, message: "请输入部门编码" }]}
-          >
+          <Form.Item name="code" label="部门编码" rules={[{ required: true, message: '请输入部门编码' }]}>
             <Input />
           </Form.Item>
           <Form.Item name="type" label="部门类型" rules={[{ required: true }]}>
             <Select
               options={[
-                { label: "公司", value: "company" },
-                { label: "事业部", value: "division" },
-                { label: "部门", value: "department" },
-                { label: "团队", value: "team" },
+                { label: '公司', value: 'company' },
+                { label: '事业部', value: 'division' },
+                { label: '部门', value: 'department' },
+                { label: '团队', value: 'team' },
               ]}
             />
           </Form.Item>
@@ -153,7 +133,7 @@ export default function OrgUnitsPage() {
             <Select
               placeholder="选择上级部门（留空为顶级）"
               allowClear
-              options={orgUnits?.map((item: any) => ({
+              options={orgUnits?.data?.map((item: any) => ({
                 label: item.name,
                 value: item.id,
               }))}

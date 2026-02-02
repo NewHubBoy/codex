@@ -1,15 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { CreateQuoteInput, UpdateQuoteInput } from "@crm/shared";
 import { quotes } from "@/services/quotes";
-import type { Quote } from "@/services/quotes";
 
 export function useQuotes(params?: {
   page?: number;
   pageSize?: number;
   q?: string;
   status?: string;
-  account_id?: string;
-  opportunity_id?: string;
-  owner_id?: string;
+  accountId?: string;
+  opportunityId?: string;
+  ownerId?: string;
+  orgUnitId?: string;
 }) {
   return useQuery({
     queryKey: ["quotes", params],
@@ -29,7 +30,7 @@ export function useCreateQuote() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (body: Partial<Quote>) => quotes.create(body),
+    mutationFn: (body: CreateQuoteInput) => quotes.create(body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["quotes"] });
     },
@@ -40,7 +41,7 @@ export function useUpdateQuote() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: Partial<Quote> }) =>
+    mutationFn: ({ id, body }: { id: string; body: UpdateQuoteInput }) =>
       quotes.update(id, body),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["quotes"] });

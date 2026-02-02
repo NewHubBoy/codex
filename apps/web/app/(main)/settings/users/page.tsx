@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Table, Button, Space, Tag, Input, Select, Card, Modal, message } from "antd";
+import { Table, Button, Space, Tag, Input, Select, Card, Modal, App } from "antd";
 import { PlusOutlined, SearchOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useUsers, useCreateUser, useDeleteUser } from "@/hooks/useSystem";
@@ -18,6 +18,7 @@ export default function UsersPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [q, setQ] = useState("");
+  const { message } = App.useApp();
 
   const { data, isLoading } = useUsers({
     page,
@@ -138,7 +139,7 @@ export default function UsersPage() {
 
         <Table
           columns={columns}
-          dataSource={data?.list}
+          dataSource={data?.data}
           rowKey="id"
           loading={isLoading}
           pagination={{

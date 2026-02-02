@@ -39,60 +39,15 @@ api.interceptors.response.use(
     return response.data;
   },
   (error: AxiosError) => {
-    // 错误处理
-    if (error.response) {
-      const { status, data } = error.response;
-
-      switch (status) {
-        case 401:
-          // Token 过期或无效，清除并跳转登录
-          if (typeof window !== "undefined") {
-            localStorage.removeItem("accessToken");
-            localStorage.removeItem("refreshToken");
-            window.location.href = "/login";
-          }
-          break;
-
-        case 403:
-          message.error("您没有权限执行此操作");
-          break;
-
-        case 404:
-          message.error("请求的资源不存在");
-          break;
-
-        case 422:
-          // 业务验证错误
-          if (data && typeof data === "object" && "message" in data) {
-            message.error((data as { message: string }).message);
-          }
-          break;
-
-        case 500:
-          message.error("服务器错误，请稍后重试");
-          break;
-      }
-    } else if (error.request) {
-      message.error("网络连接失败，请检查网络");
+    // Token 过期或无效，清除并跳转登录
+    if (error.response?.status === 401 && typeof window !== "undefined") {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      window.location.href = "/login";
     }
-
     return Promise.reject(error);
   }
 );
 
-// 简化消息提示（需要 Ant Design 的 message）
-let message: { error: (msg: string) => void; success: (msg: string) => void; warning: (msg: string) => void } = {
-  error: (msg) => console.error(msg),
-  success: (msg) => console.log(msg),
-  warning: (msg) => console.warn(msg),
-};
-
-// 设置 message（避免循环依赖）
-if (typeof window !== "undefined") {
-  import("antd").then(({ message: antdMessage }) => {
-    message = antdMessage;
-  });
-}
-
-export { api, message };
+export { api };
 export default api;

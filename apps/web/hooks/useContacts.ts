@@ -1,14 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { CreateContactInput, UpdateContactInput } from "@crm/shared";
 import { contacts } from "@/services/contacts";
-import type { Contact } from "@/services/contacts";
 
 export function useContacts(params?: {
   page?: number;
   pageSize?: number;
   q?: string;
-  account_id?: string;
+  accountId?: string;
   status?: string;
-  owner_id?: string;
+  ownerId?: string;
+  orgUnitId?: string;
 }) {
   return useQuery({
     queryKey: ["contacts", params],
@@ -28,7 +29,7 @@ export function useCreateContact() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (body: Partial<Contact>) => contacts.create(body),
+    mutationFn: (body: CreateContactInput) => contacts.create(body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contacts"] });
     },
@@ -39,7 +40,7 @@ export function useUpdateContact() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: Partial<Contact> }) =>
+    mutationFn: ({ id, body }: { id: string; body: UpdateContactInput }) =>
       contacts.update(id, body),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["contacts"] });

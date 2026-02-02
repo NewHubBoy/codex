@@ -23,7 +23,7 @@ export default function ContactsPage() {
     page,
     pageSize,
     q: q || undefined,
-    account_id: accountId || undefined,
+    accountId: accountId || undefined,
   });
 
   const columns = [
@@ -37,13 +37,13 @@ export default function ContactsPage() {
     },
     {
       title: "所属客户",
-      dataIndex: ["account", "name"],
-      key: "account",
+      dataIndex: "accountId",
+      key: "accountId",
     },
     {
       title: "职位",
-      dataIndex: "job_title",
-      key: "job_title",
+      dataIndex: "title",
+      key: "title",
     },
     {
       title: "电话",
@@ -67,13 +67,13 @@ export default function ContactsPage() {
     },
     {
       title: "负责人",
-      dataIndex: ["owner", "name"],
-      key: "owner",
+      dataIndex: "ownerId",
+      key: "ownerId",
     },
     {
       title: "创建时间",
-      dataIndex: "created_at",
-      key: "created_at",
+      dataIndex: "createdAt",
+      key: "createdAt",
     },
   ];
 
@@ -110,7 +110,7 @@ export default function ContactsPage() {
 
         <Table
           columns={columns}
-          dataSource={data?.list}
+          dataSource={data?.data}
           rowKey="id"
           loading={isLoading}
           pagination={{

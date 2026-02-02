@@ -38,21 +38,16 @@ export default function DeliveriesPage() {
   const columns = [
     {
       title: "交付单号",
-      dataIndex: "code",
-      key: "code",
+      dataIndex: "number",
+      key: "number",
       render: (text: string, record: any) => (
         <a href={`/crm/deliveries/${record.id}`}>{text}</a>
       ),
     },
     {
       title: "订单",
-      dataIndex: ["order", "code"],
-      key: "order",
-    },
-    {
-      title: "客户",
-      dataIndex: ["account", "name"],
-      key: "account",
+      dataIndex: "orderId",
+      key: "orderId",
     },
     {
       title: "状态",
@@ -65,29 +60,25 @@ export default function DeliveriesPage() {
       ),
     },
     {
-      title: "预计送达",
-      dataIndex: "estimated_delivery",
-      key: "estimated_delivery",
+      title: "送达时间",
+      dataIndex: "deliveredAt",
+      key: "deliveredAt",
     },
     {
-      title: "实际送达",
-      dataIndex: "actual_delivery",
-      key: "actual_delivery",
+      title: "送达数量",
+      dataIndex: "deliveredQty",
+      key: "deliveredQty",
     },
     {
-      title: "物流公司",
-      dataIndex: "carrier",
-      key: "carrier",
-    },
-    {
-      title: "物流单号",
-      dataIndex: "tracking_number",
-      key: "tracking_number",
+      title: "备注",
+      dataIndex: "deliveryNotes",
+      key: "deliveryNotes",
+      ellipsis: true,
     },
     {
       title: "负责人",
-      dataIndex: ["owner", "name"],
-      key: "owner",
+      dataIndex: "ownerId",
+      key: "ownerId",
     },
   ];
 
@@ -129,7 +120,7 @@ export default function DeliveriesPage() {
 
         <Table
           columns={columns}
-          dataSource={data?.list}
+          dataSource={data?.data}
           rowKey="id"
           loading={isLoading}
           pagination={{

@@ -1,4 +1,6 @@
+import type { CreateUserInput, UpdateUserInput } from "@crm/shared";
 import { api } from "./api";
+import type { PaginatedResponse } from "./types";
 
 // 类型定义
 export interface User {
@@ -19,12 +21,7 @@ export interface User {
   role?: { id: string; name: string; code: string };
 }
 
-export interface UserListResponse {
-  list: User[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
+export type UserListResponse = PaginatedResponse<User>;
 
 export interface Role {
   id: string;
@@ -52,8 +49,8 @@ export const users = {
     pageSize?: number;
     q?: string;
     status?: string;
-    org_unit_id?: string;
-    role_id?: string;
+    orgUnitId?: string;
+    roleId?: string;
   }): Promise<UserListResponse> => {
     return api.get("/users", { params });
   },
@@ -62,12 +59,12 @@ export const users = {
     return api.get(`/users/${id}`);
   },
 
-  create: async (body: Partial<User>): Promise<User> => {
+  create: async (body: CreateUserInput): Promise<User> => {
     return api.post("/users", body);
   },
 
-  update: async (id: string, body: Partial<User>): Promise<User> => {
-    return api.put(`/users/${id}`, body);
+  update: async (id: string, body: UpdateUserInput): Promise<User> => {
+    return api.patch(`/users/${id}`, body);
   },
 
   delete: async (id: string): Promise<void> => {
@@ -104,7 +101,7 @@ export const roles = {
   },
 
   update: async (id: string, body: Partial<Role>): Promise<Role> => {
-    return api.put(`/rbac/roles/${id}`, body);
+    return api.patch(`/rbac/roles/${id}`, body);
   },
 
   delete: async (id: string): Promise<void> => {
@@ -131,7 +128,7 @@ export const orgUnits = {
   },
 
   update: async (id: string, body: Partial<any>): Promise<any> => {
-    return api.put(`/org-units/${id}`, body);
+    return api.patch(`/org-units/${id}`, body);
   },
 
   delete: async (id: string): Promise<void> => {

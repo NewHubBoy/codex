@@ -1,13 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { CreateAccountInput, UpdateAccountInput } from "@crm/shared";
 import { accounts } from "@/services/accounts";
-import type { Account } from "@/services/accounts";
 
 export function useAccounts(params?: {
   page?: number;
   pageSize?: number;
   q?: string;
   status?: string;
-  owner_id?: string;
+  ownerId?: string;
+  orgUnitId?: string;
 }) {
   return useQuery({
     queryKey: ["accounts", params],
@@ -27,7 +28,7 @@ export function useCreateAccount() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (body: Partial<Account>) => accounts.create(body),
+    mutationFn: (body: CreateAccountInput) => accounts.create(body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
     },
@@ -38,7 +39,7 @@ export function useUpdateAccount() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: Partial<Account> }) =>
+    mutationFn: ({ id, body }: { id: string; body: UpdateAccountInput }) =>
       accounts.update(id, body),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
