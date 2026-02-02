@@ -83,6 +83,8 @@ export type CreateLeadParams = CreateLeadInput & {
   ownerId?: string;
 };
 
+export type CreateLeadDraftParams = Partial<CreateLeadParams>;
+
 // 更新线索参数
 export type UpdateLeadParams = UpdateLeadInput &
   Partial<Pick<CreateLeadParams, "company" | "email" | "phone" | "ownerId">> & {
@@ -115,9 +117,19 @@ export async function createLead(data: CreateLeadParams): Promise<Lead> {
   return api.post("/leads", data);
 }
 
+// 创建线索草稿
+export async function createLeadDraft(data?: CreateLeadDraftParams): Promise<Lead> {
+  return api.post("/leads/draft", data ?? {});
+}
+
 // 更新线索
 export async function updateLead(id: string, data: UpdateLeadParams): Promise<Lead> {
   return api.patch(`/leads/${id}`, data);
+}
+
+// 提交线索草稿
+export async function submitLead(id: string, data: CreateLeadParams): Promise<Lead> {
+  return api.post(`/leads/${id}/submit`, data);
 }
 
 // 删除线索

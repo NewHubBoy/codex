@@ -11,9 +11,7 @@ import {
   Select,
   Card,
   Typography,
-  App,
   Popconfirm,
-  Drawer,
 } from "antd";
 import {
   PlusOutlined,
@@ -23,22 +21,21 @@ import {
   DeleteOutlined,
   EyeOutlined,
 } from "@ant-design/icons";
-import { useLeads, useDeleteLead } from "@/hooks/useLeads";
+import { useLeads, useDeleteLead, useCreateLeadDraft } from "@/hooks/useLeads";
 import type { Lead, LeadListParams } from "@/services/leads";
 import { LeadStatus, LeadSource, LeadRating } from "@/services/leads";
 import { PageHeader } from "@/components/common/PageHeader";
-import { LeadDrawer } from "@/components/business/LeadDrawer";
+import { App } from "antd";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export default function LeadsPage() {
   const router = useRouter();
+  const { message } = App.useApp();
   const [searchText, setSearchText] = useState("");
   const [filters, setFilters] = useState<Partial<LeadListParams>>({});
   const [pagination, setPagination] = useState({ current: 1, pageSize: 20 });
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [editingLead, setEditingLead] = useState<Lead | null>(null);
-  const { message } = App.useApp();
+  const [creating, setCreating] = useState(false);
 
   // 查询线索列表
   const { data, isLoading, refetch } = useLeads({
@@ -50,6 +47,8 @@ export default function LeadsPage() {
 
   // 删除线索
   const deleteLead = useDeleteLead();
+  // 创建草稿
+  const createDraft = useCreateLeadDraft();
 
   // 处理表格变化
   const handleTableChange = (pagination: any) => {
@@ -68,16 +67,22 @@ export default function LeadsPage() {
     setPagination({ ...pagination, current: 1 });
   };
 
-  // 处理新建
-  const handleCreate = () => {
-    setEditingLead(null);
-    setDrawerOpen(true);
+  // 处理新建 - 创建草稿后跳转详情页编辑
+  const handleCreate = async () => {
+    try {
+      setCreating(true);
+      const draft = await createDraft.mutateAsync(undefined);
+      router.push(`/crm/leads/${draft.id}?operationType=edit`);
+    } catch {
+      message.error("创建草稿失败");
+    } finally {
+      setCreating(false);
+    }
   };
 
   // 处理编辑
   const handleEdit = (record: Lead) => {
-    setEditingLead(record);
-    setDrawerOpen(true);
+    router.push(`/crm/leads/${record.id}?operationType=edit`);
   };
 
   // 处理查看详情
@@ -217,6 +222,7 @@ export default function LeadsPage() {
             type="primary"
             icon={<PlusOutlined />}
             onClick={handleCreate}
+            loading={creating}
           >
             新建线索
           </Button>,
@@ -238,10 +244,12 @@ export default function LeadsPage() {
             allowClear
             style={{ width: 120 }}
             onChange={(value) => handleFilterChange("status", value)}
-            options={Object.entries(LeadStatus).map(([key, value]) => ({
-              label: key,
-              value,
-            }))}
+            options={Object.entries(LeadStatus)
+              .filter(([key]) => key !== "DRAFT")
+              .map(([key, value]) => ({
+                label: key,
+                value,
+              }))}
           />
           <Select
             placeholder="优先级"
@@ -289,20 +297,6 @@ export default function LeadsPage() {
         />
       </Card>
 
-      {/* 新建/编辑 Drawer */}
-      <LeadDrawer
-        open={drawerOpen}
-        lead={editingLead}
-        onClose={() => {
-          setDrawerOpen(false);
-          setEditingLead(null);
-        }}
-        onSuccess={() => {
-          setDrawerOpen(false);
-          setEditingLead(null);
-          refetch();
-        }}
-      />
     </div>
   );
 }

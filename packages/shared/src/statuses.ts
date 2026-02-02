@@ -1,4 +1,5 @@
 export const LEAD_STATUSES = [
+  "DRAFT",
   "NEW",
   "ASSIGNED",
   "WORKING",

@@ -7,6 +7,8 @@ export interface ListQuery {
   status?: string;
   ownerId?: string;
   orgUnitId?: string;
+  relatedType?: string;
+  relatedId?: string;
   sort?: string;
 }
 
@@ -25,6 +27,14 @@ export function parseListQuery(query: Record<string, unknown>): ListQuery {
     typeof query.orgUnitId === "string" && query.orgUnitId.trim()
       ? query.orgUnitId.trim()
       : undefined;
+  const relatedType =
+    typeof query.relatedType === "string" && query.relatedType.trim()
+      ? query.relatedType.trim()
+      : undefined;
+  const relatedId =
+    typeof query.relatedId === "string" && query.relatedId.trim()
+      ? query.relatedId.trim()
+      : undefined;
   const sort = typeof query.sort === "string" && query.sort.trim() ? query.sort.trim() : undefined;
   return {
     page,
@@ -35,6 +45,8 @@ export function parseListQuery(query: Record<string, unknown>): ListQuery {
     status,
     ownerId,
     orgUnitId,
+    relatedType,
+    relatedId,
     sort
   };
 }

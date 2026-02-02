@@ -67,6 +67,8 @@ export class ActivitiesService {
       status: query.status,
       ownerId: query.ownerId,
       orgUnitId: query.orgUnitId,
+      relatedType: query.relatedType,
+      relatedId: query.relatedId,
       ...(qFilters.length ? { OR: qFilters } : {})
     };
     const [data, total] = await this.prisma.$transaction([

@@ -19,6 +19,9 @@ export class LeadsService {
   ) {}
 
   async create(ctx: RequestContext, input: CreateLeadInput) {
+    if (input.status === "DRAFT") {
+      throw new BadRequestException("Use draft flow to create leads");
+    }
     const lead = await this.prisma.lead.create({
       data: {
         tenantId: ctx.tenantId,
@@ -39,6 +42,18 @@ export class LeadsService {
     return lead;
   }
 
+  async createDraft(ctx: RequestContext) {
+    return this.prisma.lead.create({
+      data: {
+        tenantId: ctx.tenantId,
+        orgUnitId: ctx.orgUnitId,
+        ownerId: ctx.userId,
+        status: "DRAFT",
+        name: ""
+      }
+    });
+  }
+
   async list(ctx: RequestContext, query: ListQuery) {
     const scopeFilter = await this.dataScope.buildOrgScopeFilter(ctx);
     const orderBy = parseSort(query.sort, ["createdAt", "updatedAt", "name"]);
@@ -50,10 +65,11 @@ export class LeadsService {
     if (serialId !== undefined) {
       qFilters.push({ serialId });
     }
+    const statusFilter = query.status ?? { not: "DRAFT" };
     const where = {
       tenantId: ctx.tenantId,
       ...scopeFilter,
-      status: query.status,
+      status: statusFilter,
       ownerId: query.ownerId,
       orgUnitId: query.orgUnitId,
       ...(qFilters.length ? { OR: qFilters } : {})
@@ -88,7 +104,13 @@ export class LeadsService {
 
   async update(ctx: RequestContext, id: string, input: UpdateLeadInput) {
     const existing = await this.get(ctx, id);
+    if (existing.status === "DRAFT") {
+      throw new BadRequestException("Draft lead must be submitted before update");
+    }
     if (input.status) {
+      if (input.status === "DRAFT") {
+        throw new BadRequestException("Lead status cannot be set to DRAFT");
+      }
       assertTransition("Lead", existing.status, input.status);
       if (input.status === "CONVERTED") {
         const accountId = input.accountId ?? existing.accountId;
@@ -118,15 +140,57 @@ export class LeadsService {
     return lead;
   }
 
+  async submitDraft(ctx: RequestContext, id: string, input: CreateLeadInput) {
+    const existing = await this.get(ctx, id);
+    if (existing.status !== "DRAFT") {
+      throw new BadRequestException("Lead is not in draft status");
+    }
+    const status = input.status ?? "NEW";
+    if (status === "DRAFT") {
+      throw new BadRequestException("Draft lead must be submitted with a non-draft status");
+    }
+    assertTransition("Lead", existing.status, status);
+    if (status === "CONVERTED") {
+      const accountId = input.accountId ?? existing.accountId;
+      const contactId = input.contactId ?? existing.contactId;
+      if (!accountId && !contactId) {
+        throw new BadRequestException(
+          "accountId or contactId is required when status is CONVERTED"
+        );
+      }
+    }
+    const lead = await this.prisma.lead.update({
+      where: { id },
+      data: {
+        name: input.name,
+        source: input.source,
+        rating: input.rating,
+        expectedValue: input.expectedValue,
+        accountId: input.accountId ?? undefined,
+        contactId: input.contactId ?? undefined,
+        description: input.description ?? undefined,
+        status
+      }
+    });
+    await this.audit.log(ctx, "create", "Lead", lead.id, `Created ${lead.name}`);
+    await this.outbox.enqueue(ctx, "Lead", lead.id, "lead.created", { name: lead.name });
+    return lead;
+  }
+
   async remove(ctx: RequestContext, id: string) {
     await this.get(ctx, id);
     const lead = await this.prisma.lead.delete({ where: { id } });
-    await this.audit.log(ctx, "delete", "Lead", lead.id, `Deleted ${lead.name}`);
-    await this.outbox.enqueue(ctx, "Lead", lead.id, "lead.deleted", { name: lead.name });
+    if (lead.status !== "DRAFT") {
+      await this.audit.log(ctx, "delete", "Lead", lead.id, `Deleted ${lead.name}`);
+      await this.outbox.enqueue(ctx, "Lead", lead.id, "lead.deleted", { name: lead.name });
+    }
     return lead;
   }
 
   async bulkUpdateStatus(ctx: RequestContext, input: BulkLeadStatusInput) {
+    if (input.status === "DRAFT") {
+      throw new BadRequestException("Lead status cannot be set to DRAFT");
+    }
     const scopeFilter = await this.dataScope.buildOrgScopeFilter(ctx);
     const leads = await this.prisma.lead.findMany({
       where: {

@@ -69,6 +69,14 @@ export class LeadsController {
     return this.leadsService.list(ctx, listQuery);
   }
 
+  @Post("draft")
+  @RequirePermissions("lead:write")
+  @ApiCreatedResponse({ type: LeadDto })
+  async createDraft(@Req() req: Request) {
+    const ctx = getRequestContext(req);
+    return this.leadsService.createDraft(ctx);
+  }
+
   @Post()
   @RequirePermissions("lead:write")
   @ApiBody({ type: CreateLeadDto })
@@ -77,32 +85,6 @@ export class LeadsController {
     const ctx = getRequestContext(req);
     const input = CreateLeadInputSchema.parse(body);
     return this.leadsService.create(ctx, input);
-  }
-
-  @Get(":id")
-  @RequirePermissions("lead:read")
-  @ApiOkResponse({ type: LeadDto })
-  async get(@Req() req: Request, @Param("id") id: string) {
-    const ctx = getRequestContext(req);
-    return this.leadsService.get(ctx, id);
-  }
-
-  @Patch(":id")
-  @RequirePermissions("lead:write")
-  @ApiBody({ type: UpdateLeadDto })
-  @ApiOkResponse({ type: LeadDto })
-  async update(@Req() req: Request, @Param("id") id: string, @Body() body: unknown) {
-    const ctx = getRequestContext(req);
-    const input = UpdateLeadInputSchema.parse(body);
-    return this.leadsService.update(ctx, id, input);
-  }
-
-  @Delete(":id")
-  @RequirePermissions("lead:write")
-  @ApiOkResponse({ type: LeadDto })
-  async remove(@Req() req: Request, @Param("id") id: string) {
-    const ctx = getRequestContext(req);
-    return this.leadsService.remove(ctx, id);
   }
 
   @Post("bulk/status")
@@ -133,5 +115,41 @@ export class LeadsController {
     const ctx = getRequestContext(req);
     const input = BulkLeadStatusInputSchema.parse(body);
     return this.leadsService.bulkUpdateStatus(ctx, input);
+  }
+
+  @Post(":id/submit")
+  @RequirePermissions("lead:write")
+  @ApiBody({ type: CreateLeadDto })
+  @ApiOkResponse({ type: LeadDto })
+  async submit(@Req() req: Request, @Param("id") id: string, @Body() body: unknown) {
+    const ctx = getRequestContext(req);
+    const input = CreateLeadInputSchema.parse(body);
+    return this.leadsService.submitDraft(ctx, id, input);
+  }
+
+  @Get(":id")
+  @RequirePermissions("lead:read")
+  @ApiOkResponse({ type: LeadDto })
+  async get(@Req() req: Request, @Param("id") id: string) {
+    const ctx = getRequestContext(req);
+    return this.leadsService.get(ctx, id);
+  }
+
+  @Patch(":id")
+  @RequirePermissions("lead:write")
+  @ApiBody({ type: UpdateLeadDto })
+  @ApiOkResponse({ type: LeadDto })
+  async update(@Req() req: Request, @Param("id") id: string, @Body() body: unknown) {
+    const ctx = getRequestContext(req);
+    const input = UpdateLeadInputSchema.parse(body);
+    return this.leadsService.update(ctx, id, input);
+  }
+
+  @Delete(":id")
+  @RequirePermissions("lead:write")
+  @ApiOkResponse({ type: LeadDto })
+  async remove(@Req() req: Request, @Param("id") id: string) {
+    const ctx = getRequestContext(req);
+    return this.leadsService.remove(ctx, id);
   }
 }

@@ -1,9 +1,14 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Drawer, Form, Input, Select, InputNumber, Button, Space, App } from "antd";
-import { useCreateLead, useUpdateLead } from "@/hooks/useLeads";
-import type { Lead, LeadStatus } from "@/services/leads";
+import {
+  useCreateLeadDraft,
+  useSubmitLead,
+  useUpdateLead,
+  useDeleteLead
+} from "@/hooks/useLeads";
+import type { Lead } from "@/services/leads";
 import { LeadSource, LeadRating } from "@/services/leads";
 
 interface LeadDrawerProps {
@@ -17,15 +22,24 @@ export function LeadDrawer({ open, lead, onClose, onSuccess }: LeadDrawerProps) 
   const [form] = Form.useForm();
   const isEditing = !!lead;
   const { message } = App.useApp();
+  const [draftLead, setDraftLead] = useState<Lead | null>(null);
+  const [draftSubmitted, setDraftSubmitted] = useState(false);
+  const discardDraftRef = useRef(false);
 
-  // 创建线索
-  const createLead = useCreateLead();
+  // 创建草稿
+  const createDraft = useCreateLeadDraft();
+  // 提交草稿
+  const submitDraft = useSubmitLead();
   // 更新线索
   const updateLead = useUpdateLead();
+  // 删除线索
+  const deleteLead = useDeleteLead();
 
   // 加载编辑数据
   useEffect(() => {
     if (lead && open) {
+      setDraftLead(null);
+      setDraftSubmitted(false);
       form.setFieldsValue({
         name: lead.name,
         company: lead.company,
@@ -39,8 +53,24 @@ export function LeadDrawer({ open, lead, onClose, onSuccess }: LeadDrawerProps) 
       });
     } else if (open) {
       form.resetFields();
+      setDraftSubmitted(false);
+      discardDraftRef.current = false;
+      if (!draftLead && !createDraft.isPending) {
+        createDraft
+          .mutateAsync(undefined)
+          .then((created) => {
+            if (discardDraftRef.current) {
+              deleteLead.mutateAsync(created.id).catch(() => {});
+              return;
+            }
+            setDraftLead(created);
+          })
+          .catch(() => {
+            message.error("创建草稿失败");
+          });
+      }
     }
-  }, [lead, open, form]);
+  }, [lead, open, form, createDraft, draftLead, deleteLead, message]);
 
   // 提交表单
   const handleSubmit = async () => {
@@ -54,7 +84,16 @@ export function LeadDrawer({ open, lead, onClose, onSuccess }: LeadDrawerProps) 
         });
         message.success("更新成功");
       } else {
-        await createLead.mutateAsync(values);
+        if (!draftLead) {
+          message.error("草稿未准备好，请稍后再试");
+          return;
+        }
+        await submitDraft.mutateAsync({
+          id: draftLead.id,
+          data: values,
+        });
+        setDraftSubmitted(true);
+        setDraftLead(null);
         message.success("创建成功");
       }
 
@@ -64,18 +103,33 @@ export function LeadDrawer({ open, lead, onClose, onSuccess }: LeadDrawerProps) 
     }
   };
 
+  const handleClose = async () => {
+    if (!isEditing && draftLead && !draftSubmitted) {
+      try {
+        await deleteLead.mutateAsync(draftLead.id);
+      } catch (error) {
+        console.error("删除草稿失败:", error);
+      }
+    } else if (!isEditing && !draftLead && !draftSubmitted) {
+      discardDraftRef.current = true;
+    }
+    setDraftLead(null);
+    onClose();
+  };
+
   return (
     <Drawer
       title={isEditing ? "编辑线索" : "新建线索"}
       width={600}
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       footer={
         <Space style={{ float: "right" }}>
-          <Button onClick={onClose}>取消</Button>
+          <Button onClick={handleClose}>取消</Button>
           <Button
             type="primary"
-            loading={createLead.isPending || updateLead.isPending}
+            disabled={!isEditing && !draftLead}
+            loading={createDraft.isPending || submitDraft.isPending || updateLead.isPending}
             onClick={handleSubmit}
           >
             {isEditing ? "更新" : "创建"}

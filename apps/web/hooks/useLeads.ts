@@ -5,11 +5,14 @@ import {
   getLeads,
   getLead,
   createLead,
+  createLeadDraft,
   updateLead,
   deleteLead,
   bulkUpdateStatus,
+  submitLead,
   LeadListParams,
   CreateLeadParams,
+  CreateLeadDraftParams,
   UpdateLeadParams,
 } from "@/services/leads";
 
@@ -51,6 +54,13 @@ export function useCreateLead() {
   });
 }
 
+// 创建线索草稿
+export function useCreateLeadDraft() {
+  return useMutation({
+    mutationFn: (data?: CreateLeadDraftParams) => createLeadDraft(data),
+  });
+}
+
 // 更新线索
 export function useUpdateLead() {
   const queryClient = useQueryClient();
@@ -58,6 +68,20 @@ export function useUpdateLead() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateLeadParams }) =>
       updateLead(id, data),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: leadKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: leadKeys.detail(id) });
+    },
+  });
+}
+
+// 提交线索草稿
+export function useSubmitLead() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: CreateLeadParams }) =>
+      submitLead(id, data),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: leadKeys.lists() });
       queryClient.invalidateQueries({ queryKey: leadKeys.detail(id) });

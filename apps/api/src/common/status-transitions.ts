@@ -1,6 +1,7 @@
 import { BadRequestException } from "@nestjs/common";
 
 const leadTransitions: Record<string, string[]> = {
+  DRAFT: ["NEW"],
   NEW: ["ASSIGNED", "WORKING", "DISQUALIFIED"],
   ASSIGNED: ["WORKING", "QUALIFIED", "DISQUALIFIED"],
   WORKING: ["QUALIFIED", "DISQUALIFIED"],
