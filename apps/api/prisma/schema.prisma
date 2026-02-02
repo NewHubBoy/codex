@@ -10,6 +10,7 @@ datasource db {
 
 model Tenant {
   id           String       @id @default(uuid())
+  serialId     Int          @default(autoincrement()) @unique
   name         String
   code         String?      @unique
   timezone     String?
@@ -36,6 +37,7 @@ model Tenant {
 
 model OrgUnit {
   id        String        @id @default(uuid())
+  serialId  Int           @default(autoincrement()) @unique
   tenantId  String
   parentId  String?
   name      String
@@ -57,6 +59,7 @@ model OrgUnit {
 
 model User {
   id        String     @id @default(uuid())
+  serialId  Int        @default(autoincrement()) @unique
   tenantId  String
   email     String
   name      String
@@ -76,6 +79,7 @@ model User {
 
 model Role {
   id        String     @id @default(uuid())
+  serialId  Int        @default(autoincrement()) @unique
   tenantId  String
   code      String
   name      String
@@ -94,6 +98,7 @@ model Role {
 
 model Permission {
   id          String         @id @default(uuid())
+  serialId    Int            @default(autoincrement()) @unique
   code        String         @unique
   name        String
   type        PermissionType @default(ACTION)
@@ -138,6 +143,7 @@ model UserOrgMembership {
 
 model Account {
   id              String   @id @default(uuid())
+  serialId        Int      @default(autoincrement()) @unique
   tenantId        String
   orgUnitId       String?
   ownerId         String?
@@ -169,6 +175,7 @@ model Account {
 
 model Contact {
   id        String   @id @default(uuid())
+  serialId  Int      @default(autoincrement()) @unique
   tenantId  String
   orgUnitId String?
   ownerId   String?
@@ -200,6 +207,7 @@ model Contact {
 
 model Lead {
   id             String   @id @default(uuid())
+  serialId       Int      @default(autoincrement()) @unique
   tenantId       String
   orgUnitId      String?
   ownerId        String?
@@ -227,7 +235,8 @@ model Lead {
 
 model Opportunity {
   id                String   @id @default(uuid())
-  tenantId           String
+  serialId          Int      @default(autoincrement()) @unique
+  tenantId          String
   orgUnitId          String?
   ownerId            String?
   status             String   @default("OPEN")
@@ -260,6 +269,7 @@ model Opportunity {
 
 model Activity {
   id          String   @id @default(uuid())
+  serialId    Int      @default(autoincrement()) @unique
   tenantId    String
   orgUnitId   String?
   ownerId     String?
@@ -283,6 +293,7 @@ model Activity {
 
 model Product {
   id        String   @id @default(uuid())
+  serialId  Int      @default(autoincrement()) @unique
   tenantId  String
   orgUnitId String?
   ownerId   String?
@@ -306,6 +317,7 @@ model Product {
 
 model Quote {
   id            String   @id @default(uuid())
+  serialId      Int      @default(autoincrement()) @unique
   tenantId      String
   orgUnitId     String?
   ownerId       String?
@@ -338,6 +350,7 @@ model Quote {
 
 model QuoteItem {
   id        String   @id @default(uuid())
+  serialId  Int      @default(autoincrement()) @unique
   quoteId   String
   productId String?
   qty       Float?
@@ -356,6 +369,7 @@ model QuoteItem {
 
 model Order {
   id            String   @id @default(uuid())
+  serialId      Int      @default(autoincrement()) @unique
   tenantId      String
   orgUnitId     String?
   ownerId       String?
@@ -388,6 +402,7 @@ model Order {
 
 model OrderItem {
   id        String   @id @default(uuid())
+  serialId  Int      @default(autoincrement()) @unique
   orderId   String
   productId String?
   qty       Float?
@@ -406,6 +421,7 @@ model OrderItem {
 
 model Delivery {
   id           String   @id @default(uuid())
+  serialId     Int      @default(autoincrement()) @unique
   tenantId     String
   orgUnitId    String?
   ownerId      String?
@@ -429,6 +445,7 @@ model Delivery {
 
 model Ticket {
   id        String   @id @default(uuid())
+  serialId  Int      @default(autoincrement()) @unique
   tenantId  String
   orgUnitId String?
   ownerId   String?
@@ -459,6 +476,7 @@ model Ticket {
 
 model NumberRange {
   id           String   @id @default(uuid())
+  serialId     Int      @default(autoincrement()) @unique
   tenantId     String
   objectType   String
   prefix       String?
@@ -474,6 +492,7 @@ model NumberRange {
 
 model AuditLog {
   id        String   @id @default(uuid())
+  serialId  Int      @default(autoincrement()) @unique
   tenantId  String
   actorId   String?
   action    String
@@ -488,6 +507,7 @@ model AuditLog {
 
 model OutboxEvent {
   id            String       @id @default(uuid())
+  serialId      Int          @default(autoincrement()) @unique
   tenantId      String
   aggregateType String
   aggregateId   String
@@ -502,6 +522,7 @@ model OutboxEvent {
 
 model ProcessDefinition {
   id        String   @id @default(uuid())
+  serialId  Int      @default(autoincrement()) @unique
   tenantId  String
   entityType String
   name      String
@@ -518,6 +539,7 @@ model ProcessDefinition {
 
 model ProcessState {
   id          String   @id @default(uuid())
+  serialId    Int      @default(autoincrement()) @unique
   processId   String
   stateKey    String
   displayName String
@@ -533,6 +555,7 @@ model ProcessState {
 
 model ProcessTransition {
   id            String   @id @default(uuid())
+  serialId      Int      @default(autoincrement()) @unique
   processId     String
   fromState     String
   toState       String
@@ -547,6 +570,7 @@ model ProcessTransition {
 
 model FieldDefinition {
   id           String   @id @default(uuid())
+  serialId     Int      @default(autoincrement()) @unique
   tenantId     String
   entityType   String
   fieldKey     String
@@ -564,6 +588,7 @@ model FieldDefinition {
 
 model FieldGroup {
   id         String   @id @default(uuid())
+  serialId   Int      @default(autoincrement()) @unique
   tenantId   String
   entityType String
   groupName  String

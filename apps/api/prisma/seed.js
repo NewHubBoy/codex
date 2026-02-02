@@ -11,6 +11,13 @@ function hashPassword(password) {
   return `${salt}:${hash}`;
 }
 
+async function resetSerial(table) {
+  const sql =
+    `SELECT setval(pg_get_serial_sequence('"${table}"','serialId'), ` +
+    `COALESCE((SELECT MAX("serialId") FROM "${table}"), 0));`;
+  await prisma.$executeRawUnsafe(sql);
+}
+
 const ids = {
   tenant: "00000000-0000-0000-0000-000000000001",
   orgUnit: "00000000-0000-0000-0000-000000000002",
@@ -24,12 +31,27 @@ const ids = {
   activity: "00000000-0000-0000-0000-000000000010",
 };
 
+const serialIds = {
+  tenant: 1,
+  orgUnit: 1,
+  user: 1,
+  role: 1,
+  account: 1,
+  contact: 1,
+  lead: 1,
+  opportunity: 1,
+  activity: 1,
+};
+
 async function main() {
   const tenant = await prisma.tenant.upsert({
     where: { id: ids.tenant },
-    update: {},
+    update: {
+      serialId: serialIds.tenant,
+    },
     create: {
       id: ids.tenant,
+      serialId: serialIds.tenant,
       name: "Acme Corp",
       code: "ACME",
       timezone: "Asia/Shanghai",
@@ -40,9 +62,12 @@ async function main() {
 
   const orgUnit = await prisma.orgUnit.upsert({
     where: { id: ids.orgUnit },
-    update: {},
+    update: {
+      serialId: serialIds.orgUnit,
+    },
     create: {
       id: ids.orgUnit,
+      serialId: serialIds.orgUnit,
       tenantId: tenant.id,
       name: "Sales CN",
       code: "SALES_CN",
@@ -54,6 +79,7 @@ async function main() {
   const user = await prisma.user.upsert({
     where: { id: ids.user },
     update: {
+      serialId: serialIds.user,
       email: "admin@acme.test",
       name: "Admin",
       passwordHash: hashPassword("Admin#123"),
@@ -61,6 +87,7 @@ async function main() {
     },
     create: {
       id: ids.user,
+      serialId: serialIds.user,
       tenantId: tenant.id,
       email: "admin@acme.test",
       name: "Admin",
@@ -72,6 +99,7 @@ async function main() {
   const role = await prisma.role.upsert({
     where: { id: ids.role },
     update: {
+      serialId: serialIds.role,
       tenantId: tenant.id,
       code: "ADMIN",
       name: "Admin",
@@ -80,6 +108,7 @@ async function main() {
     },
     create: {
       id: ids.role,
+      serialId: serialIds.role,
       tenantId: tenant.id,
       code: "ADMIN",
       name: "Admin",
@@ -89,15 +118,17 @@ async function main() {
   });
 
   const permissionRecords = [];
-  for (const permission of defaultPermissions) {
+  for (const [index, permission] of defaultPermissions.entries()) {
     const record = await prisma.permission.upsert({
       where: { code: permission.code },
       update: {
+        serialId: index + 1,
         name: permission.name,
         type: permission.type ?? "ACTION",
         description: permission.description ?? null,
       },
       create: {
+        serialId: index + 1,
         code: permission.code,
         name: permission.name,
         type: permission.type ?? "ACTION",
@@ -154,9 +185,12 @@ async function main() {
 
   const account = await prisma.account.upsert({
     where: { id: ids.account },
-    update: {},
+    update: {
+      serialId: serialIds.account,
+    },
     create: {
       id: ids.account,
+      serialId: serialIds.account,
       tenantId: tenant.id,
       orgUnitId: orgUnit.id,
       ownerId: user.id,
@@ -170,9 +204,12 @@ async function main() {
 
   const contact = await prisma.contact.upsert({
     where: { id: ids.contact },
-    update: {},
+    update: {
+      serialId: serialIds.contact,
+    },
     create: {
       id: ids.contact,
+      serialId: serialIds.contact,
       tenantId: tenant.id,
       orgUnitId: orgUnit.id,
       ownerId: user.id,
@@ -187,9 +224,12 @@ async function main() {
 
   const lead = await prisma.lead.upsert({
     where: { id: ids.lead },
-    update: {},
+    update: {
+      serialId: serialIds.lead,
+    },
     create: {
       id: ids.lead,
+      serialId: serialIds.lead,
       tenantId: tenant.id,
       orgUnitId: orgUnit.id,
       ownerId: user.id,
@@ -206,9 +246,12 @@ async function main() {
 
   await prisma.opportunity.upsert({
     where: { id: ids.opportunity },
-    update: {},
+    update: {
+      serialId: serialIds.opportunity,
+    },
     create: {
       id: ids.opportunity,
+      serialId: serialIds.opportunity,
       tenantId: tenant.id,
       orgUnitId: orgUnit.id,
       ownerId: user.id,
@@ -226,9 +269,12 @@ async function main() {
 
   await prisma.activity.upsert({
     where: { id: ids.activity },
-    update: {},
+    update: {
+      serialId: serialIds.activity,
+    },
     create: {
       id: ids.activity,
+      serialId: serialIds.activity,
       tenantId: tenant.id,
       orgUnitId: orgUnit.id,
       ownerId: user.id,
@@ -239,6 +285,19 @@ async function main() {
       relatedId: lead.id,
     },
   });
+
+  await Promise.all([
+    resetSerial("Tenant"),
+    resetSerial("OrgUnit"),
+    resetSerial("User"),
+    resetSerial("Role"),
+    resetSerial("Permission"),
+    resetSerial("Account"),
+    resetSerial("Contact"),
+    resetSerial("Lead"),
+    resetSerial("Opportunity"),
+    resetSerial("Activity"),
+  ]);
 
   console.log("Seed completed:", {
     tenantId: tenant.id,

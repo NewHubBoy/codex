@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { Card, Typography, Space } from "antd";
-import { ReactNode } from "react";
+import { Card, Typography, Space } from 'antd';
+import { ReactNode } from 'react';
 
 const { Title, Text } = Typography;
 
@@ -15,17 +15,13 @@ interface PageHeaderProps {
 export function PageHeader({ title, description, extra, action }: PageHeaderProps) {
   return (
     <div style={{ marginBottom: 16 }}>
-      <Space direction="vertical" size={4}>
+      <Space direction="vertical" size={'small'}>
         <Title level={4} style={{ margin: 0 }}>
           {title}
         </Title>
-        {description && (
-          <Text type="secondary">{description}</Text>
-        )}
+        {description && <Text type="secondary">{description}</Text>}
       </Space>
-      {(extra || action) && (
-        <div style={{ marginTop: 8 }}>{extra || action}</div>
-      )}
+      {(extra || action) && <div style={{ marginTop: 8, display: 'flex', gap: 10 }}>{extra || action}</div>}
     </div>
   );
 }
