@@ -24,7 +24,6 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { LeadDrawer } from "@/components/business/LeadDrawer";
 import type { Lead } from "@/services/leads";
 import { useState } from "react";
-import { App } from "antd";
 
 const { Text } = Typography;
 
