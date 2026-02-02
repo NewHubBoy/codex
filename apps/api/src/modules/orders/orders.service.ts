@@ -13,7 +13,7 @@ import { AuditLogService } from "../../common/services/audit-log.service";
 import { OutboxService } from "../../common/services/outbox.service";
 import { NumberingService } from "../../common/services/numbering.service";
 import type { ListQuery } from "../../common/list-query";
-import { parseSort } from "../../common/list-query";
+import { parseSerialId, parseSort } from "../../common/list-query";
 import { assertTransition } from "../../common/status-transitions";
 
 @Injectable()
@@ -53,15 +53,21 @@ export class OrdersService {
   async list(ctx: RequestContext, query: ListQuery) {
     const scopeFilter = await this.dataScope.buildOrgScopeFilter(ctx);
     const orderBy = parseSort(query.sort, ["createdAt", "updatedAt", "number", "orderDate"]);
+    const serialId = parseSerialId(query.q);
+    const qFilters: Record<string, unknown>[] = [];
+    if (query.q) {
+      qFilters.push({ number: { contains: query.q, mode: "insensitive" as const } });
+    }
+    if (serialId !== undefined) {
+      qFilters.push({ serialId });
+    }
     const where = {
       tenantId: ctx.tenantId,
       ...scopeFilter,
       status: query.status,
       ownerId: query.ownerId,
       orgUnitId: query.orgUnitId,
-      ...(query.q
-        ? { number: { contains: query.q, mode: "insensitive" as const } }
-        : {})
+      ...(qFilters.length ? { OR: qFilters } : {})
     };
     const [data, total] = await this.prisma.$transaction([
       this.prisma.order.findMany({

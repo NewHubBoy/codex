@@ -31,6 +31,12 @@ export default function UsersPage() {
 
   const columns = [
     {
+      title: "编号",
+      dataIndex: "serialId",
+      key: "serialId",
+      width: 80,
+    },
+    {
       title: "用户名",
       dataIndex: "username",
       key: "username",
@@ -120,7 +126,7 @@ export default function UsersPage() {
       <Card>
         <Space style={{ marginBottom: 16 }} wrap>
           <Search
-            placeholder="搜索用户"
+            placeholder="搜索编号/用户"
             allowClear
             style={{ width: 200 }}
             onSearch={setQ}

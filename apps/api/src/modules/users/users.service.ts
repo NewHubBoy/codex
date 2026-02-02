@@ -6,7 +6,7 @@ import { hashPassword } from "../../common/security/password";
 import { AuditLogService } from "../../common/services/audit-log.service";
 import { OutboxService } from "../../common/services/outbox.service";
 import type { ListQuery } from "../../common/list-query";
-import { parseSort } from "../../common/list-query";
+import { parseSerialId, parseSort } from "../../common/list-query";
 import type { UserStatus } from "@prisma/client";
 
 @Injectable()
@@ -27,17 +27,21 @@ export class UsersService {
       query.status && ["ACTIVE", "INACTIVE", "INVITED"].includes(query.status)
         ? (query.status as UserStatus)
         : undefined;
+    const serialId = parseSerialId(query.q);
+    const qFilters: Record<string, unknown>[] = [];
+    if (query.q) {
+      qFilters.push(
+        { email: { contains: query.q, mode: "insensitive" as const } },
+        { name: { contains: query.q, mode: "insensitive" as const } }
+      );
+    }
+    if (serialId !== undefined) {
+      qFilters.push({ serialId });
+    }
     const where = {
       tenantId: ctx.tenantId,
       status,
-      ...(query.q
-        ? {
-            OR: [
-              { email: { contains: query.q, mode: "insensitive" as const } },
-              { name: { contains: query.q, mode: "insensitive" as const } }
-            ]
-          }
-        : {})
+      ...(qFilters.length ? { OR: qFilters } : {})
     };
     const [data, total] = await this.prisma.$transaction([
       this.prisma.user.findMany({

@@ -32,6 +32,12 @@ export default function OpportunitiesPage() {
 
   const columns = [
     {
+      title: "编号",
+      dataIndex: "serialId",
+      key: "serialId",
+      width: 80,
+    },
+    {
       title: "商机名称",
       dataIndex: "name",
       key: "name",
@@ -90,7 +96,7 @@ export default function OpportunitiesPage() {
       <Card>
         <Space style={{ marginBottom: 16 }} wrap>
           <Search
-            placeholder="搜索商机"
+            placeholder="搜索编号/商机"
             allowClear
             style={{ width: 200 }}
             onSearch={setQ}

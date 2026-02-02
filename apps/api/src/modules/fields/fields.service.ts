@@ -11,7 +11,7 @@ import { Prisma } from "@prisma/client";
 import { AuditLogService } from "../../common/services/audit-log.service";
 import { OutboxService } from "../../common/services/outbox.service";
 import type { ListQuery } from "../../common/list-query";
-import { parseSort } from "../../common/list-query";
+import { parseSerialId, parseSort } from "../../common/list-query";
 
 @Injectable()
 export class FieldsService {
@@ -23,17 +23,21 @@ export class FieldsService {
 
   async listDefinitions(ctx: RequestContext, query: ListQuery, entityType?: string) {
     const orderBy = parseSort(query.sort, ["createdAt", "updatedAt", "fieldKey", "label"]);
+    const serialId = parseSerialId(query.q);
+    const qFilters: Record<string, unknown>[] = [];
+    if (query.q) {
+      qFilters.push(
+        { fieldKey: { contains: query.q, mode: "insensitive" as const } },
+        { label: { contains: query.q, mode: "insensitive" as const } }
+      );
+    }
+    if (serialId !== undefined) {
+      qFilters.push({ serialId });
+    }
     const where = {
       tenantId: ctx.tenantId,
       entityType: entityType ?? undefined,
-      ...(query.q
-        ? {
-            OR: [
-              { fieldKey: { contains: query.q, mode: "insensitive" as const } },
-              { label: { contains: query.q, mode: "insensitive" as const } }
-            ]
-          }
-        : {})
+      ...(qFilters.length ? { OR: qFilters } : {})
     };
     const [data, total] = await this.prisma.$transaction([
       this.prisma.fieldDefinition.findMany({
@@ -102,12 +106,18 @@ export class FieldsService {
 
   async listGroups(ctx: RequestContext, query: ListQuery, entityType?: string) {
     const orderBy = parseSort(query.sort, ["createdAt", "updatedAt", "groupName", "sortOrder"]);
+    const serialId = parseSerialId(query.q);
+    const qFilters: Record<string, unknown>[] = [];
+    if (query.q) {
+      qFilters.push({ groupName: { contains: query.q, mode: "insensitive" as const } });
+    }
+    if (serialId !== undefined) {
+      qFilters.push({ serialId });
+    }
     const where = {
       tenantId: ctx.tenantId,
       entityType: entityType ?? undefined,
-      ...(query.q
-        ? { groupName: { contains: query.q, mode: "insensitive" as const } }
-        : {})
+      ...(qFilters.length ? { OR: qFilters } : {})
     };
     const [data, total] = await this.prisma.$transaction([
       this.prisma.fieldGroup.findMany({

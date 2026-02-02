@@ -29,6 +29,12 @@ export default function ProductsPage() {
 
   const columns = [
     {
+      title: "编号",
+      dataIndex: "serialId",
+      key: "serialId",
+      width: 80,
+    },
+    {
       title: "产品编码",
       dataIndex: "sku",
       key: "sku",
@@ -84,7 +90,7 @@ export default function ProductsPage() {
       <Card>
         <Space style={{ marginBottom: 16 }} wrap>
           <Search
-            placeholder="搜索产品"
+            placeholder="搜索编号/产品"
             allowClear
             style={{ width: 200 }}
             onSearch={setQ}

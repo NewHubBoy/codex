@@ -10,7 +10,7 @@ import { PrismaService } from "../../prisma/prisma.service";
 import { AuditLogService } from "../../common/services/audit-log.service";
 import { OutboxService } from "../../common/services/outbox.service";
 import type { ListQuery } from "../../common/list-query";
-import { parseSort } from "../../common/list-query";
+import { parseSerialId, parseSort } from "../../common/list-query";
 
 @Injectable()
 export class WorkflowsService {
@@ -22,11 +22,17 @@ export class WorkflowsService {
 
   async list(ctx: RequestContext, query: ListQuery) {
     const orderBy = parseSort(query.sort, ["createdAt", "updatedAt", "name", "entityType"]);
+    const serialId = parseSerialId(query.q);
+    const qFilters: Record<string, unknown>[] = [];
+    if (query.q) {
+      qFilters.push({ name: { contains: query.q, mode: "insensitive" as const } });
+    }
+    if (serialId !== undefined) {
+      qFilters.push({ serialId });
+    }
     const where = {
       tenantId: ctx.tenantId,
-      ...(query.q
-        ? { name: { contains: query.q, mode: "insensitive" as const } }
-        : {})
+      ...(qFilters.length ? { OR: qFilters } : {})
     };
     const [data, total] = await this.prisma.$transaction([
       this.prisma.processDefinition.findMany({

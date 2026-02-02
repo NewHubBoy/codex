@@ -10,7 +10,7 @@ import { PrismaService } from "../../prisma/prisma.service";
 import { AuditLogService } from "../../common/services/audit-log.service";
 import { OutboxService } from "../../common/services/outbox.service";
 import type { ListQuery } from "../../common/list-query";
-import { parseSort } from "../../common/list-query";
+import { parseSerialId, parseSort } from "../../common/list-query";
 import type { RoleStatus } from "@prisma/client";
 
 @Injectable()
@@ -30,17 +30,21 @@ export class RbacService {
     const status = query.status && ["ACTIVE", "INACTIVE"].includes(query.status)
       ? (query.status as RoleStatus)
       : undefined;
+    const serialId = parseSerialId(query.q);
+    const qFilters: Record<string, unknown>[] = [];
+    if (query.q) {
+      qFilters.push(
+        { code: { contains: query.q, mode: "insensitive" as const } },
+        { name: { contains: query.q, mode: "insensitive" as const } }
+      );
+    }
+    if (serialId !== undefined) {
+      qFilters.push({ serialId });
+    }
     const where = {
       tenantId: ctx.tenantId,
       status,
-      ...(query.q
-        ? {
-            OR: [
-              { code: { contains: query.q, mode: "insensitive" as const } },
-              { name: { contains: query.q, mode: "insensitive" as const } }
-            ]
-          }
-        : {})
+      ...(qFilters.length ? { OR: qFilters } : {})
     };
     const [data, total] = await this.prisma.$transaction([
       this.prisma.role.findMany({
@@ -102,14 +106,18 @@ export class RbacService {
 
   async listPermissions(query: ListQuery) {
     const orderBy = parseSort(query.sort, ["code", "name", "type"], "code");
-    const where = query.q
-      ? {
-          OR: [
-            { code: { contains: query.q, mode: "insensitive" as const } },
-            { name: { contains: query.q, mode: "insensitive" as const } }
-          ]
-        }
-      : {};
+    const serialId = parseSerialId(query.q);
+    const qFilters: Record<string, unknown>[] = [];
+    if (query.q) {
+      qFilters.push(
+        { code: { contains: query.q, mode: "insensitive" as const } },
+        { name: { contains: query.q, mode: "insensitive" as const } }
+      );
+    }
+    if (serialId !== undefined) {
+      qFilters.push({ serialId });
+    }
+    const where = qFilters.length ? { OR: qFilters } : {};
     const [data, total] = await this.prisma.$transaction([
       this.prisma.permission.findMany({
         where,

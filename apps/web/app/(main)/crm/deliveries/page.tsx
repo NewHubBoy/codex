@@ -37,6 +37,12 @@ export default function DeliveriesPage() {
 
   const columns = [
     {
+      title: "编号",
+      dataIndex: "serialId",
+      key: "serialId",
+      width: 80,
+    },
+    {
       title: "交付单号",
       dataIndex: "number",
       key: "number",
@@ -97,7 +103,7 @@ export default function DeliveriesPage() {
       <Card>
         <Space style={{ marginBottom: 16 }} wrap>
           <Search
-            placeholder="搜索交付单"
+            placeholder="搜索编号/交付单"
             allowClear
             style={{ width: 200 }}
             onSearch={setQ}

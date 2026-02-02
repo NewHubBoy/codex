@@ -55,6 +55,12 @@ export default function TicketsPage() {
 
   const columns = [
     {
+      title: "编号",
+      dataIndex: "serialId",
+      key: "serialId",
+      width: 80,
+    },
+    {
       title: "工单号",
       dataIndex: "number",
       key: "number",
@@ -120,7 +126,7 @@ export default function TicketsPage() {
       <Card>
         <Space style={{ marginBottom: 16 }} wrap>
           <Search
-            placeholder="搜索工单"
+            placeholder="搜索编号/工单"
             allowClear
             style={{ width: 200 }}
             onSearch={setQ}

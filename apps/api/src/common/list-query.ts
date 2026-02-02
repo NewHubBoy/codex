@@ -39,6 +39,18 @@ export function parseListQuery(query: Record<string, unknown>): ListQuery {
   };
 }
 
+export function parseSerialId(q: string | undefined): number | undefined {
+  if (!q) {
+    return undefined;
+  }
+  const trimmed = q.trim();
+  if (!trimmed || !/^\d+$/.test(trimmed)) {
+    return undefined;
+  }
+  const value = Number.parseInt(trimmed, 10);
+  return Number.isSafeInteger(value) ? value : undefined;
+}
+
 export function parseSort(
   sort: string | undefined,
   allowed: string[],

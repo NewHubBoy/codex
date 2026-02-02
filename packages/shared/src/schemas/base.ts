@@ -5,6 +5,7 @@ export const DateTimeSchema = z.string().datetime();
 
 export const BaseEntitySchema = z.object({
   id: IdSchema,
+  serialId: z.number().int(),
   tenantId: IdSchema,
   orgUnitId: IdSchema.nullish(),
   ownerId: IdSchema.nullish(),

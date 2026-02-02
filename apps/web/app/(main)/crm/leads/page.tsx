@@ -115,6 +115,12 @@ export default function LeadsPage() {
   // 表格列配置
   const columns = [
     {
+      title: "编号",
+      dataIndex: "serialId",
+      key: "serialId",
+      width: 80,
+    },
+    {
       title: "线索名称",
       dataIndex: "name",
       key: "name",
@@ -221,7 +227,7 @@ export default function LeadsPage() {
         {/* 筛选栏 */}
         <Space wrap style={{ marginBottom: 16 }}>
           <Input.Search
-            placeholder="搜索线索名称"
+            placeholder="搜索编号/线索名称"
             allowClear
             style={{ width: 200 }}
             onSearch={handleSearch}

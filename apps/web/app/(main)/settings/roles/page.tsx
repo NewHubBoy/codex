@@ -12,6 +12,12 @@ export default function RolesPage() {
 
   const columns = [
     {
+      title: "编号",
+      dataIndex: "serialId",
+      key: "serialId",
+      width: 80,
+    },
+    {
       title: "角色名称",
       dataIndex: "name",
       key: "name",

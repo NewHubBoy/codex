@@ -3,6 +3,7 @@ import { DateTimeSchema, IdSchema } from "../base";
 
 export const QuoteItemDTOSchema = z.object({
   id: IdSchema,
+  serialId: z.number().int(),
   quoteId: IdSchema,
   productId: IdSchema.nullish(),
   qty: z.number().optional(),

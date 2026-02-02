@@ -41,6 +41,12 @@ export default function OrdersPage() {
 
   const columns = [
     {
+      title: "编号",
+      dataIndex: "serialId",
+      key: "serialId",
+      width: 80,
+    },
+    {
       title: "订单号",
       dataIndex: "number",
       key: "number",
@@ -101,7 +107,7 @@ export default function OrdersPage() {
       <Card>
         <Space style={{ marginBottom: 16 }} wrap>
           <Search
-            placeholder="搜索订单"
+            placeholder="搜索编号/订单"
             allowClear
             style={{ width: 200 }}
             onSearch={setQ}

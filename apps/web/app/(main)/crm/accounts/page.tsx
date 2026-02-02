@@ -30,6 +30,12 @@ export default function AccountsPage() {
 
   const columns = [
     {
+      title: "编号",
+      dataIndex: "serialId",
+      key: "serialId",
+      width: 80,
+    },
+    {
       title: "客户名称",
       dataIndex: "name",
       key: "name",
@@ -89,7 +95,7 @@ export default function AccountsPage() {
       <Card>
         <Space style={{ marginBottom: 16 }} wrap>
           <Search
-            placeholder="搜索客户"
+            placeholder="搜索编号/客户"
             allowClear
             style={{ width: 200 }}
             onSearch={setQ}

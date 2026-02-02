@@ -28,6 +28,12 @@ export default function ContactsPage() {
 
   const columns = [
     {
+      title: "编号",
+      dataIndex: "serialId",
+      key: "serialId",
+      width: 80,
+    },
+    {
       title: "姓名",
       dataIndex: "name",
       key: "name",
@@ -92,7 +98,7 @@ export default function ContactsPage() {
       <Card>
         <Space style={{ marginBottom: 16 }} wrap>
           <Search
-            placeholder="搜索联系人"
+            placeholder="搜索编号/联系人"
             allowClear
             style={{ width: 200 }}
             onSearch={setQ}

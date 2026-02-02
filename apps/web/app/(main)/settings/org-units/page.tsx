@@ -90,6 +90,7 @@ export default function OrgUnitsPage() {
           titleRender={(nodeData: any) => (
             <Space>
               <span>{nodeData.title}</span>
+              {nodeData.serialId ? <Tag color="blue">ID {nodeData.serialId}</Tag> : null}
               <Tag>{nodeData.type}</Tag>
               <Space size="small">
                 <Button
