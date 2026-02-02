@@ -55,101 +55,86 @@ export const users = {
     org_unit_id?: string;
     role_id?: string;
   }): Promise<UserListResponse> => {
-    const { data } = await api.get("/users", { params });
-    return data;
+    return api.get("/users", { params });
   },
 
   get: async (id: string): Promise<User> => {
-    const { data } = await api.get(`/users/${id}`);
-    return data;
+    return api.get(`/users/${id}`);
   },
 
   create: async (body: Partial<User>): Promise<User> => {
-    const { data } = await api.post("/users", body);
-    return data;
+    return api.post("/users", body);
   },
 
   update: async (id: string, body: Partial<User>): Promise<User> => {
-    const { data } = await api.put(`/users/${id}`, body);
-    return data;
+    return api.put(`/users/${id}`, body);
   },
 
   delete: async (id: string): Promise<void> => {
-    await api.delete(`/users/${id}`);
+    return api.delete(`/users/${id}`);
   },
 
   // 获取当前用户信息
   me: async (): Promise<User> => {
-    const { data } = await api.get("/users/me");
-    return data;
+    return api.get("/users/me");
   },
 
   // 修改密码
   changePassword: async (oldPassword: string, newPassword: string): Promise<void> => {
-    await api.post("/users/change-password", { oldPassword, newPassword });
+    return api.post("/users/change-password", { oldPassword, newPassword });
   },
 
   // 重置密码
   resetPassword: async (id: string): Promise<{ tempPassword: string }> => {
-    const { data } = await api.post(`/users/${id}/reset-password`);
-    return data;
+    return api.post(`/users/${id}/reset-password`);
   },
 };
 
 export const roles = {
   list: async (): Promise<Role[]> => {
-    const { data } = await api.get("/rbac/roles");
-    return data;
+    return api.get("/rbac/roles");
   },
 
   get: async (id: string): Promise<Role> => {
-    const { data } = await api.get(`/rbac/roles/${id}`);
-    return data;
+    return api.get(`/rbac/roles/${id}`);
   },
 
   create: async (body: Partial<Role>): Promise<Role> => {
-    const { data } = await api.post("/rbac/roles", body);
-    return data;
+    return api.post("/rbac/roles", body);
   },
 
   update: async (id: string, body: Partial<Role>): Promise<Role> => {
-    const { data } = await api.put(`/rbac/roles/${id}`, body);
-    return data;
+    return api.put(`/rbac/roles/${id}`, body);
   },
 
   delete: async (id: string): Promise<void> => {
-    await api.delete(`/rbac/roles/${id}`);
+    return api.delete(`/rbac/roles/${id}`);
   },
 
   // 获取所有权限
   getPermissions: async (): Promise<Permission[]> => {
-    const { data } = await api.get("/rbac/permissions");
-    return data;
+    return api.get("/rbac/permissions");
   },
 };
 
 export const orgUnits = {
   list: async (): Promise<any[]> => {
-    const { data } = await api.get("/org-units");
-    return data;
+    return api.get("/org-units");
   },
 
   get: async (id: string): Promise<any> => {
-    const { data } = await api.get(`/org-units/${id}`);
-    return data;
+    return api.get(`/org-units/${id}`);
   },
 
   create: async (body: Partial<any>): Promise<any> => {
-    const { data } = await api.post("/org-units", body);
-    return data;
+    return api.post("/org-units", body);
   },
 
   update: async (id: string, body: Partial<any>): Promise<any> => {
-    const { data } = await api.put(`/org-units/${id}`, body);
-    return data;
+    return api.put(`/org-units/${id}`, body);
   },
 
   delete: async (id: string): Promise<void> => {
-    await api.delete(`/org-units/${id}`);
+    return api.delete(`/org-units/${id}`);
   },
 };

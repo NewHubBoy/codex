@@ -33,30 +33,26 @@ export const accounts = {
     status?: string;
     owner_id?: string;
   }): Promise<AccountListResponse> => {
-    const { data } = await api.get("/accounts", { params });
-    return data;
+    return api.get("/accounts", { params });
   },
 
   get: async (id: string): Promise<Account> => {
-    const { data } = await api.get(`/accounts/${id}`);
-    return data;
+    return api.get(`/accounts/${id}`);
   },
 
   create: async (body: Partial<Account>): Promise<Account> => {
-    const { data } = await api.post("/accounts", body);
-    return data;
+    return api.post("/accounts", body);
   },
 
   update: async (id: string, body: Partial<Account>): Promise<Account> => {
-    const { data } = await api.put(`/accounts/${id}`, body);
-    return data;
+    return api.put(`/accounts/${id}`, body);
   },
 
   delete: async (id: string): Promise<void> => {
-    await api.delete(`/accounts/${id}`);
+    return api.delete(`/accounts/${id}`);
   },
 
   batchDelete: async (ids: string[]): Promise<void> => {
-    await api.post("/accounts/batch-delete", { ids });
+    return api.post("/accounts/batch-delete", { ids });
   },
 };

@@ -41,8 +41,7 @@ export async function logout(): Promise<void> {
 
 // 获取当前用户信息
 export async function getCurrentUser() {
-  const response = await api.get("/users/me");
-  return response.data;
+  return api.get("/auth/me");
 }
 
 // 设置 Token

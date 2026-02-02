@@ -34,30 +34,26 @@ export const contacts = {
     status?: string;
     owner_id?: string;
   }): Promise<ContactListResponse> => {
-    const { data } = await api.get("/contacts", { params });
-    return data;
+    return api.get("/contacts", { params });
   },
 
   get: async (id: string): Promise<Contact> => {
-    const { data } = await api.get(`/contacts/${id}`);
-    return data;
+    return api.get(`/contacts/${id}`);
   },
 
   create: async (body: Partial<Contact>): Promise<Contact> => {
-    const { data } = await api.post("/contacts", body);
-    return data;
+    return api.post("/contacts", body);
   },
 
   update: async (id: string, body: Partial<Contact>): Promise<Contact> => {
-    const { data } = await api.put(`/contacts/${id}`, body);
-    return data;
+    return api.put(`/contacts/${id}`, body);
   },
 
   delete: async (id: string): Promise<void> => {
-    await api.delete(`/contacts/${id}`);
+    return api.delete(`/contacts/${id}`);
   },
 
   batchDelete: async (ids: string[]): Promise<void> => {
-    await api.post("/contacts/batch-delete", { ids });
+    return api.post("/contacts/batch-delete", { ids });
   },
 };

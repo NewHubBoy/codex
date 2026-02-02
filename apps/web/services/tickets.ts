@@ -36,44 +36,37 @@ export const tickets = {
     account_id?: string;
     owner_id?: string;
   }): Promise<TicketListResponse> => {
-    const { data } = await api.get("/tickets", { params });
-    return data;
+    return api.get("/tickets", { params });
   },
 
   get: async (id: string): Promise<Ticket> => {
-    const { data } = await api.get(`/tickets/${id}`);
-    return data;
+    return api.get(`/tickets/${id}`);
   },
 
   create: async (body: Partial<Ticket>): Promise<Ticket> => {
-    const { data } = await api.post("/tickets", body);
-    return data;
+    return api.post("/tickets", body);
   },
 
   update: async (id: string, body: Partial<Ticket>): Promise<Ticket> => {
-    const { data } = await api.put(`/tickets/${id}`, body);
-    return data;
+    return api.put(`/tickets/${id}`, body);
   },
 
   delete: async (id: string): Promise<void> => {
-    await api.delete(`/tickets/${id}`);
+    return api.delete(`/tickets/${id}`);
   },
 
   // 分配
   assign: async (id: string, owner_id: string): Promise<Ticket> => {
-    const { data } = await api.post(`/tickets/${id}/assign`, { owner_id });
-    return data;
+    return api.post(`/tickets/${id}/assign`, { owner_id });
   },
 
   // 解决
   resolve: async (id: string): Promise<Ticket> => {
-    const { data } = await api.post(`/tickets/${id}/resolve`);
-    return data;
+    return api.post(`/tickets/${id}/resolve`);
   },
 
   // 关闭
   close: async (id: string): Promise<Ticket> => {
-    const { data } = await api.post(`/tickets/${id}/close`);
-    return data;
+    return api.post(`/tickets/${id}/close`);
   },
 };

@@ -37,50 +37,42 @@ export const quotes = {
     opportunity_id?: string;
     owner_id?: string;
   }): Promise<QuoteListResponse> => {
-    const { data } = await api.get("/quotes", { params });
-    return data;
+    return api.get("/quotes", { params });
   },
 
   get: async (id: string): Promise<Quote> => {
-    const { data } = await api.get(`/quotes/${id}`);
-    return data;
+    return api.get(`/quotes/${id}`);
   },
 
   create: async (body: Partial<Quote>): Promise<Quote> => {
-    const { data } = await api.post("/quotes", body);
-    return data;
+    return api.post("/quotes", body);
   },
 
   update: async (id: string, body: Partial<Quote>): Promise<Quote> => {
-    const { data } = await api.put(`/quotes/${id}`, body);
-    return data;
+    return api.put(`/quotes/${id}`, body);
   },
 
   delete: async (id: string): Promise<void> => {
-    await api.delete(`/quotes/${id}`);
+    return api.delete(`/quotes/${id}`);
   },
 
   // 发送报价
   send: async (id: string): Promise<Quote> => {
-    const { data } = await api.post(`/quotes/${id}/send`);
-    return data;
+    return api.post(`/quotes/${id}/send`);
   },
 
   // 审批
   approve: async (id: string): Promise<Quote> => {
-    const { data } = await api.post(`/quotes/${id}/approve`);
-    return data;
+    return api.post(`/quotes/${id}/approve`);
   },
 
   // 拒绝
   reject: async (id: string, reason?: string): Promise<Quote> => {
-    const { data } = await api.post(`/quotes/${id}/reject`, { reason });
-    return data;
+    return api.post(`/quotes/${id}/reject`, { reason });
   },
 
   // 转为订单
   convertToOrder: async (id: string): Promise<Quote> => {
-    const { data } = await api.post(`/quotes/${id}/convert`);
-    return data;
+    return api.post(`/quotes/${id}/convert`);
   },
 };

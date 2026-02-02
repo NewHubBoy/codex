@@ -40,6 +40,17 @@ export class AuthController {
     return this.authService.refresh(ctx.tenantId, input.userId, input.refreshToken);
   }
 
+  @Get("me")
+  @UseGuards(AuthGuard)
+  @ApiOkResponse({ schema: { example: { id: "...", name: "...", email: "..." } } })
+  async getCurrentUser(@Req() req: Request) {
+    const ctx = getRequestContext(req);
+    if (!ctx.userId) {
+      throw new Error("User ID not found in request context");
+    }
+    return this.authService.getCurrentUser(ctx.tenantId, ctx.userId);
+  }
+
   @Post("logout")
   @UseGuards(AuthGuard)
   @ApiOkResponse({ schema: { example: { success: true } } })

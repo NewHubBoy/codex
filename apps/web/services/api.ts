@@ -12,7 +12,7 @@ const api: AxiosInstance = axios.create({
   },
 });
 
-// 请求拦截器 - 添加认证 Token
+// 请求拦截器 - 添加认证 Token 和 Tenant ID
 api.interceptors.request.use(
   (config) => {
     // 从 localStorage 获取 token
@@ -21,6 +21,9 @@ api.interceptors.request.use(
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
+      // 添加 tenant-id（默认租户）
+      const tenantId = localStorage.getItem("tenantId") || "00000000-0000-0000-0000-000000000001";
+      config.headers["x-tenant-id"] = tenantId;
     }
     return config;
   },

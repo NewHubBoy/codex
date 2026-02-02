@@ -37,38 +37,32 @@ export const orders = {
     quote_id?: string;
     owner_id?: string;
   }): Promise<OrderListResponse> => {
-    const { data } = await api.get("/orders", { params });
-    return data;
+    return api.get("/orders", { params });
   },
 
   get: async (id: string): Promise<Order> => {
-    const { data } = await api.get(`/orders/${id}`);
-    return data;
+    return api.get(`/orders/${id}`);
   },
 
   create: async (body: Partial<Order>): Promise<Order> => {
-    const { data } = await api.post("/orders", body);
-    return data;
+    return api.post("/orders", body);
   },
 
   update: async (id: string, body: Partial<Order>): Promise<Order> => {
-    const { data } = await api.put(`/orders/${id}`, body);
-    return data;
+    return api.put(`/orders/${id}`, body);
   },
 
   delete: async (id: string): Promise<void> => {
-    await api.delete(`/orders/${id}`);
+    return api.delete(`/orders/${id}`);
   },
 
   // 发货
   ship: async (id: string): Promise<Order> => {
-    const { data } = await api.post(`/orders/${id}/ship`);
-    return data;
+    return api.post(`/orders/${id}/ship`);
   },
 
   // 取消
   cancel: async (id: string, reason?: string): Promise<Order> => {
-    const { data } = await api.post(`/orders/${id}/cancel`, { reason });
-    return data;
+    return api.post(`/orders/${id}/cancel`, { reason });
   },
 };

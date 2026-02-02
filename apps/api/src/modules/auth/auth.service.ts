@@ -96,4 +96,23 @@ export class AuthService {
     });
     return { success: true };
   }
+
+  async getCurrentUser(tenantId: string, userId: string) {
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId, tenantId },
+      select: {
+        id: true,
+        tenantId: true,
+        email: true,
+        name: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+      }
+    });
+    if (!user) {
+      throw new NotFoundException("User not found");
+    }
+    return user;
+  }
 }

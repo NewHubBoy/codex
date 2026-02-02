@@ -20,7 +20,7 @@ export default function LoginPage() {
     try {
       await login(values);
       message.success("登录成功");
-      router.push("/");
+      router.push("/dashboard");
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
       const errorMessage =

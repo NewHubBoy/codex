@@ -37,38 +37,32 @@ export const deliveries = {
     order_id?: string;
     owner_id?: string;
   }): Promise<DeliveryListResponse> => {
-    const { data } = await api.get("/deliveries", { params });
-    return data;
+    return api.get("/deliveries", { params });
   },
 
   get: async (id: string): Promise<Delivery> => {
-    const { data } = await api.get(`/deliveries/${id}`);
-    return data;
+    return api.get(`/deliveries/${id}`);
   },
 
   create: async (body: Partial<Delivery>): Promise<Delivery> => {
-    const { data } = await api.post("/deliveries", body);
-    return data;
+    return api.post("/deliveries", body);
   },
 
   update: async (id: string, body: Partial<Delivery>): Promise<Delivery> => {
-    const { data } = await api.put(`/deliveries/${id}`, body);
-    return data;
+    return api.put(`/deliveries/${id}`, body);
   },
 
   delete: async (id: string): Promise<void> => {
-    await api.delete(`/deliveries/${id}`);
+    return api.delete(`/deliveries/${id}`);
   },
 
   // 开始发货
   start: async (id: string): Promise<Delivery> => {
-    const { data } = await api.post(`/deliveries/${id}/start`);
-    return data;
+    return api.post(`/deliveries/${id}/start`);
   },
 
   // 完成
   complete: async (id: string): Promise<Delivery> => {
-    const { data } = await api.post(`/deliveries/${id}/complete`);
-    return data;
+    return api.post(`/deliveries/${id}/complete`);
   },
 };

@@ -31,34 +31,29 @@ export const products = {
     category?: string;
     status?: string;
   }): Promise<ProductListResponse> => {
-    const { data } = await api.get("/products", { params });
-    return data;
+    return api.get("/products", { params });
   },
 
   get: async (id: string): Promise<Product> => {
-    const { data } = await api.get(`/products/${id}`);
-    return data;
+    return api.get(`/products/${id}`);
   },
 
   create: async (body: Partial<Product>): Promise<Product> => {
-    const { data } = await api.post("/products", body);
-    return data;
+    return api.post("/products", body);
   },
 
   update: async (id: string, body: Partial<Product>): Promise<Product> => {
-    const { data } = await api.put(`/products/${id}`, body);
-    return data;
+    return api.put(`/products/${id}`, body);
   },
 
   delete: async (id: string): Promise<void> => {
-    await api.delete(`/products/${id}`);
+    return api.delete(`/products/${id}`);
   },
 
   // 获取价格
   getPrice: async (id: string, quantity?: number): Promise<{ price: number }> => {
-    const { data } = await api.get(`/products/${id}/price`, {
+    return api.get(`/products/${id}/price`, {
       params: { quantity },
     });
-    return data;
   },
 };

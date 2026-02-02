@@ -38,27 +38,23 @@ export const opportunities = {
     lead_id?: string;
     owner_id?: string;
   }): Promise<OpportunityListResponse> => {
-    const { data } = await api.get("/opportunities", { params });
-    return data;
+    return api.get("/opportunities", { params });
   },
 
   get: async (id: string): Promise<Opportunity> => {
-    const { data } = await api.get(`/opportunities/${id}`);
-    return data;
+    return api.get(`/opportunities/${id}`);
   },
 
   create: async (body: Partial<Opportunity>): Promise<Opportunity> => {
-    const { data } = await api.post("/opportunities", body);
-    return data;
+    return api.post("/opportunities", body);
   },
 
   update: async (id: string, body: Partial<Opportunity>): Promise<Opportunity> => {
-    const { data } = await api.put(`/opportunities/${id}`, body);
-    return data;
+    return api.put(`/opportunities/${id}`, body);
   },
 
   delete: async (id: string): Promise<void> => {
-    await api.delete(`/opportunities/${id}`);
+    return api.delete(`/opportunities/${id}`);
   },
 
   batchStatus: async (
@@ -66,12 +62,11 @@ export const opportunities = {
     status: string,
     dryRun?: boolean
   ): Promise<{ success: boolean; message: string }> => {
-    const { data } = await api.post("/opportunities/bulk-status", {
+    return api.post("/opportunities/bulk-status", {
       ids,
       status,
       dryRun,
     });
-    return data;
   },
 
   // 阶段更新（拖拽）
@@ -79,7 +74,6 @@ export const opportunities = {
     id: string,
     stage: string
   ): Promise<Opportunity> => {
-    const { data } = await api.patch(`/opportunities/${id}/stage`, { stage });
-    return data;
+    return api.patch(`/opportunities/${id}/stage`, { stage });
   },
 };
