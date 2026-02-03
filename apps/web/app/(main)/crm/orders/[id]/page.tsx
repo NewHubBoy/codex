@@ -12,13 +12,22 @@ import {
   Spin,
 } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
+import Link from "next/link";
 import { PageHeader } from "@/components/common/PageHeader";
-import { useOpportunity } from "@/hooks/useOpportunities";
+import { useOrder } from "@/hooks/useOrders";
 import { AttachmentTable } from "@/components/business/AttachmentTable";
 import { ActivityTable } from "@/components/business/ActivityTable";
-import Link from "next/link";
 
 const { Text } = Typography;
+
+const statusColors: Record<string, string> = {
+  DRAFT: "default",
+  CONFIRMED: "blue",
+  IN_FULFILLMENT: "processing",
+  DELIVERED: "green",
+  CLOSED: "gold",
+  CANCELLED: "red",
+};
 
 const formatAmount = (amount?: number, currency?: string) => {
   if (amount === undefined || amount === null) return "-";
@@ -29,12 +38,12 @@ const formatAmount = (amount?: number, currency?: string) => {
   return currency ? `${formatted} ${currency}` : formatted;
 };
 
-export default function OpportunityDetailPage() {
+export default function OrderDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
 
-  const { data: opportunity, isLoading } = useOpportunity(id);
+  const { data: order, isLoading } = useOrder(id);
 
   if (isLoading) {
     return (
@@ -44,13 +53,15 @@ export default function OpportunityDetailPage() {
     );
   }
 
-  if (!opportunity) {
+  if (!order) {
     return (
       <Card>
-        <Text type="secondary">未找到该商机</Text>
+        <Text type="secondary">未找到该订单</Text>
       </Card>
     );
   }
+
+  const accountDisplay = order.account?.name || order.accountId || "-";
 
   const tabItems = [
     {
@@ -59,10 +70,10 @@ export default function OpportunityDetailPage() {
       children: (
         <Descriptions column={2} bordered>
           <Descriptions.Item label="负责人">
-            {opportunity.owner?.name || "-"}
+            {order.owner?.name || "-"}
           </Descriptions.Item>
           <Descriptions.Item label="负责人邮箱">
-            {opportunity.owner?.email || "-"}
+            {order.owner?.email || "-"}
           </Descriptions.Item>
         </Descriptions>
       ),
@@ -70,12 +81,12 @@ export default function OpportunityDetailPage() {
     {
       key: "activity",
       label: "活动记录",
-      children: <ActivityTable relatedType="Opportunity" relatedId={id} />,
+      children: <ActivityTable relatedType="Order" relatedId={id} />,
     },
     {
       key: "attachments",
       label: "附件",
-      children: <AttachmentTable relatedType="Opportunity" relatedId={id} />,
+      children: <AttachmentTable relatedType="Order" relatedId={id} />,
     },
     {
       key: "system",
@@ -83,17 +94,17 @@ export default function OpportunityDetailPage() {
       children: (
         <Descriptions column={2} bordered>
           <Descriptions.Item label="创建时间">
-            {new Date(opportunity.createdAt).toLocaleString("zh-CN")}
+            {new Date(order.createdAt).toLocaleString("zh-CN")}
           </Descriptions.Item>
           <Descriptions.Item label="最后更新时间">
-            {new Date(opportunity.updatedAt).toLocaleString("zh-CN")}
+            {new Date(order.updatedAt).toLocaleString("zh-CN")}
           </Descriptions.Item>
           <Descriptions.Item label="编号" span={2}>
-            {opportunity.serialId}
+            {order.serialId}
           </Descriptions.Item>
           <Descriptions.Item label="ID" span={2}>
             <Text copyable style={{ fontFamily: "monospace" }}>
-              {opportunity.id}
+              {order.id}
             </Text>
           </Descriptions.Item>
         </Descriptions>
@@ -104,7 +115,7 @@ export default function OpportunityDetailPage() {
   return (
     <div>
       <PageHeader
-        title={opportunity.name || "商机详情"}
+        title={order.number || "订单详情"}
         extra={[
           <Button key="back" icon={<ArrowLeftOutlined />} onClick={() => router.back()}>
             返回
@@ -115,57 +126,34 @@ export default function OpportunityDetailPage() {
       <Space direction="vertical" size={16} style={{ width: "100%" }}>
         <Card title="基本信息">
           <Descriptions column={2} bordered>
-            <Descriptions.Item label="商机名称">
-              {opportunity.name}
+            <Descriptions.Item label="订单号">{order.number || "-"}</Descriptions.Item>
+            <Descriptions.Item label="状态">
+              <Tag color={statusColors[order.status] || "default"}>
+                {order.status || "-"}
+              </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="阶段">
-              <Tag color="blue">{opportunity.stage || "-"}</Tag>
+            <Descriptions.Item label="订单日期">
+              {order.orderDate ? new Date(order.orderDate).toLocaleString("zh-CN") : "-"}
             </Descriptions.Item>
             <Descriptions.Item label="金额">
-              {formatAmount(opportunity.amount, opportunity.currency)}
-            </Descriptions.Item>
-            <Descriptions.Item label="成交概率">
-              {opportunity.probability !== undefined && opportunity.probability !== null
-                ? `${opportunity.probability}%`
-                : "-"}
-            </Descriptions.Item>
-            <Descriptions.Item label="预计成交时间">
-              {opportunity.expectedCloseDate
-                ? new Date(opportunity.expectedCloseDate).toLocaleString("zh-CN")
-                : "-"}
-            </Descriptions.Item>
-            <Descriptions.Item label="状态">
-              <Tag color="default">{opportunity.status || "-"}</Tag>
+              {formatAmount(order.totalAmount, order.currency)}
             </Descriptions.Item>
             <Descriptions.Item label="客户">
-              {opportunity.accountId ? (
-                <Link href={`/crm/accounts/${opportunity.accountId}`}>
-                  {opportunity.account?.name || opportunity.accountId}
-                </Link>
+              {order.accountId ? (
+                <Link href={`/crm/accounts/${order.accountId}`}>{accountDisplay}</Link>
               ) : (
-                opportunity.account?.name || "-"
+                accountDisplay
               )}
             </Descriptions.Item>
-            <Descriptions.Item label="线索">
-              {opportunity.leadId ? (
-                <Link href={`/crm/leads/${opportunity.leadId}`}>
-                  {opportunity.lead?.name || opportunity.leadId}
-                </Link>
-              ) : (
-                opportunity.lead?.name || "-"
-              )}
-            </Descriptions.Item>
-            <Descriptions.Item label="联系人">
-              {opportunity.contactId ? (
-                <Link href={`/crm/contacts/${opportunity.contactId}`}>
-                  {opportunity.contactId}
+            <Descriptions.Item label="联系人">{order.contactId || "-"}</Descriptions.Item>
+            <Descriptions.Item label="商机">
+              {order.opportunityId ? (
+                <Link href={`/crm/opportunities/${order.opportunityId}`}>
+                  {order.opportunityId}
                 </Link>
               ) : (
                 "-"
               )}
-            </Descriptions.Item>
-            <Descriptions.Item label="丢单原因">
-              {opportunity.reasonLost || "-"}
             </Descriptions.Item>
           </Descriptions>
         </Card>

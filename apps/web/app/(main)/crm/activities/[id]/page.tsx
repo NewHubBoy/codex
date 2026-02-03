@@ -76,6 +76,16 @@ export default function ActivityDetailPage() {
 
   const tabItems = [
     {
+      key: 'owner',
+      label: '负责人信息',
+      children: (
+        <Descriptions column={2} bordered>
+          <Descriptions.Item label="负责人">{activity.owner?.name || '-'}</Descriptions.Item>
+          <Descriptions.Item label="负责人邮箱">{activity.owner?.email || '-'}</Descriptions.Item>
+        </Descriptions>
+      ),
+    },
+    {
       key: 'attachments',
       label: '附件',
       children: <AttachmentTable relatedType="Activity" relatedId={id} />,

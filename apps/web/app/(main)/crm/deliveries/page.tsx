@@ -5,6 +5,7 @@ import { Table, Button, Space, Tag, Input, Select, Card } from "antd";
 import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useDeliveries } from "@/hooks/useDeliveries";
+import Link from "next/link";
 
 const { Search } = Input;
 
@@ -47,7 +48,7 @@ export default function DeliveriesPage() {
       dataIndex: "number",
       key: "number",
       render: (text: string, record: any) => (
-        <a href={`/crm/deliveries/${record.id}`}>{text}</a>
+        <Link href={`/crm/deliveries/${record.id}`}>{text}</Link>
       ),
     },
     {

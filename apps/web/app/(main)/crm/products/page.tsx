@@ -5,6 +5,7 @@ import { Table, Button, Space, Tag, Input, Select, Card } from "antd";
 import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useProducts } from "@/hooks/useProducts";
+import Link from "next/link";
 
 const { Search } = Input;
 
@@ -39,7 +40,7 @@ export default function ProductsPage() {
       dataIndex: "sku",
       key: "sku",
       render: (text: string, record: any) => (
-        <a href={`/crm/products/${record.id}`}>{text}</a>
+        <Link href={`/crm/products/${record.id}`}>{text}</Link>
       ),
     },
     {

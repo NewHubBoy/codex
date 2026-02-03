@@ -5,6 +5,7 @@ import { Table, Button, Space, Tag, Input, Select, Card } from "antd";
 import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useContacts } from "@/hooks/useContacts";
+import Link from "next/link";
 
 const { Search } = Input;
 
@@ -38,7 +39,7 @@ export default function ContactsPage() {
       dataIndex: "name",
       key: "name",
       render: (text: string, record: any) => (
-        <a href={`/crm/contacts/${record.id}`}>{text}</a>
+        <Link href={`/crm/contacts/${record.id}`}>{text}</Link>
       ),
     },
     {

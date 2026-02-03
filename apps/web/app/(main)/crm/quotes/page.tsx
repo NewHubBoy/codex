@@ -5,6 +5,7 @@ import { Table, Button, Space, Tag, Input, Select, Card } from "antd";
 import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useQuotes } from "@/hooks/useQuotes";
+import Link from "next/link";
 
 const { Search } = Input;
 
@@ -53,7 +54,7 @@ export default function QuotesPage() {
       dataIndex: "number",
       key: "number",
       render: (text: string, record: any) => (
-        <a href={`/crm/quotes/${record.id}`}>{text}</a>
+        <Link href={`/crm/quotes/${record.id}`}>{text}</Link>
       ),
     },
     {

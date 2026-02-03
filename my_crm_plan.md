@@ -10,6 +10,7 @@
 - Swagger 必填说明已补充
 - 批量状态接口：Lead / Ticket（含 dryRun）
 - 最小回归脚本：`pnpm -C apps/api status:regress`
+- 详情页统一布局（基本信息 + Tabs），覆盖主菜单各对象详情页
 
 ### 待完成（可选）
 - 扩展批量状态到其他对象（Opportunity/Quote/Order/Delivery/Activity）

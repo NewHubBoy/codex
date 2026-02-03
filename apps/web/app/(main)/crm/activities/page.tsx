@@ -28,6 +28,23 @@ const relatedTypeLabels: Record<string, string> = {
   Opportunity: "商机",
   Account: "客户",
   Contact: "联系人",
+  Ticket: "工单",
+  Quote: "报价单",
+  Order: "订单",
+  Delivery: "交付",
+  Product: "产品",
+};
+
+const relatedRoutes: Record<string, string> = {
+  Lead: "/crm/leads",
+  Opportunity: "/crm/opportunities",
+  Account: "/crm/accounts",
+  Contact: "/crm/contacts",
+  Ticket: "/crm/tickets",
+  Quote: "/crm/quotes",
+  Order: "/crm/orders",
+  Delivery: "/crm/deliveries",
+  Product: "/crm/products",
 };
 
 export default function ActivitiesPage() {
@@ -82,8 +99,9 @@ export default function ActivitiesPage() {
         if (!record.relatedType || !record.relatedId) return "-";
         const label = relatedTypeLabels[record.relatedType] || record.relatedType;
         const shortId = record.relatedId.slice(0, 8);
-        if (record.relatedType === "Lead") {
-          return <Link href={`/crm/leads/${record.relatedId}`}>{`${label} #${shortId}`}</Link>;
+        const baseRoute = relatedRoutes[record.relatedType];
+        if (baseRoute) {
+          return <Link href={`${baseRoute}/${record.relatedId}`}>{`${label} #${shortId}`}</Link>;
         }
         return `${label} #${shortId}`;
       },

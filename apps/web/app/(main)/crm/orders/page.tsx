@@ -5,6 +5,7 @@ import { Table, Button, Space, Tag, Input, Select, Card } from "antd";
 import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useOrders } from "@/hooks/useOrders";
+import Link from "next/link";
 
 const { Search } = Input;
 
@@ -51,7 +52,7 @@ export default function OrdersPage() {
       dataIndex: "number",
       key: "number",
       render: (text: string, record: any) => (
-        <a href={`/crm/orders/${record.id}`}>{text}</a>
+        <Link href={`/crm/orders/${record.id}`}>{text}</Link>
       ),
     },
     {

@@ -5,6 +5,7 @@ import { Table, Button, Space, Tag, Input, Select, Card } from "antd";
 import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useTickets } from "@/hooks/useTickets";
+import Link from "next/link";
 
 const { Search } = Input;
 
@@ -65,7 +66,7 @@ export default function TicketsPage() {
       dataIndex: "number",
       key: "number",
       render: (text: string, record: any) => (
-        <a href={`/crm/tickets/${record.id}`}>{text}</a>
+        <Link href={`/crm/tickets/${record.id}`}>{text}</Link>
       ),
     },
     {

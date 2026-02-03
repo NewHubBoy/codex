@@ -5,6 +5,7 @@ import { Table, Button, Space, Tag, Input, Select, Card } from "antd";
 import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useAccounts } from "@/hooks/useAccounts";
+import Link from "next/link";
 
 const { Search } = Input;
 
@@ -40,7 +41,7 @@ export default function AccountsPage() {
       dataIndex: "name",
       key: "name",
       render: (text: string, record: any) => (
-        <a href={`/crm/accounts/${record.id}`}>{text}</a>
+        <Link href={`/crm/accounts/${record.id}`}>{text}</Link>
       ),
     },
     {
