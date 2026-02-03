@@ -6,7 +6,7 @@ import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import Link from "next/link";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useActivities } from "@/hooks/useActivities";
-import type { Activity } from "@/services/activities";
+import type { Activity, ActivityStatusType } from "@/services/activities";
 import { ActivityStatus } from "@/services/activities";
 
 const { Search } = Input;
@@ -34,7 +34,7 @@ export default function ActivitiesPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [q, setQ] = useState("");
-  const [status, setStatus] = useState<string | undefined>(undefined);
+  const [status, setStatus] = useState<ActivityStatusType | undefined>(undefined);
 
   const { data, isLoading } = useActivities({
     page,

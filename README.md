@@ -22,3 +22,9 @@ pnpm -C apps/api exec prisma migrate reset --force
 # run seed only
 pnpm -C apps/api exec prisma db seed
 ```
+
+## 类型检查
+
+```bash
+ pnpm -C apps/web lint
+```

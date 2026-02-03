@@ -26,6 +26,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.3",
     "@types/node": "^20.19.30",
     "eslint": "^9",
     "eslint-config-next": "^15.1.0",
