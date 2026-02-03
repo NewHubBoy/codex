@@ -1,16 +1,14 @@
 'use client';
 
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { Card, Typography, Button, Space, Tag, Table, Tabs, Descriptions, Spin, App, Popconfirm, Form, Input, Select, InputNumber } from 'antd';
+import { Card, Typography, Button, Space, Tag, Tabs, Descriptions, Spin, App, Popconfirm, Form, Input, Select, InputNumber } from 'antd';
 import { ArrowLeftOutlined, EditOutlined, DeleteOutlined, SwapOutlined } from '@ant-design/icons';
 import { useLead, useDeleteLead, useUpdateLead, useSubmitLead } from '@/hooks/useLeads';
 import { PageHeader } from '@/components/common/PageHeader';
 import { useEffect, useState } from 'react';
 import { LeadSource, LeadRating, LeadStatus } from '@/services/leads';
-import { useActivities } from '@/hooks/useActivities';
 import { AttachmentTable } from '@/components/business/AttachmentTable';
-import { Activity, ActivityListResponse } from '@/services/activities';
-import Link from 'next/link';
+import { ActivityTable } from '@/components/business/ActivityTable';
 
 const { Text } = Typography;
 
@@ -38,18 +36,6 @@ const sourceLabels: Record<string, string> = {
   OTHER: '其他',
 };
 
-const activityStatusColors: Record<string, string> = {
-  OPEN: 'blue',
-  COMPLETED: 'green',
-  CANCELLED: 'red',
-};
-
-const activityStatusLabels: Record<string, string> = {
-  OPEN: '进行中',
-  COMPLETED: '已完成',
-  CANCELLED: '已取消',
-};
-
 export default function LeadDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -66,17 +52,6 @@ export default function LeadDetailPage() {
   const updateLead = useUpdateLead();
   const submitLead = useSubmitLead();
   const isDraft = lead?.status === 'DRAFT';
-  const [activityPage, setActivityPage] = useState(1);
-  const [activityPageSize, setActivityPageSize] = useState(5);
-
-  const { data: activityData, isLoading: isActivitiesLoading } = useActivities({
-    page: activityPage,
-    pageSize: activityPageSize,
-    relatedType: 'Lead',
-    relatedId: id,
-    sort: 'createdAt:desc',
-  });
-
   // 根据 operationType 自动进入编辑模式
   useEffect(() => {
     if (operationType === 'edit' && lead) {
@@ -179,43 +154,6 @@ export default function LeadDetailPage() {
     );
   }
 
-  const activityColumns = [
-    {
-      title: '主题',
-      dataIndex: 'subject',
-      key: 'subject',
-      ellipsis: true,
-      render: (text: string, record: Activity) => {
-        console.log(record);
-        return text ? <Link href={`/crm/activities/${record.id}`}>{text}</Link> : '-';
-      },
-    },
-    {
-      title: '类型',
-      dataIndex: 'type',
-      key: 'type',
-      render: (text: string) => text || '-',
-    },
-    {
-      title: '状态',
-      dataIndex: 'status',
-      key: 'status',
-      render: (value: string) => <Tag color={activityStatusColors[value] || 'default'}>{activityStatusLabels[value] || value}</Tag>,
-    },
-    {
-      title: '截止时间',
-      dataIndex: 'dueAt',
-      key: 'dueAt',
-      render: (value: string) => (value ? new Date(value).toLocaleString('zh-CN') : '-'),
-    },
-    {
-      title: '完成时间',
-      dataIndex: 'completedAt',
-      key: 'completedAt',
-      render: (value: string) => (value ? new Date(value).toLocaleString('zh-CN') : '-'),
-    },
-  ];
-
   const tabItems = [
     {
       key: 'owner',
@@ -230,26 +168,7 @@ export default function LeadDetailPage() {
     {
       key: 'activity',
       label: '活动记录',
-      children: (
-        <Table
-          columns={activityColumns}
-          dataSource={activityData?.data}
-          rowKey="id"
-          loading={isActivitiesLoading}
-          pagination={{
-            current: activityPage,
-            pageSize: activityPageSize,
-            total: activityData?.total || 0,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total) => `共 ${total} 条`,
-          }}
-          onChange={(pagination) => {
-            setActivityPage(pagination.current || 1);
-            setActivityPageSize(pagination.pageSize || 5);
-          }}
-        />
-      ),
+      children: <ActivityTable relatedType="Lead" relatedId={id} />,
     },
     {
       key: 'attachments',
