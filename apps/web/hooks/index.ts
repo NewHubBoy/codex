@@ -1,4 +1,6 @@
 export * from "./useAuth";
+export * from "./useActivities";
+export * from "./useAttachments";
 export * from "./useLeads";
 export * from "./useAccounts";
 export * from "./useContacts";

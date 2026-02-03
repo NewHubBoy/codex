@@ -31,6 +31,8 @@ This document defines the default permission codes used by the API.
 | `opportunity:write` | Opportunity Write | ACTION |  |
 | `activity:read` | Activity Read | ACTION |  |
 | `activity:write` | Activity Write | ACTION |  |
+| `attachment:read` | Attachment Read | ACTION |  |
+| `attachment:write` | Attachment Write | ACTION |  |
 | `product:read` | Product Read | ACTION |  |
 | `product:write` | Product Write | ACTION |  |
 | `quote:read` | Quote Read | ACTION |  |

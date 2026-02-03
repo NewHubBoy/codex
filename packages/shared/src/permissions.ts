@@ -31,6 +31,8 @@ export const PERMISSIONS = [
   { code: "opportunity:write", name: "Opportunity Write", type: "ACTION" },
   { code: "activity:read", name: "Activity Read", type: "ACTION" },
   { code: "activity:write", name: "Activity Write", type: "ACTION" },
+  { code: "attachment:read", name: "Attachment Read", type: "ACTION" },
+  { code: "attachment:write", name: "Attachment Write", type: "ACTION" },
   { code: "product:read", name: "Product Read", type: "ACTION" },
   { code: "product:write", name: "Product Write", type: "ACTION" },
   { code: "quote:read", name: "Quote Read", type: "ACTION" },

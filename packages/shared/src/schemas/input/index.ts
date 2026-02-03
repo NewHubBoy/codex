@@ -22,3 +22,4 @@ export * from "./delivery.input";
 export * from "./product.input";
 export * from "./price-book.input";
 export * from "./activity.input";
+export * from "./attachment.input";

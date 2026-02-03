@@ -6,6 +6,7 @@ import { ContactsModule } from "./modules/contacts/contacts.module";
 import { LeadsModule } from "./modules/leads/leads.module";
 import { OpportunitiesModule } from "./modules/opportunities/opportunities.module";
 import { ActivitiesModule } from "./modules/activities/activities.module";
+import { AttachmentsModule } from "./modules/attachments/attachments.module";
 import { ProductsModule } from "./modules/products/products.module";
 import { QuotesModule } from "./modules/quotes/quotes.module";
 import { OrdersModule } from "./modules/orders/orders.module";
@@ -35,6 +36,7 @@ import { AppService } from "./app.service";
     LeadsModule,
     OpportunitiesModule,
     ActivitiesModule,
+    AttachmentsModule,
     ProductsModule,
     QuotesModule,
     OrdersModule,

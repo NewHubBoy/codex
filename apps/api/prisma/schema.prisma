@@ -28,6 +28,8 @@ model Tenant {
   leads         Lead[]
   opportunities Opportunity[]
   activities    Activity[]
+  attachments   Attachment[]
+  attachmentLinks AttachmentLink[]
   products     Product[]
   quotes       Quote[]
   orders       Order[]
@@ -289,6 +291,53 @@ model Activity {
   @@index([tenantId])
   @@index([ownerId])
   @@index([relatedType, relatedId])
+}
+
+model Attachment {
+  id              String   @id @default(uuid())
+  serialId        Int      @default(autoincrement()) @unique
+  tenantId        String
+  orgUnitId       String?
+  ownerId         String?
+  status          String   @default("ACTIVE")
+  fileName        String
+  mimeType        String
+  size            Int
+  checksumSha256  String?
+  storageProvider String   @default("S3")
+  bucket          String
+  objectKey       String
+  url             String?
+  metadata        Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  links  AttachmentLink[]
+
+  @@index([tenantId])
+  @@index([ownerId])
+  @@index([orgUnitId])
+}
+
+model AttachmentLink {
+  id           String   @id @default(uuid())
+  tenantId     String
+  orgUnitId    String?
+  ownerId      String?
+  attachmentId String
+  relatedType  String
+  relatedId    String
+  note         String?
+  createdAt    DateTime @default(now())
+
+  tenant     Tenant     @relation(fields: [tenantId], references: [id])
+  attachment Attachment @relation(fields: [attachmentId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([attachmentId])
+  @@index([relatedType, relatedId])
+  @@unique([attachmentId, relatedType, relatedId])
 }
 
 model Product {

@@ -7,6 +7,8 @@ import {
   Button,
   Space,
   Tag,
+  Table,
+  Upload,
   Descriptions,
   Spin,
   App,
@@ -21,11 +23,15 @@ import {
   EditOutlined,
   DeleteOutlined,
   SwapOutlined,
+  UploadOutlined,
 } from "@ant-design/icons";
 import { useLead, useDeleteLead, useUpdateLead, useSubmitLead } from "@/hooks/useLeads";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useEffect, useState } from "react";
 import { LeadSource, LeadRating, LeadStatus } from "@/services/leads";
+import { useActivities } from "@/hooks/useActivities";
+import { useAttachments, useUploadAttachment } from "@/hooks/useAttachments";
+import type { Attachment } from "@/services/attachments";
 
 const { Text } = Typography;
 
@@ -53,6 +59,49 @@ const sourceLabels: Record<string, string> = {
   OTHER: "其他",
 };
 
+const MAX_ATTACHMENT_SIZE_BYTES = 20 * 1024 * 1024;
+const DEFAULT_ALLOWED_MIME_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/gif",
+  "image/webp",
+  "application/pdf",
+  "text/plain",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+];
+
+const allowedMimeTypes = (process.env.NEXT_PUBLIC_ATTACHMENT_ALLOWED_MIME_TYPES || "")
+  .split(",")
+  .map((value) => value.trim())
+  .filter(Boolean);
+
+const effectiveAllowedMimeTypes =
+  allowedMimeTypes.length > 0 ? allowedMimeTypes : DEFAULT_ALLOWED_MIME_TYPES;
+
+const formatFileSize = (bytes: number) => {
+  if (!Number.isFinite(bytes)) return "-";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const activityStatusColors: Record<string, string> = {
+  OPEN: "blue",
+  COMPLETED: "green",
+  CANCELLED: "red",
+};
+
+const activityStatusLabels: Record<string, string> = {
+  OPEN: "进行中",
+  COMPLETED: "已完成",
+  CANCELLED: "已取消",
+};
+
 export default function LeadDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -69,6 +118,28 @@ export default function LeadDetailPage() {
   const updateLead = useUpdateLead();
   const submitLead = useSubmitLead();
   const isDraft = lead?.status === "DRAFT";
+  const [activityPage, setActivityPage] = useState(1);
+  const [activityPageSize, setActivityPageSize] = useState(5);
+  const [attachmentPage, setAttachmentPage] = useState(1);
+  const [attachmentPageSize, setAttachmentPageSize] = useState(5);
+
+  const { data: activityData, isLoading: isActivitiesLoading } = useActivities({
+    page: activityPage,
+    pageSize: activityPageSize,
+    relatedType: "Lead",
+    relatedId: id,
+    sort: "createdAt:desc",
+  });
+
+  const { data: attachmentData, isLoading: isAttachmentsLoading } = useAttachments({
+    page: attachmentPage,
+    pageSize: attachmentPageSize,
+    relatedType: "Lead",
+    relatedId: id,
+    sort: "createdAt:desc",
+  });
+
+  const uploadAttachment = useUploadAttachment();
 
   // 根据 operationType 自动进入编辑模式
   useEffect(() => {
@@ -156,6 +227,43 @@ export default function LeadDetailPage() {
     }
   };
 
+  const uploadProps = {
+    showUploadList: false,
+    multiple: false,
+    accept: effectiveAllowedMimeTypes.join(","),
+    beforeUpload: (file: File) => {
+      if (file.size > MAX_ATTACHMENT_SIZE_BYTES) {
+        message.error("附件大小不能超过 20MB");
+        return Upload.LIST_IGNORE;
+      }
+      if (
+        effectiveAllowedMimeTypes.length > 0 &&
+        file.type &&
+        !effectiveAllowedMimeTypes.includes(file.type)
+      ) {
+        message.error("不支持的文件类型");
+        return Upload.LIST_IGNORE;
+      }
+      return true;
+    },
+    customRequest: async (options: any) => {
+      try {
+        const file = options.file as File;
+        await uploadAttachment.mutateAsync({
+          file,
+          relatedType: "Lead",
+          relatedId: id,
+        });
+        message.success("上传成功");
+        options.onSuccess?.({}, file);
+      } catch (error) {
+        console.error("上传失败:", error);
+        message.error("上传失败");
+        options.onError?.(error);
+      }
+    },
+  };
+
   if (isLoading) {
     return (
       <div style={{ display: "flex", justifyContent: "center", padding: 100 }}>
@@ -171,6 +279,82 @@ export default function LeadDetailPage() {
       </Card>
     );
   }
+
+  const activityColumns = [
+    {
+      title: "主题",
+      dataIndex: "subject",
+      key: "subject",
+      ellipsis: true,
+      render: (text: string) => text || "-",
+    },
+    {
+      title: "类型",
+      dataIndex: "type",
+      key: "type",
+      render: (text: string) => text || "-",
+    },
+    {
+      title: "状态",
+      dataIndex: "status",
+      key: "status",
+      render: (value: string) => (
+        <Tag color={activityStatusColors[value] || "default"}>
+          {activityStatusLabels[value] || value}
+        </Tag>
+      ),
+    },
+    {
+      title: "截止时间",
+      dataIndex: "dueAt",
+      key: "dueAt",
+      render: (value: string) => (value ? new Date(value).toLocaleString("zh-CN") : "-"),
+    },
+    {
+      title: "完成时间",
+      dataIndex: "completedAt",
+      key: "completedAt",
+      render: (value: string) => (value ? new Date(value).toLocaleString("zh-CN") : "-"),
+    },
+  ];
+
+  const attachmentColumns = [
+    {
+      title: "文件名",
+      dataIndex: "fileName",
+      key: "fileName",
+      ellipsis: true,
+      render: (text: string) => text || "-",
+    },
+    {
+      title: "大小",
+      dataIndex: "size",
+      key: "size",
+      width: 100,
+      render: (value: number) => formatFileSize(value),
+    },
+    {
+      title: "上传时间",
+      dataIndex: "createdAt",
+      key: "createdAt",
+      width: 180,
+      render: (value: string) =>
+        value ? new Date(value).toLocaleString("zh-CN") : "-",
+    },
+    {
+      title: "操作",
+      key: "action",
+      width: 100,
+      render: (_: unknown, record: Attachment) =>
+        record.url ? (
+          <a href={record.url} target="_blank" rel="noreferrer">
+            下载
+          </a>
+        ) : (
+          "-"
+        ),
+    },
+  ];
 
   return (
     <div>
@@ -350,6 +534,59 @@ export default function LeadDetailPage() {
               {lead.owner?.email || "-"}
             </Descriptions.Item>
           </Descriptions>
+        </Card>
+
+        {/* 活动记录 */}
+        <Card title="活动记录">
+          <Table
+            columns={activityColumns}
+            dataSource={activityData?.data}
+            rowKey="id"
+            loading={isActivitiesLoading}
+            pagination={{
+              current: activityPage,
+              pageSize: activityPageSize,
+              total: activityData?.total || 0,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total) => `共 ${total} 条`,
+            }}
+            onChange={(pagination) => {
+              setActivityPage(pagination.current || 1);
+              setActivityPageSize(pagination.pageSize || 5);
+            }}
+          />
+        </Card>
+
+        {/* 附件 */}
+        <Card
+          title="附件"
+          extra={
+            <Upload {...uploadProps} disabled={uploadAttachment.isPending}>
+              <Button icon={<UploadOutlined />} loading={uploadAttachment.isPending}>
+                上传附件
+              </Button>
+            </Upload>
+          }
+        >
+          <Table
+            columns={attachmentColumns}
+            dataSource={attachmentData?.data}
+            rowKey="id"
+            loading={isAttachmentsLoading}
+            pagination={{
+              current: attachmentPage,
+              pageSize: attachmentPageSize,
+              total: attachmentData?.total || 0,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total) => `共 ${total} 条`,
+            }}
+            onChange={(pagination) => {
+              setAttachmentPage(pagination.current || 1);
+              setAttachmentPageSize(pagination.pageSize || 5);
+            }}
+          />
         </Card>
 
         {/* 系统信息 */}

@@ -9,4 +9,4 @@ coverage
 .DS_Store
 *.log
 packages/shared/dist
-.turbo/cookies/*.cookie
+.turbo/

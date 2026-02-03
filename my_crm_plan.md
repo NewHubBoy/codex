@@ -65,6 +65,7 @@
 - Delivery（交付，可用“交付单/交付记录”建模）
 - Ticket（售后工单）
 - Activity（跟进记录/日志）
+- Attachment（附件/文件，S3 存储）
 - Org Unit / Territory（组织/区域，支持父子层级与成员分配）
 
 典型关系：
@@ -81,6 +82,32 @@
 6) 售后 → 工单（Ticket，可从订单/客户发起）
 7) 付款/发票（Payment/Invoice，v1 只建表）
 
+### 4.1 前期规划（Lead → Customer/Contact → Opportunity）
+**目标**：把「来源线索」沉淀为结构化客户、联系人与可推进的商机。
+
+**Lead（线索）采集字段（v1 必备）**
+- 来源（source）
+- 初步需求（initial_need）
+- 联系方式（contact_name / phone / email）
+- 负责人（owner）
+- 公司主体（company_name，可先写在 Lead.company）
+- 备注/描述（description）
+
+**验证需求 / 跟进（Activity 驱动）**
+- 每次电话/邮件/拜访/备注 = Activity 记录（relatedType=Lead, relatedId=leadId）
+- Lead 状态流：New → Assigned → Working → Qualified（有意向）→ Converted
+- 进入 Qualified 的基本条件：已完成至少 1 次有效跟进 + 需求明确
+
+**转化规则（Lead → Customer/Contact/Opportunity）**
+- 创建 Customer（Account）：公司主体 + 行业/规模/等级（可从 Lead 或补录）
+- 创建 Contact：至少 1 个（决策人/影响人/使用人/付款人等角色）
+- 创建 Opportunity：初始金额、阶段、成交概率、预计成交时间
+- Lead 设为 CONVERTED，并回写关联的 accountId / contactId / opportunityId（若已有）
+
+**可选补充**
+- Lead 转化前可允许“半结构化”数据；转化时补齐关键字段
+- 转化失败原因（Disqualified）需记录原因与标签
+
 ## 5. 功能清单（MVP）
 - 用户登录、角色权限管理（RBAC）
 - 线索管理（状态、来源、分配、跟进）
@@ -92,6 +119,7 @@
 - 售后工单管理（工单状态、处理人、SLA字段预留）
 - 产品管理（产品、规格、价格）
 - 活动/跟进记录（电话、邮件、拜访、备注）
+- 附件管理（S3 存储、支持挂载到任意对象）
 - 基础审计日志（操作记录）
 - 编号中心（NumberRange，报价/订单/交付/工单）
 - 事件机制（Outbox 写入 + 异步投递）
@@ -109,6 +137,7 @@
 - /tickets
 - /products
 - /activities
+- /attachments
 - /price-books
 - /number-ranges
 - /record-shares
@@ -127,6 +156,7 @@
 - 报表与仪表盘（后期）
 - 任务/消息队列（异步处理、对接 SAP/ERP）
 - 流程可扩展（业务流程编排/状态机）
+- 附件存储：S3（v1 暂时公共读写；后期切换私有桶 + 预签名上传/下载）
 
 ## 8. C4C 对齐要点（先做设计基线）
 - 销售流程：Lead → Opportunity → Quote → Order → Delivery → Service
@@ -183,6 +213,7 @@
 
 ### 10.5 销售与服务对象
 - Lead: source, status, rating, expected_value, account_id, contact_id, converted_opportunity_id
+  - 规划补充字段（v1 目标）：initial_need, company_name, contact_name, phone, email
 - Opportunity: stage, amount, currency, expected_close_date, probability, primary_quote_id, reason_lost
 - Quote: number, version, status, valid_from, valid_to, total_amount, opportunity_id, account_id, contact_id
 - QuoteItem: quote_id, product_id, qty, unit_price, discount, tax, line_total
@@ -197,6 +228,15 @@
 - PriceBookItem: price_book_id, product_id, price, currency
 - PaymentSchedule: order_id, amount, currency, due_date, status
 - Invoice: order_id, number, amount, currency, status, issued_at
+
+### 10.7 附件（跨对象挂载）
+- Attachment: id(UUID), file_name, mime_type, size, checksum_sha256, storage_provider(S3), bucket, object_key, url(optional), metadata(json)
+- AttachmentLink: attachment_id, related_type, related_id, note(optional)
+- 说明：
+  - Attachment 只存文件元数据与存储指针；AttachmentLink 支持挂载到任意对象（Lead/Account/Contact/Opportunity/Quote/Order/Delivery/Ticket/Activity/…）
+  - 允许同一附件挂载到多个对象
+  - 允许同名文件，所有引用以附件 UUID 为准
+  - v1 需校验文件类型/大小；病毒扫描后续补
 
 ### 10.7 编号与共享
 - NumberRange: object_type, prefix, current_value, format, reset_rule

@@ -15,6 +15,9 @@ const api: AxiosInstance = axios.create({
 // 请求拦截器 - 添加认证 Token 和 Tenant ID
 api.interceptors.request.use(
   (config) => {
+    if (typeof window !== "undefined" && config.data instanceof FormData) {
+      delete config.headers["Content-Type"];
+    }
     // 从 localStorage 获取 token
     if (typeof window !== "undefined") {
       const token = localStorage.getItem("accessToken");

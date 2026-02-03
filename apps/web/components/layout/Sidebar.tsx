@@ -16,6 +16,7 @@ import {
   ShopOutlined,
   CalendarOutlined,
   ExperimentOutlined,
+  ClockCircleOutlined,
 } from "@ant-design/icons";
 
 const { Sider: AntSider } = Layout;
@@ -42,6 +43,12 @@ const crmMenuItems: MenuItem[] = [
     label: "线索管理",
     icon: <RocketOutlined />,
     permission: "LEAD_READ",
+  },
+  {
+    key: "/crm/activities",
+    label: "活动管理",
+    icon: <ClockCircleOutlined />,
+    permission: "ACTIVITY_READ",
   },
   {
     key: "/crm/opportunities",
@@ -140,7 +147,7 @@ export function Sidebar() {
 
   // 查找父菜单以确定展开项
   const findOpenKeys = (path: string): string[] => {
-    const crmPaths = ["/crm/leads", "/crm/opportunities", "/crm/accounts"];
+    const crmPaths = ["/crm/leads", "/crm/activities", "/crm/opportunities", "/crm/accounts"];
     const productPaths = ["/crm/products"];
     const reportPaths = ["/reports"];
     const settingsPaths = ["/settings"];

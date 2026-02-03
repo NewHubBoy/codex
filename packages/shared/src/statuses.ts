@@ -51,5 +51,8 @@ export type TicketStatus = (typeof TICKET_STATUSES)[number];
 export const ACTIVITY_STATUSES = ["OPEN", "COMPLETED", "CANCELLED"] as const;
 export type ActivityStatus = (typeof ACTIVITY_STATUSES)[number];
 
+export const ATTACHMENT_STATUSES = ["ACTIVE", "DELETED"] as const;
+export type AttachmentStatus = (typeof ATTACHMENT_STATUSES)[number];
+
 export const PRODUCT_STATUSES = ["ACTIVE", "INACTIVE"] as const;
 export type ProductStatus = (typeof PRODUCT_STATUSES)[number];
