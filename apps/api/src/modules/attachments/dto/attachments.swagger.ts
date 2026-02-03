@@ -155,3 +155,11 @@ export class CreateAttachmentLinkDto {
   @ApiProperty({ required: false })
   note?: string;
 }
+
+export class AttachmentConfigDto {
+  @ApiProperty({ type: [String] })
+  allowedMimeTypes!: string[];
+
+  @ApiProperty()
+  maxSizeBytes!: number;
+}

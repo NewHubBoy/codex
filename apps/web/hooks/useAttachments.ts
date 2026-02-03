@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getAttachments,
+  getAttachmentConfig,
   getAttachment,
   createAttachment,
   updateAttachment,
@@ -12,7 +13,8 @@ import {
   removeAttachmentLink,
   type AttachmentListParams,
   type Attachment,
-  type AttachmentLink
+  type AttachmentLink,
+  type AttachmentConfig
 } from "@/services/attachments";
 import type {
   CreateAttachmentInput,
@@ -34,6 +36,14 @@ export function useAttachments(params: AttachmentListParams, options?: { enabled
     queryKey: attachmentKeys.list(params),
     queryFn: () => getAttachments(params),
     enabled: options?.enabled ?? true,
+  });
+}
+
+export function useAttachmentConfig() {
+  return useQuery({
+    queryKey: ["attachments", "config"],
+    queryFn: () => getAttachmentConfig(),
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -125,4 +135,4 @@ export function useRemoveAttachmentLink() {
   });
 }
 
-export type { Attachment, AttachmentLink };
+export type { Attachment, AttachmentLink, AttachmentConfig };

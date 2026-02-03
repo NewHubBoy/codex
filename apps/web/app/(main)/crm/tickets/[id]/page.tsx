@@ -12,13 +12,23 @@ import {
   App,
   Upload,
   Table,
+  Popconfirm,
 } from "antd";
 import { ArrowLeftOutlined, UploadOutlined } from "@ant-design/icons";
 import { useTicket } from "@/hooks/useTickets";
-import { useAttachments, useUploadAttachment } from "@/hooks/useAttachments";
+import {
+  useAttachmentConfig,
+  useAttachments,
+  useDeleteAttachment,
+  useUploadAttachment,
+} from "@/hooks/useAttachments";
 import type { Attachment } from "@/services/attachments";
 import { useState } from "react";
 import { PageHeader } from "@/components/common/PageHeader";
+import {
+  DEFAULT_ALLOWED_MIME_TYPES,
+  DEFAULT_MAX_ATTACHMENT_SIZE_BYTES,
+} from "@/config/attachments";
 
 const { Text } = Typography;
 
@@ -39,29 +49,7 @@ const priorityColors: Record<string, string> = {
   URGENT: "red",
 };
 
-const MAX_ATTACHMENT_SIZE_BYTES = 20 * 1024 * 1024;
-const DEFAULT_ALLOWED_MIME_TYPES = [
-  "image/png",
-  "image/jpeg",
-  "image/gif",
-  "image/webp",
-  "application/pdf",
-  "text/plain",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/vnd.ms-excel",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  "application/vnd.ms-powerpoint",
-  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-];
-
-const allowedMimeTypes = (process.env.NEXT_PUBLIC_ATTACHMENT_ALLOWED_MIME_TYPES || "")
-  .split(",")
-  .map((value) => value.trim())
-  .filter(Boolean);
-
-const effectiveAllowedMimeTypes =
-  allowedMimeTypes.length > 0 ? allowedMimeTypes : DEFAULT_ALLOWED_MIME_TYPES;
+const fallbackAllowedMimeTypes = DEFAULT_ALLOWED_MIME_TYPES;
 
 const formatFileSize = (bytes: number) => {
   if (!Number.isFinite(bytes)) return "-";
@@ -79,6 +67,7 @@ export default function TicketDetailPage() {
   const [attachmentPageSize, setAttachmentPageSize] = useState(5);
 
   const { data: ticket, isLoading } = useTicket(id);
+  const { data: attachmentConfig } = useAttachmentConfig();
   const { data: attachmentData, isLoading: isAttachmentsLoading } = useAttachments({
     page: attachmentPage,
     pageSize: attachmentPageSize,
@@ -86,14 +75,31 @@ export default function TicketDetailPage() {
     relatedId: id,
     sort: "createdAt:desc",
   });
+  const deleteAttachment = useDeleteAttachment();
   const uploadAttachment = useUploadAttachment();
+  const effectiveAllowedMimeTypes =
+    attachmentConfig?.allowedMimeTypes?.length
+      ? attachmentConfig.allowedMimeTypes
+      : fallbackAllowedMimeTypes;
+  const maxAttachmentSizeBytes =
+    attachmentConfig?.maxSizeBytes ?? DEFAULT_MAX_ATTACHMENT_SIZE_BYTES;
+
+  const handleDeleteAttachment = async (attachmentId: string) => {
+    try {
+      await deleteAttachment.mutateAsync(attachmentId);
+      message.success("删除成功");
+    } catch (error) {
+      console.error("删除失败:", error);
+      message.error("删除失败");
+    }
+  };
 
   const uploadProps = {
     showUploadList: false,
     multiple: false,
     accept: effectiveAllowedMimeTypes.join(","),
     beforeUpload: (file: File) => {
-      if (file.size > MAX_ATTACHMENT_SIZE_BYTES) {
+      if (file.size > maxAttachmentSizeBytes) {
         message.error("附件大小不能超过 20MB");
         return Upload.LIST_IGNORE;
       }
@@ -167,15 +173,36 @@ export default function TicketDetailPage() {
     {
       title: "操作",
       key: "action",
-      width: 100,
-      render: (_: unknown, record: Attachment) =>
-        record.url ? (
-          <a href={record.url} target="_blank" rel="noreferrer">
-            下载
-          </a>
-        ) : (
-          "-"
-        ),
+      width: 140,
+      render: (_: unknown, record: Attachment) => (
+        <Space>
+          {record.url ? (
+            <Space size={4}>
+              {record.mimeType?.startsWith("image/") ? (
+                <a href={record.url} target="_blank" rel="noreferrer">
+                  预览
+                </a>
+              ) : null}
+              <a href={record.url} target="_blank" rel="noreferrer">
+                下载
+              </a>
+            </Space>
+          ) : (
+            <span>-</span>
+          )}
+          <Popconfirm
+            title="确认删除"
+            description="确定要删除该附件吗？"
+            onConfirm={() => handleDeleteAttachment(record.id)}
+            okText="确认"
+            cancelText="取消"
+          >
+            <Button type="link" danger size="small">
+              删除
+            </Button>
+          </Popconfirm>
+        </Space>
+      ),
     },
   ];
 

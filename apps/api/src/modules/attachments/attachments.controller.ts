@@ -41,6 +41,7 @@ import {
 import { AttachmentsService } from "./attachments.service";
 import {
   AttachmentDto,
+  AttachmentConfigDto,
   AttachmentLinkDto,
   CreateAttachmentDto,
   CreateAttachmentLinkDto,
@@ -58,15 +59,7 @@ function resolveAllowedMimeTypes() {
       "image/png",
       "image/jpeg",
       "image/gif",
-      "image/webp",
-      "application/pdf",
-      "text/plain",
-      "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      "application/vnd.ms-excel",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "application/vnd.ms-powerpoint",
-      "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+      "image/webp"
     ];
   }
   return raw
@@ -105,6 +98,13 @@ export class AttachmentsController {
     const ctx = getRequestContext(req);
     const listQuery = parseListQuery(query);
     return this.attachmentsService.list(ctx, listQuery);
+  }
+
+  @Get("config")
+  @RequirePermissions("attachment:read")
+  @ApiOkResponse({ type: AttachmentConfigDto })
+  getConfig() {
+    return this.attachmentsService.getConfig();
   }
 
   @Post()

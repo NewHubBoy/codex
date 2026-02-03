@@ -22,15 +22,7 @@ const DEFAULT_ALLOWED_MIME_TYPES = [
   "image/png",
   "image/jpeg",
   "image/gif",
-  "image/webp",
-  "application/pdf",
-  "text/plain",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/vnd.ms-excel",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  "application/vnd.ms-powerpoint",
-  "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+  "image/webp"
 ];
 
 @Injectable()
@@ -59,10 +51,19 @@ export class AttachmentsService {
     const secretAccessKey =
       process.env.S3_SECRET_ACCESS_KEY ?? process.env.AWS_SECRET_ACCESS_KEY ?? undefined;
     const region = process.env.S3_REGION ?? process.env.AWS_REGION ?? "us-east-1";
-    const endpoint = process.env.S3_ENDPOINT;
+    const endpoint = process.env.S3_ENDPOINT?.trim();
     const forcePathStyle = process.env.S3_FORCE_PATH_STYLE === "true";
     if (!accessKeyId || !secretAccessKey) {
       throw new BadRequestException("S3 credentials are not configured");
+    }
+    if (endpoint) {
+      try {
+        new URL(endpoint);
+      } catch {
+        throw new BadRequestException(
+          "S3_ENDPOINT must be a valid URL including scheme, e.g. https://s3.amazonaws.com or http://localhost:9000"
+        );
+      }
     }
     return new S3Client({
       region,
@@ -323,6 +324,13 @@ export class AttachmentsService {
       relatedId: input.relatedId
     });
     return link;
+  }
+
+  getConfig() {
+    return {
+      allowedMimeTypes: this.getAllowedMimeTypes(),
+      maxSizeBytes: MAX_ATTACHMENT_SIZE_BYTES
+    };
   }
 
   async upload(

@@ -36,9 +36,17 @@ export interface AttachmentListParams {
 export type Attachment = AttachmentDTO;
 export type AttachmentLink = AttachmentLinkDTO;
 export type AttachmentListResponse = PaginatedResponse<Attachment>;
+export type AttachmentConfig = {
+  allowedMimeTypes: string[];
+  maxSizeBytes: number;
+};
 
 export async function getAttachments(params: AttachmentListParams): Promise<AttachmentListResponse> {
   return api.get("/attachments", { params });
+}
+
+export async function getAttachmentConfig(): Promise<AttachmentConfig> {
+  return api.get("/attachments/config");
 }
 
 export async function getAttachment(id: string): Promise<Attachment> {
