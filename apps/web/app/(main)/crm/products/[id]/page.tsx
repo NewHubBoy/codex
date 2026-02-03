@@ -14,8 +14,6 @@ import {
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useProduct } from "@/hooks/useProducts";
-import { AttachmentTable } from "@/components/business/AttachmentTable";
-import { ActivityTable } from "@/components/business/ActivityTable";
 
 const { Text } = Typography;
 
@@ -58,16 +56,6 @@ export default function ProductDetailPage() {
   }
 
   const tabItems = [
-    {
-      key: "activity",
-      label: "活动记录",
-      children: <ActivityTable relatedType="Product" relatedId={id} />,
-    },
-    {
-      key: "attachments",
-      label: "附件",
-      children: <AttachmentTable relatedType="Product" relatedId={id} />,
-    },
     {
       key: "system",
       label: "系统信息",

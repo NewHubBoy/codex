@@ -14,8 +14,6 @@ import {
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useAccount } from "@/hooks/useAccounts";
-import { AttachmentTable } from "@/components/business/AttachmentTable";
-import { ActivityTable } from "@/components/business/ActivityTable";
 
 const { Text } = Typography;
 
@@ -50,30 +48,6 @@ export default function AccountDetailPage() {
   }
 
   const tabItems = [
-    {
-      key: "owner",
-      label: "负责人信息",
-      children: (
-        <Descriptions column={2} bordered>
-          <Descriptions.Item label="负责人">
-            {account.owner?.name || "-"}
-          </Descriptions.Item>
-          <Descriptions.Item label="负责人邮箱">
-            {account.owner?.email || "-"}
-          </Descriptions.Item>
-        </Descriptions>
-      ),
-    },
-    {
-      key: "activity",
-      label: "活动记录",
-      children: <ActivityTable relatedType="Account" relatedId={id} />,
-    },
-    {
-      key: "attachments",
-      label: "附件",
-      children: <AttachmentTable relatedType="Account" relatedId={id} />,
-    },
     {
       key: "system",
       label: "系统信息",

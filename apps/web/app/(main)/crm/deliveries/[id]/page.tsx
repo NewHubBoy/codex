@@ -15,8 +15,6 @@ import { ArrowLeftOutlined } from "@ant-design/icons";
 import Link from "next/link";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useDelivery } from "@/hooks/useDeliveries";
-import { AttachmentTable } from "@/components/business/AttachmentTable";
-import { ActivityTable } from "@/components/business/ActivityTable";
 
 const { Text } = Typography;
 
@@ -53,30 +51,6 @@ export default function DeliveryDetailPage() {
   const orderDisplay = delivery.order?.number || delivery.orderId || "-";
 
   const tabItems = [
-    {
-      key: "owner",
-      label: "负责人信息",
-      children: (
-        <Descriptions column={2} bordered>
-          <Descriptions.Item label="负责人">
-            {delivery.owner?.name || "-"}
-          </Descriptions.Item>
-          <Descriptions.Item label="负责人邮箱">
-            {delivery.owner?.email || "-"}
-          </Descriptions.Item>
-        </Descriptions>
-      ),
-    },
-    {
-      key: "activity",
-      label: "活动记录",
-      children: <ActivityTable relatedType="Delivery" relatedId={id} />,
-    },
-    {
-      key: "attachments",
-      label: "附件",
-      children: <AttachmentTable relatedType="Delivery" relatedId={id} />,
-    },
     {
       key: "system",
       label: "系统信息",

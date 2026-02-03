@@ -15,8 +15,6 @@ import { ArrowLeftOutlined } from "@ant-design/icons";
 import Link from "next/link";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useQuote } from "@/hooks/useQuotes";
-import { AttachmentTable } from "@/components/business/AttachmentTable";
-import { ActivityTable } from "@/components/business/ActivityTable";
 
 const { Text } = Typography;
 
@@ -66,30 +64,6 @@ export default function QuoteDetailPage() {
   const opportunityDisplay = quote.opportunity?.name || quote.opportunityId || "-";
 
   const tabItems = [
-    {
-      key: "owner",
-      label: "负责人信息",
-      children: (
-        <Descriptions column={2} bordered>
-          <Descriptions.Item label="负责人">
-            {quote.owner?.name || "-"}
-          </Descriptions.Item>
-          <Descriptions.Item label="负责人邮箱">
-            {quote.owner?.email || "-"}
-          </Descriptions.Item>
-        </Descriptions>
-      ),
-    },
-    {
-      key: "activity",
-      label: "活动记录",
-      children: <ActivityTable relatedType="Quote" relatedId={id} />,
-    },
-    {
-      key: "attachments",
-      label: "附件",
-      children: <AttachmentTable relatedType="Quote" relatedId={id} />,
-    },
     {
       key: "system",
       label: "系统信息",
