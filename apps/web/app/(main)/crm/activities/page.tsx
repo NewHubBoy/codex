@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Table, Button, Space, Tag, Input, Select, Card } from "antd";
 import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
+import Link from "next/link";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useActivities } from "@/hooks/useActivities";
 import type { Activity } from "@/services/activities";
@@ -55,7 +56,7 @@ export default function ActivitiesPage() {
       key: "subject",
       ellipsis: true,
       render: (text: string, record: Activity) => (
-        <a href={`/crm/activities/${record.id}`}>{text || "-"}</a>
+        <Link href={`/crm/activities/${record.id}`}>{text || "-"}</Link>
       ),
     },
     {
@@ -82,7 +83,7 @@ export default function ActivitiesPage() {
         const label = relatedTypeLabels[record.relatedType] || record.relatedType;
         const shortId = record.relatedId.slice(0, 8);
         if (record.relatedType === "Lead") {
-          return <a href={`/crm/leads/${record.relatedId}`}>{`${label} #${shortId}`}</a>;
+          return <Link href={`/crm/leads/${record.relatedId}`}>{`${label} #${shortId}`}</Link>;
         }
         return `${label} #${shortId}`;
       },

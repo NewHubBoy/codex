@@ -1,0 +1,154 @@
+.shell {
+  width: 100%;
+  min-height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.shellFull {
+  min-height: 100vh;
+}
+
+.card {
+  position: relative;
+  width: min(420px, 90vw);
+  padding: 28px 24px 22px;
+  border-radius: 20px;
+  background: radial-gradient(120% 120% at 20% 0%, #f0f7ff 0%, #ffffff 45%, #f7fbff 100%);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  text-align: center;
+}
+
+.orbit {
+  width: 76px;
+  height: 76px;
+  margin: 0 auto 18px;
+  position: relative;
+}
+
+.ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  animation: spin 1.6s linear infinite;
+}
+
+.ringPrimary {
+  border-top-color: rgba(37, 99, 235, 0.9);
+  border-right-color: rgba(56, 189, 248, 0.6);
+}
+
+.ringSecondary {
+  inset: 10px;
+  border-bottom-color: rgba(14, 165, 233, 0.7);
+  border-left-color: rgba(99, 102, 241, 0.5);
+  animation-duration: 2.4s;
+  animation-direction: reverse;
+}
+
+.core {
+  position: absolute;
+  inset: 22px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #38bdf8 0%, #2563eb 55%, #1e3a8a 100%);
+  box-shadow: 0 0 24px rgba(37, 99, 235, 0.35);
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+.dot {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #38bdf8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+  animation: float 2s ease-in-out infinite;
+}
+
+.dotA {
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.dotB {
+  bottom: 8px;
+  right: 10px;
+  animation-delay: 0.3s;
+}
+
+.dotC {
+  bottom: 10px;
+  left: 8px;
+  animation-delay: 0.6s;
+}
+
+.text {
+  font-size: 18px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.sub {
+  margin-top: 6px;
+  font-size: 13px;
+  color: rgba(30, 41, 59, 0.6);
+}
+
+.bar {
+  position: relative;
+  height: 4px;
+  background: rgba(148, 163, 184, 0.18);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 16px;
+}
+
+.barFill {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(56, 189, 248, 0), rgba(56, 189, 248, 0.9), rgba(37, 99, 235, 0));
+  animation: slide 1.6s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}

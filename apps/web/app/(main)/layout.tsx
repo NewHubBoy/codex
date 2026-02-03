@@ -3,6 +3,7 @@
 import { Layout } from "antd";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
+import { LoadingScene } from "@/components/common/LoadingScene";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -23,27 +24,27 @@ export default function MainLayout({
     }
   }, [isAuthenticated, isLoading, router]);
 
-  if (isLoading) {
-    return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-        }}
-      >
-        加载中...
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return null;
-  }
+  const showGate = isLoading || !isAuthenticated;
+  const gateMessage = isLoading ? "验证登录中" : "正在跳转登录";
+  const gateDetail = isLoading ? "正在加载你的工作台" : "请稍候";
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
+      {showGate && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(248, 250, 252, 0.92)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 2000,
+          }}
+        >
+          <LoadingScene message={gateMessage} detail={gateDetail} />
+        </div>
+      )}
       <Sidebar />
       <Layout style={{ marginLeft: 240 }}>
         <Header />
@@ -53,7 +54,7 @@ export default function MainLayout({
             minHeight: 280,
           }}
         >
-          {children}
+          {isAuthenticated ? children : null}
         </Content>
       </Layout>
     </Layout>

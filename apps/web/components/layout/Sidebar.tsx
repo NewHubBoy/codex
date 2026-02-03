@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { Layout, Menu, Typography } from "antd";
-import { usePathname, useRouter } from "next/navigation";
+import { Layout, Menu, Typography } from 'antd';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   DashboardOutlined,
   TeamOutlined,
@@ -17,7 +17,8 @@ import {
   CalendarOutlined,
   ExperimentOutlined,
   ClockCircleOutlined,
-} from "@ant-design/icons";
+} from '@ant-design/icons';
+import { useEffect } from 'react';
 
 const { Sider: AntSider } = Layout;
 const { Title } = Typography;
@@ -34,102 +35,102 @@ interface MenuItem {
 // CRM 菜单配置
 const crmMenuItems: MenuItem[] = [
   {
-    key: "/dashboard",
-    label: "工作台",
+    key: '/dashboard',
+    label: '工作台',
     icon: <DashboardOutlined />,
   },
   {
-    key: "/crm/leads",
-    label: "线索管理",
+    key: '/crm/leads',
+    label: '线索管理',
     icon: <RocketOutlined />,
-    permission: "LEAD_READ",
+    permission: 'LEAD_READ',
   },
   {
-    key: "/crm/activities",
-    label: "活动管理",
+    key: '/crm/activities',
+    label: '活动管理',
     icon: <ClockCircleOutlined />,
-    permission: "ACTIVITY_READ",
+    permission: 'ACTIVITY_READ',
   },
   {
-    key: "/crm/opportunities",
-    label: "商机管理",
+    key: '/crm/opportunities',
+    label: '商机管理',
     icon: <ShoppingCartOutlined />,
-    permission: "OPPORTUNITY_READ",
+    permission: 'OPPORTUNITY_READ',
   },
   {
-    key: "/crm/accounts",
-    label: "客户管理",
+    key: '/crm/accounts',
+    label: '客户管理',
     icon: <ShopOutlined />,
-    permission: "ACCOUNT_READ",
+    permission: 'ACCOUNT_READ',
   },
   {
-    key: "/crm/contacts",
-    label: "联系人",
+    key: '/crm/contacts',
+    label: '联系人',
     icon: <ContactsOutlined />,
-    permission: "CONTACT_READ",
+    permission: 'CONTACT_READ',
   },
   {
-    key: "/crm/quotes",
-    label: "报价单",
+    key: '/crm/quotes',
+    label: '报价单',
     icon: <FileTextOutlined />,
-    permission: "QUOTE_READ",
+    permission: 'QUOTE_READ',
   },
   {
-    key: "/crm/orders",
-    label: "订单管理",
+    key: '/crm/orders',
+    label: '订单管理',
     icon: <FileProtectOutlined />,
-    permission: "ORDER_READ",
+    permission: 'ORDER_READ',
   },
   {
-    key: "/crm/deliveries",
-    label: "交付管理",
+    key: '/crm/deliveries',
+    label: '交付管理',
     icon: <CalendarOutlined />,
-    permission: "DELIVERY_READ",
+    permission: 'DELIVERY_READ',
   },
   {
-    key: "/crm/tickets",
-    label: "工单管理",
+    key: '/crm/tickets',
+    label: '工单管理',
     icon: <AlertOutlined />,
-    permission: "TICKET_READ",
+    permission: 'TICKET_READ',
   },
 ];
 
 const productMenuItems: MenuItem[] = [
   {
-    key: "/crm/products",
-    label: "产品管理",
+    key: '/crm/products',
+    label: '产品管理',
     icon: <ExperimentOutlined />,
-    permission: "PRODUCT_READ",
+    permission: 'PRODUCT_READ',
   },
 ];
 
 const reportMenuItems: MenuItem[] = [
   {
-    key: "/reports",
-    label: "报表分析",
+    key: '/reports',
+    label: '报表分析',
     icon: <BarChartOutlined />,
-    permission: "REPORT_READ",
+    permission: 'REPORT_READ',
   },
 ];
 
 const settingsMenuItems: MenuItem[] = [
   {
-    key: "/settings/users",
-    label: "用户管理",
+    key: '/settings/users',
+    label: '用户管理',
     icon: <TeamOutlined />,
-    permission: "USER_READ",
+    permission: 'USER_READ',
   },
   {
-    key: "/settings/roles",
-    label: "角色权限",
+    key: '/settings/roles',
+    label: '角色权限',
     icon: <SettingOutlined />,
-    permission: "RBAC_READ",
+    permission: 'RBAC_READ',
   },
   {
-    key: "/settings/org-units",
-    label: "组织架构",
+    key: '/settings/org-units',
+    label: '组织架构',
     icon: <TeamOutlined />,
-    permission: "ORG_UNIT_READ",
+    permission: 'ORG_UNIT_READ',
   },
 ];
 
@@ -138,25 +139,25 @@ export function Sidebar() {
   const router = useRouter();
 
   // 收集所有菜单项
-  const allMenuItems: MenuItem[] = [
-    ...crmMenuItems,
-    ...productMenuItems,
-    ...reportMenuItems,
-    ...settingsMenuItems,
-  ];
+  const allMenuItems: MenuItem[] = [...crmMenuItems, ...productMenuItems, ...reportMenuItems, ...settingsMenuItems];
 
   // 查找父菜单以确定展开项
   const findOpenKeys = (path: string): string[] => {
-    const crmPaths = ["/crm/leads", "/crm/activities", "/crm/opportunities", "/crm/accounts"];
-    const productPaths = ["/crm/products"];
-    const reportPaths = ["/reports"];
-    const settingsPaths = ["/settings"];
+    const crmPaths = ['/crm/leads', '/crm/activities', '/crm/opportunities', '/crm/accounts'];
+    const productPaths = ['/crm/products'];
+    const reportPaths = ['/reports'];
+    const settingsPaths = ['/settings'];
 
-    if (crmPaths.some((p) => path.startsWith(p))) return ["/crm"];
-    if (productPaths.some((p) => path.startsWith(p))) return ["/crm"];
-    if (reportPaths.some((p) => path.startsWith(p))) return ["/reports"];
-    if (settingsPaths.some((p) => path.startsWith(p))) return ["/settings"];
+    if (crmPaths.some((p) => path.startsWith(p))) return ['/crm'];
+    if (productPaths.some((p) => path.startsWith(p))) return ['/crm'];
+    if (reportPaths.some((p) => path.startsWith(p))) return ['/reports'];
+    if (settingsPaths.some((p) => path.startsWith(p))) return ['/settings'];
     return [];
+  };
+
+  const findSelectedKey = (path: string): string => {
+    const match = allMenuItems.find((item) => path === item.key || path.startsWith(`${item.key}/`));
+    return match?.key ?? path;
   };
 
   const handleMenuClick = ({ key }: { key: string }) => {
@@ -167,10 +168,10 @@ export function Sidebar() {
     <AntSider
       width={240}
       style={{
-        background: "#001529",
-        overflow: "auto",
-        height: "100vh",
-        position: "fixed",
+        background: '#001529',
+        overflow: 'auto',
+        height: '100vh',
+        position: 'fixed',
         left: 0,
         top: 0,
         bottom: 0,
@@ -180,18 +181,18 @@ export function Sidebar() {
       <div
         style={{
           height: 64,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
         }}
       >
         <Title
           level={4}
           style={{
-            color: "#fff",
+            color: '#fff',
             margin: 0,
-            whiteSpace: "nowrap",
+            whiteSpace: 'nowrap',
           }}
         >
           CRM System
@@ -202,11 +203,11 @@ export function Sidebar() {
       <Menu
         theme="dark"
         mode="inline"
-        selectedKeys={[pathname]}
+        selectedKeys={[findSelectedKey(pathname)]}
         defaultOpenKeys={findOpenKeys(pathname)}
         items={allMenuItems as any}
         onClick={handleMenuClick}
-        style={{ background: "#001529", borderRight: 0 }}
+        style={{ background: '#001529', borderRight: 0 }}
       />
     </AntSider>
   );

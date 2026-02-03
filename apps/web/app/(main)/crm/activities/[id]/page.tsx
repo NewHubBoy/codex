@@ -14,6 +14,7 @@ import {
   Table,
 } from "antd";
 import { ArrowLeftOutlined, UploadOutlined } from "@ant-design/icons";
+import Link from "next/link";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useActivity } from "@/hooks/useActivities";
 import { useAttachments, useUploadAttachment } from "@/hooks/useAttachments";
@@ -195,10 +196,10 @@ export default function ActivityDetailPage() {
       return "-";
     }
     if (activity.relatedType === "Lead") {
-      return <a href={`/crm/leads/${activity.relatedId}`}>{relatedDisplay}</a>;
+      return <Link href={`/crm/leads/${activity.relatedId}`}>{relatedDisplay}</Link>;
     }
     if (activity.relatedType === "Ticket") {
-      return <a href={`/crm/tickets/${activity.relatedId}`}>{relatedDisplay}</a>;
+      return <Link href={`/crm/tickets/${activity.relatedId}`}>{relatedDisplay}</Link>;
     }
     return relatedDisplay;
   };

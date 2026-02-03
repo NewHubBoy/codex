@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { createHash, randomUUID } from "crypto";
-import path from "path";
+import * as path from "path";
 import type {
   CreateAttachmentInput,
   UpdateAttachmentInput,
@@ -83,11 +83,11 @@ export class AttachmentsService {
   private buildPublicUrl(bucket: string, objectKey: string): string | undefined {
     const base = process.env.S3_PUBLIC_BASE_URL;
     if (base) {
-      return `${base.replace(/\\/$/, "")}/${objectKey}`;
+      return `${base.replace(/\/$/, "")}/${objectKey}`;
     }
     const endpoint = process.env.S3_ENDPOINT;
     if (endpoint) {
-      const normalized = endpoint.replace(/\\/$/, "");
+      const normalized = endpoint.replace(/\/$/, "");
       const forcePathStyle = process.env.S3_FORCE_PATH_STYLE === "true";
       return forcePathStyle
         ? `${normalized}/${bucket}/${objectKey}`

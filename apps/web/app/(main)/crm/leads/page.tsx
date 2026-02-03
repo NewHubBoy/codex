@@ -26,6 +26,7 @@ import type { Lead, LeadListParams } from "@/services/leads";
 import { LeadStatus, LeadSource, LeadRating } from "@/services/leads";
 import { PageHeader } from "@/components/common/PageHeader";
 import { App } from "antd";
+import Link from "next/link";
 
 const { Text } = Typography;
 
@@ -130,7 +131,7 @@ export default function LeadsPage() {
       dataIndex: "name",
       key: "name",
       render: (text: string, record: Lead) => (
-        <a onClick={() => handleView(record.id)}>{text}</a>
+        <Link href={`/crm/leads/${record.id}`}>{text}</Link>
       ),
     },
     {
