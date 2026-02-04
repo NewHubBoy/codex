@@ -1,0 +1,20 @@
+{
+  "_meta.language": "en-US",
+  "lead.draft.create_forbidden": "Please use the draft flow to create leads.",
+  "lead.not_found": "Lead not found.",
+  "lead.draft.update_forbidden": "Draft lead must be submitted before update.",
+  "lead.status.draft_forbidden": "Lead status cannot be set to DRAFT.",
+  "lead.status.transition_invalid": "Invalid lead status transition: {from} -> {to}.",
+  "lead.convert.missing_account_contact": "accountId or contactId is required when status is CONVERTED.",
+  "lead.draft.not_in_draft": "Lead is not in draft status.",
+  "lead.draft.submit_invalid_status": "Draft lead must be submitted with a non-draft status.",
+  "lead.bulk.not_found": "Leads not found: {ids}.",
+  "activity.not_found": "Activity not found.",
+  "activity.status.transition_invalid": "Invalid activity status transition: {from} -> {to}.",
+  "activity.completed.missing_completed_at": "completedAt is required when status is COMPLETED.",
+  "opportunity.not_found": "Opportunity not found.",
+  "opportunity.status.transition_invalid": "Invalid opportunity status transition: {from} -> {to}.",
+  "opportunity.won.missing_amount": "amount is required when status is WON.",
+  "opportunity.won.missing_expected_close_date": "expectedCloseDate is required when status is WON.",
+  "opportunity.lost.missing_reason": "reasonLost is required when status is LOST."
+}

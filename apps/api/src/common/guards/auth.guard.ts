@@ -8,12 +8,17 @@ import { Reflector } from "@nestjs/core";
 import type { Request } from "express";
 import { verifyJwt } from "../security/jwt";
 import { PUBLIC_KEY } from "../decorators/public.decorator";
+import { PrismaService } from "../../prisma/prisma.service";
+import { normalizeLocale } from "../i18n/locale";
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) {}
+  constructor(
+    private readonly reflector: Reflector,
+    private readonly prisma: PrismaService
+  ) {}
 
-  canActivate(context: ExecutionContext) {
+  async canActivate(context: ExecutionContext) {
     const isPublic = this.reflector.getAllAndOverride<boolean>(PUBLIC_KEY, [
       context.getHandler(),
       context.getClass()
@@ -34,6 +39,16 @@ export class AuthGuard implements CanActivate {
     }
     request.headers["x-tenant-id"] = payload.tid;
     request.headers["x-user-id"] = payload.sub;
+    const headerLocale = request.header("x-locale");
+    if (headerLocale) {
+      request.headers["x-locale"] = normalizeLocale(headerLocale);
+      return true;
+    }
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: { locale: true }
+    });
+    request.headers["x-locale"] = normalizeLocale(user?.locale ?? undefined);
     return true;
   }
 }

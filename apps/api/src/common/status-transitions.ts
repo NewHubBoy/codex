@@ -1,4 +1,5 @@
 import { BadRequestException } from "@nestjs/common";
+import type { TransitionErrorFactory } from "./i18n/i18n-error";
 
 const leadTransitions: Record<string, string[]> = {
   DRAFT: ["NEW"],
@@ -67,7 +68,8 @@ const productTransitions: Record<string, string[]> = {
 export function assertTransition(
   entity: string,
   fromStatus: string,
-  toStatus: string
+  toStatus: string,
+  errorFactory?: TransitionErrorFactory
 ) {
   if (fromStatus === toStatus) {
     return;
@@ -75,6 +77,9 @@ export function assertTransition(
   const map = getTransitionMap(entity);
   const allowed = map[fromStatus] ?? [];
   if (!allowed.includes(toStatus)) {
+    if (errorFactory) {
+      throw errorFactory({ entity, from: fromStatus, to: toStatus });
+    }
     throw new BadRequestException(
       `Invalid ${entity} status transition: ${fromStatus} -> ${toStatus}`
     );

@@ -1,0 +1,20 @@
+{
+  "_meta.language": "zh-CN",
+  "lead.draft.create_forbidden": "请使用草稿流程创建线索",
+  "lead.not_found": "未找到线索",
+  "lead.draft.update_forbidden": "草稿线索必须先提交后才能更新",
+  "lead.status.draft_forbidden": "线索状态不能设置为草稿",
+  "lead.status.transition_invalid": "线索状态转换无效：{from} -> {to}",
+  "lead.convert.missing_account_contact": "状态为已转换时需要 accountId 或 contactId",
+  "lead.draft.not_in_draft": "线索不在草稿状态",
+  "lead.draft.submit_invalid_status": "草稿提交必须使用非草稿状态",
+  "lead.bulk.not_found": "未找到线索：{ids}",
+  "activity.not_found": "未找到活动",
+  "activity.status.transition_invalid": "活动状态转换无效：{from} -> {to}",
+  "activity.completed.missing_completed_at": "状态为已完成时需要 completedAt",
+  "opportunity.not_found": "未找到商机",
+  "opportunity.status.transition_invalid": "商机状态转换无效：{from} -> {to}",
+  "opportunity.won.missing_amount": "状态为已赢单时需要 amount",
+  "opportunity.won.missing_expected_close_date": "状态为已赢单时需要 expectedCloseDate",
+  "opportunity.lost.missing_reason": "状态为已失单时需要 reasonLost"
+}

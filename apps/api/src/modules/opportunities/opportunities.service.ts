@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import type { CreateOpportunityInput, UpdateOpportunityInput } from "@crm/shared";
 import { PrismaService } from "../../prisma/prisma.service";
 import type { RequestContext } from "../../common/request-context";
@@ -8,6 +8,8 @@ import { OutboxService } from "../../common/services/outbox.service";
 import type { ListQuery } from "../../common/list-query";
 import { parseSerialId, parseSort } from "../../common/list-query";
 import { assertTransition } from "../../common/status-transitions";
+import { I18nService } from "../../common/i18n/i18n.service";
+import { badRequest, notFound } from "../../common/i18n/i18n-error";
 
 @Injectable()
 export class OpportunitiesService {
@@ -15,7 +17,8 @@ export class OpportunitiesService {
     private readonly prisma: PrismaService,
     private readonly dataScope: DataScopeService,
     private readonly audit: AuditLogService,
-    private readonly outbox: OutboxService
+    private readonly outbox: OutboxService,
+    private readonly i18n: I18nService
   ) {}
 
   async create(ctx: RequestContext, input: CreateOpportunityInput) {
@@ -94,7 +97,12 @@ export class OpportunitiesService {
       where: { id, tenantId: ctx.tenantId, ...scopeFilter }
     });
     if (!opportunity) {
-      throw new NotFoundException("Opportunity not found");
+      throw notFound(
+        this.i18n,
+        ctx.locale,
+        "OPPORTUNITY_NOT_FOUND",
+        "opportunity.not_found"
+      );
     }
     return opportunity;
   }
@@ -102,21 +110,44 @@ export class OpportunitiesService {
   async update(ctx: RequestContext, id: string, input: UpdateOpportunityInput) {
     const existing = await this.get(ctx, id);
     if (input.status) {
-      assertTransition("Opportunity", existing.status, input.status);
+      assertTransition("Opportunity", existing.status, input.status, ({ entity, from, to }) =>
+        badRequest(
+          this.i18n,
+          ctx.locale,
+          "OPPORTUNITY_STATUS_TRANSITION_INVALID",
+          "opportunity.status.transition_invalid",
+          { entity, from, to }
+        )
+      );
       if (input.status === "WON") {
         const amount = input.amount ?? existing.amount;
         const closeDate = input.expectedCloseDate ?? existing.expectedCloseDate?.toISOString();
         if (amount === undefined || amount === null) {
-          throw new BadRequestException("amount is required when status is WON");
+          throw badRequest(
+            this.i18n,
+            ctx.locale,
+            "OPPORTUNITY_WON_MISSING_AMOUNT",
+            "opportunity.won.missing_amount"
+          );
         }
         if (!closeDate) {
-          throw new BadRequestException("expectedCloseDate is required when status is WON");
+          throw badRequest(
+            this.i18n,
+            ctx.locale,
+            "OPPORTUNITY_WON_MISSING_EXPECTED_CLOSE_DATE",
+            "opportunity.won.missing_expected_close_date"
+          );
         }
       }
       if (input.status === "LOST") {
         const reasonLost = input.reasonLost ?? existing.reasonLost;
         if (!reasonLost) {
-          throw new BadRequestException("reasonLost is required when status is LOST");
+          throw badRequest(
+            this.i18n,
+            ctx.locale,
+            "OPPORTUNITY_LOST_MISSING_REASON",
+            "opportunity.lost.missing_reason"
+          );
         }
       }
     }

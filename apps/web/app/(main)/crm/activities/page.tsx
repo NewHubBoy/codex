@@ -8,31 +8,14 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { useActivities } from "@/hooks/useActivities";
 import type { Activity, ActivityStatusType } from "@/services/activities";
 import { ActivityStatus } from "@/services/activities";
+import { useI18n } from "@/i18n/provider";
 
 const { Search } = Input;
 
 const statusColors: Record<string, string> = {
   OPEN: "blue",
   COMPLETED: "green",
-  CANCELLED: "red",
-};
-
-const statusLabels: Record<string, string> = {
-  OPEN: "进行中",
-  COMPLETED: "已完成",
-  CANCELLED: "已取消",
-};
-
-const relatedTypeLabels: Record<string, string> = {
-  Lead: "线索",
-  Opportunity: "商机",
-  Account: "客户",
-  Contact: "联系人",
-  Ticket: "工单",
-  Quote: "报价单",
-  Order: "订单",
-  Delivery: "交付",
-  Product: "产品",
+  CANCELLED: "red"
 };
 
 const relatedRoutes: Record<string, string> = {
@@ -44,56 +27,75 @@ const relatedRoutes: Record<string, string> = {
   Quote: "/crm/quotes",
   Order: "/crm/orders",
   Delivery: "/crm/deliveries",
-  Product: "/crm/products",
+  Product: "/crm/products"
 };
 
 export default function ActivitiesPage() {
+  const { t, locale } = useI18n();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<ActivityStatusType | undefined>(undefined);
 
+  const statusLabels: Record<string, string> = {
+    OPEN: t("activity.status.open"),
+    COMPLETED: t("activity.status.completed"),
+    CANCELLED: t("activity.status.cancelled")
+  };
+
+  const relatedTypeLabels: Record<string, string> = {
+    Lead: t("related.lead"),
+    Opportunity: t("related.opportunity"),
+    Account: t("related.account"),
+    Contact: t("related.contact"),
+    Ticket: t("related.ticket"),
+    Quote: t("related.quote"),
+    Order: t("related.order"),
+    Delivery: t("related.delivery"),
+    Product: t("related.product")
+  };
+
   const { data, isLoading } = useActivities({
     page,
     pageSize,
     q: q || undefined,
-    status,
+    status
   });
 
   const columns = [
     {
-      title: "编号",
+      title: t("common.serial_id"),
       dataIndex: "serialId",
       key: "serialId",
-      width: 80,
+      width: 80
     },
     {
-      title: "主题",
+      title: t("activity.fields.subject"),
       dataIndex: "subject",
       key: "subject",
       ellipsis: true,
       render: (text: string, record: Activity) => (
         <Link href={`/crm/activities/${record.id}`}>{text || "-"}</Link>
-      ),
+      )
     },
     {
-      title: "类型",
+      title: t("common.type"),
       dataIndex: "type",
       key: "type",
-      render: (text: string) => text || "-",
+      render: (text: string) => text || "-"
     },
     {
-      title: "状态",
+      title: t("common.status"),
       dataIndex: "status",
       key: "status",
       render: (value: string) => (
         <Tag color={statusColors[value] || "default"}>
           {statusLabels[value] || value}
         </Tag>
-      ),
+      )
     },
     {
-      title: "关联对象",
+      title: t("activity.fields.related"),
       key: "related",
       render: (_: unknown, record: Activity) => {
         if (!record.relatedType || !record.relatedId) return "-";
@@ -101,33 +103,35 @@ export default function ActivitiesPage() {
         const shortId = record.relatedId.slice(0, 8);
         const baseRoute = relatedRoutes[record.relatedType];
         if (baseRoute) {
-          return <Link href={`${baseRoute}/${record.relatedId}`}>{`${label} #${shortId}`}</Link>;
+          return (
+            <Link href={`${baseRoute}/${record.relatedId}`}>{`${label} #${shortId}`}</Link>
+          );
         }
         return `${label} #${shortId}`;
-      },
+      }
     },
     {
-      title: "截止时间",
+      title: t("common.due_at"),
       dataIndex: "dueAt",
       key: "dueAt",
-      render: (value: string) => (value ? new Date(value).toLocaleString("zh-CN") : "-"),
+      render: (value: string) => (value ? new Date(value).toLocaleString(locale) : "-")
     },
     {
-      title: "完成时间",
+      title: t("common.completed_at"),
       dataIndex: "completedAt",
       key: "completedAt",
-      render: (value: string) => (value ? new Date(value).toLocaleString("zh-CN") : "-"),
-    },
+      render: (value: string) => (value ? new Date(value).toLocaleString(locale) : "-")
+    }
   ];
 
   return (
     <div>
       <PageHeader
-        title="活动管理"
-        description="记录并跟踪客户互动"
+        title={t("activities.page.title")}
+        description={t("activities.page.description")}
         action={
           <Button type="primary" icon={<PlusOutlined />}>
-            新建活动
+            {t("activities.actions.create")}
           </Button>
         }
       />
@@ -135,21 +139,21 @@ export default function ActivitiesPage() {
       <Card>
         <Space style={{ marginBottom: 16 }} wrap>
           <Search
-            placeholder="搜索主题/类型"
+            placeholder={t("activities.filters.search_placeholder")}
             allowClear
             style={{ width: 200 }}
             onSearch={setQ}
             prefix={<SearchOutlined />}
           />
           <Select
-            placeholder="状态筛选"
+            placeholder={t("activities.filters.status_placeholder")}
             allowClear
             style={{ width: 140 }}
             value={status}
             onChange={setStatus}
             options={Object.entries(ActivityStatus).map(([key, value]) => ({
               label: statusLabels[key] || key,
-              value,
+              value
             }))}
           />
         </Space>
@@ -165,7 +169,7 @@ export default function ActivitiesPage() {
             total: data?.total || 0,
             showSizeChanger: true,
             showQuickJumper: true,
-            showTotal: (total) => `共 ${total} 条`,
+            showTotal: (total) => t("common.total_count", { total })
           }}
           onChange={(pagination) => {
             setPage(pagination.current || 1);

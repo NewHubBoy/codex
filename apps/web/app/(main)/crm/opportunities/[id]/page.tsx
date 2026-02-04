@@ -1,40 +1,51 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import {
-  Card,
-  Typography,
-  Button,
-  Space,
-  Tag,
-  Tabs,
-  Descriptions,
-  Spin,
-} from "antd";
+import { Card, Typography, Button, Space, Tag, Tabs, Descriptions, Spin } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useOpportunity } from "@/hooks/useOpportunities";
 import { AttachmentTable } from "@/components/business/AttachmentTable";
 import { ActivityTable } from "@/components/business/ActivityTable";
 import Link from "next/link";
+import { useI18n } from "@/i18n/provider";
 
 const { Text } = Typography;
 
-const formatAmount = (amount?: number, currency?: string) => {
-  if (amount === undefined || amount === null) return "-";
-  const formatted = amount.toLocaleString("zh-CN", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-  return currency ? `${formatted} ${currency}` : formatted;
+const statusColors: Record<string, string> = {
+  QUALIFICATION: "blue",
+  NEEDS_ANALYSIS: "cyan",
+  PROPOSAL: "green",
+  NEGOTIATION: "purple",
+  WON: "gold",
+  LOST: "red"
 };
 
 export default function OpportunityDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { t, locale } = useI18n();
   const id = params.id as string;
 
   const { data: opportunity, isLoading } = useOpportunity(id);
+
+  const stageLabels: Record<string, string> = {
+    QUALIFICATION: t("opportunity.stage.qualification"),
+    NEEDS_ANALYSIS: t("opportunity.stage.needs_analysis"),
+    PROPOSAL: t("opportunity.stage.proposal"),
+    NEGOTIATION: t("opportunity.stage.negotiation"),
+    WON: t("opportunity.stage.won"),
+    LOST: t("opportunity.stage.lost")
+  };
+
+  const formatAmount = (amount?: number, currency?: string) => {
+    if (amount === undefined || amount === null) return "-";
+    const formatted = amount.toLocaleString(locale, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+    return currency ? `${formatted} ${currency}` : formatted;
+  };
 
   if (isLoading) {
     return (
@@ -47,7 +58,7 @@ export default function OpportunityDetailPage() {
   if (!opportunity) {
     return (
       <Card>
-        <Text type="secondary">未找到该商机</Text>
+        <Text type="secondary">{t("opportunity.messages.not_found")}</Text>
       </Card>
     );
   }
@@ -55,89 +66,91 @@ export default function OpportunityDetailPage() {
   const tabItems = [
     {
       key: "owner",
-      label: "负责人信息",
+      label: t("common.owner_info"),
       children: (
         <Descriptions column={2} bordered>
-          <Descriptions.Item label="负责人">
+          <Descriptions.Item label={t("common.owner_name")}>
             {opportunity.owner?.name || "-"}
           </Descriptions.Item>
-          <Descriptions.Item label="负责人邮箱">
+          <Descriptions.Item label={t("common.owner_email")}>
             {opportunity.owner?.email || "-"}
           </Descriptions.Item>
         </Descriptions>
-      ),
+      )
     },
     {
       key: "activity",
-      label: "活动记录",
-      children: <ActivityTable relatedType="Opportunity" relatedId={id} />,
+      label: t("common.activities"),
+      children: <ActivityTable relatedType="Opportunity" relatedId={id} />
     },
     {
       key: "attachments",
-      label: "附件",
-      children: <AttachmentTable relatedType="Opportunity" relatedId={id} />,
+      label: t("common.attachments"),
+      children: <AttachmentTable relatedType="Opportunity" relatedId={id} />
     },
     {
       key: "system",
-      label: "系统信息",
+      label: t("common.system_info"),
       children: (
         <Descriptions column={2} bordered>
-          <Descriptions.Item label="创建时间">
-            {new Date(opportunity.createdAt).toLocaleString("zh-CN")}
+          <Descriptions.Item label={t("common.created_at")}>
+            {new Date(opportunity.createdAt).toLocaleString(locale)}
           </Descriptions.Item>
-          <Descriptions.Item label="最后更新时间">
-            {new Date(opportunity.updatedAt).toLocaleString("zh-CN")}
+          <Descriptions.Item label={t("common.updated_at")}>
+            {new Date(opportunity.updatedAt).toLocaleString(locale)}
           </Descriptions.Item>
-          <Descriptions.Item label="编号" span={2}>
+          <Descriptions.Item label={t("common.serial_id")} span={2}>
             {opportunity.serialId}
           </Descriptions.Item>
-          <Descriptions.Item label="ID" span={2}>
+          <Descriptions.Item label={t("common.id")} span={2}>
             <Text copyable style={{ fontFamily: "monospace" }}>
               {opportunity.id}
             </Text>
           </Descriptions.Item>
         </Descriptions>
-      ),
-    },
+      )
+    }
   ];
 
   return (
     <div>
       <PageHeader
-        title={opportunity.name || "商机详情"}
+        title={opportunity.name || t("opportunity.detail.title")}
         extra={[
           <Button key="back" icon={<ArrowLeftOutlined />} onClick={() => router.back()}>
-            返回
-          </Button>,
+            {t("common.back")}
+          </Button>
         ]}
       />
 
       <Space direction="vertical" size={16} style={{ width: "100%" }}>
-        <Card title="基本信息">
+        <Card title={t("common.basic_info")}>
           <Descriptions column={2} bordered>
-            <Descriptions.Item label="商机名称">
+            <Descriptions.Item label={t("opportunity.fields.name")}>
               {opportunity.name}
             </Descriptions.Item>
-            <Descriptions.Item label="阶段">
-              <Tag color="blue">{opportunity.stage || "-"}</Tag>
+            <Descriptions.Item label={t("opportunity.fields.stage")}>
+              <Tag color={statusColors[opportunity.stage] || "default"}>
+                {stageLabels[opportunity.stage] || opportunity.stage || "-"}
+              </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="金额">
+            <Descriptions.Item label={t("opportunity.fields.amount")}>
               {formatAmount(opportunity.amount, opportunity.currency)}
             </Descriptions.Item>
-            <Descriptions.Item label="成交概率">
+            <Descriptions.Item label={t("opportunity.fields.probability")}>
               {opportunity.probability !== undefined && opportunity.probability !== null
                 ? `${opportunity.probability}%`
                 : "-"}
             </Descriptions.Item>
-            <Descriptions.Item label="预计成交时间">
+            <Descriptions.Item label={t("opportunity.fields.expected_close_date")}>
               {opportunity.expectedCloseDate
-                ? new Date(opportunity.expectedCloseDate).toLocaleString("zh-CN")
+                ? new Date(opportunity.expectedCloseDate).toLocaleString(locale)
                 : "-"}
             </Descriptions.Item>
-            <Descriptions.Item label="状态">
+            <Descriptions.Item label={t("opportunity.fields.status")}>
               <Tag color="default">{opportunity.status || "-"}</Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="客户">
+            <Descriptions.Item label={t("opportunity.fields.account")}>
               {opportunity.accountId ? (
                 <Link href={`/crm/accounts/${opportunity.accountId}`}>
                   {opportunity.account?.name || opportunity.accountId}
@@ -146,7 +159,7 @@ export default function OpportunityDetailPage() {
                 opportunity.account?.name || "-"
               )}
             </Descriptions.Item>
-            <Descriptions.Item label="线索">
+            <Descriptions.Item label={t("opportunity.fields.lead")}>
               {opportunity.leadId ? (
                 <Link href={`/crm/leads/${opportunity.leadId}`}>
                   {opportunity.lead?.name || opportunity.leadId}
@@ -155,7 +168,7 @@ export default function OpportunityDetailPage() {
                 opportunity.lead?.name || "-"
               )}
             </Descriptions.Item>
-            <Descriptions.Item label="联系人">
+            <Descriptions.Item label={t("opportunity.fields.contact")}>
               {opportunity.contactId ? (
                 <Link href={`/crm/contacts/${opportunity.contactId}`}>
                   {opportunity.contactId}
@@ -164,7 +177,7 @@ export default function OpportunityDetailPage() {
                 "-"
               )}
             </Descriptions.Item>
-            <Descriptions.Item label="丢单原因">
+            <Descriptions.Item label={t("opportunity.fields.reason_lost")}>
               {opportunity.reasonLost || "-"}
             </Descriptions.Item>
           </Descriptions>

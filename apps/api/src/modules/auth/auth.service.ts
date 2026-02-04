@@ -3,6 +3,7 @@ import { PrismaService } from "../../prisma/prisma.service";
 import { hashPassword, hashToken, hasPasswordHash, verifyPassword } from "../../common/security/password";
 import { signJwt, verifyJwt } from "../../common/security/jwt";
 import type { AuthTokens } from "./dto/auth.dto";
+import { normalizeLocale } from "../../common/i18n/locale";
 
 @Injectable()
 export class AuthService {
@@ -12,7 +13,12 @@ export class AuthService {
     return { status: "ok", module: "auth" };
   }
 
-  async login(tenantId: string, email: string, password: string): Promise<AuthTokens> {
+  async login(
+    tenantId: string,
+    email: string,
+    password: string,
+    locale?: string
+  ): Promise<AuthTokens> {
     const user = await this.prisma.user.findFirst({
       where: { tenantId, email }
     });
@@ -23,10 +29,15 @@ export class AuthService {
     if (!ok) {
       throw new UnauthorizedException("Invalid credentials");
     }
-    return this.issueTokens(user.id, tenantId);
+    const normalizedLocale = locale ? normalizeLocale(locale) : undefined;
+    return this.issueTokens(user.id, tenantId, normalizedLocale);
   }
 
-  async issueTokens(userId: string, tenantId: string): Promise<AuthTokens> {
+  async issueTokens(
+    userId: string,
+    tenantId: string,
+    locale?: string
+  ): Promise<AuthTokens> {
     const accessTtl = Number.parseInt(process.env.ACCESS_TOKEN_TTL ?? "900", 10);
     const refreshTtl = Number.parseInt(process.env.REFRESH_TOKEN_TTL ?? "2592000", 10);
     const secret = process.env.JWT_SECRET ?? "dev-secret-change-me";
@@ -34,7 +45,10 @@ export class AuthService {
     const refreshToken = signJwt({ sub: userId, tid: tenantId }, secret, refreshTtl);
     await this.prisma.user.update({
       where: { id: userId },
-      data: { refreshTokenHash: hashToken(refreshToken) }
+      data: {
+        refreshTokenHash: hashToken(refreshToken),
+        ...(locale ? { locale } : {})
+      }
     });
     return {
       accessToken,
@@ -105,6 +119,7 @@ export class AuthService {
         tenantId: true,
         email: true,
         name: true,
+        locale: true,
         status: true,
         createdAt: true,
         updatedAt: true,

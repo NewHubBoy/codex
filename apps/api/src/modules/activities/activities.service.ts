@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import type { CreateActivityInput, UpdateActivityInput } from "@crm/shared";
 import { PrismaService } from "../../prisma/prisma.service";
 import type { RequestContext } from "../../common/request-context";
@@ -8,6 +8,8 @@ import { OutboxService } from "../../common/services/outbox.service";
 import type { ListQuery } from "../../common/list-query";
 import { parseSerialId, parseSort } from "../../common/list-query";
 import { assertTransition } from "../../common/status-transitions";
+import { I18nService } from "../../common/i18n/i18n.service";
+import { badRequest, notFound } from "../../common/i18n/i18n-error";
 
 @Injectable()
 export class ActivitiesService {
@@ -15,7 +17,8 @@ export class ActivitiesService {
     private readonly prisma: PrismaService,
     private readonly dataScope: DataScopeService,
     private readonly audit: AuditLogService,
-    private readonly outbox: OutboxService
+    private readonly outbox: OutboxService,
+    private readonly i18n: I18nService
   ) {}
 
   async create(ctx: RequestContext, input: CreateActivityInput) {
@@ -94,7 +97,7 @@ export class ActivitiesService {
       where: { id, tenantId: ctx.tenantId, ...scopeFilter }
     });
     if (!activity) {
-      throw new NotFoundException("Activity not found");
+      throw notFound(this.i18n, ctx.locale, "ACTIVITY_NOT_FOUND", "activity.not_found");
     }
     return activity;
   }
@@ -102,13 +105,26 @@ export class ActivitiesService {
   async update(ctx: RequestContext, id: string, input: UpdateActivityInput) {
     const existing = await this.get(ctx, id);
     if (input.status) {
-      assertTransition("Activity", existing.status, input.status);
+      assertTransition("Activity", existing.status, input.status, ({ entity, from, to }) =>
+        badRequest(
+          this.i18n,
+          ctx.locale,
+          "ACTIVITY_STATUS_TRANSITION_INVALID",
+          "activity.status.transition_invalid",
+          { entity, from, to }
+        )
+      );
       if (input.status === "COMPLETED") {
         const completedAt =
           input.completedAt ??
           (existing.completedAt ? existing.completedAt.toISOString() : undefined);
         if (!completedAt) {
-          throw new BadRequestException("completedAt is required when status is COMPLETED");
+          throw badRequest(
+            this.i18n,
+            ctx.locale,
+            "ACTIVITY_COMPLETED_MISSING_COMPLETED_AT",
+            "activity.completed.missing_completed_at"
+          );
         }
       }
     }

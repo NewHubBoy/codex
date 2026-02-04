@@ -4,6 +4,7 @@ import { api } from "./api";
 export interface LoginParams {
   email: string;
   password: string;
+  locale?: string;
 }
 
 // 登录响应
@@ -15,6 +16,7 @@ export interface LoginResponse {
     email: string;
     name: string;
     tenantId: string;
+    locale?: string;
   };
 }
 

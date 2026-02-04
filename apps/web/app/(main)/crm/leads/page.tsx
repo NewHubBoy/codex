@@ -2,24 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Table,
-  Button,
-  Space,
-  Tag,
-  Input,
-  Select,
-  Card,
-  Typography,
-  Popconfirm,
-} from "antd";
+import { Table, Button, Space, Tag, Input, Select, Card, Typography, Popconfirm } from "antd";
 import {
   PlusOutlined,
   SearchOutlined,
   ReloadOutlined,
   EditOutlined,
   DeleteOutlined,
-  EyeOutlined,
+  EyeOutlined
 } from "@ant-design/icons";
 import { useLeads, useDeleteLead, useCreateLeadDraft } from "@/hooks/useLeads";
 import type { Lead, LeadListParams } from "@/services/leads";
@@ -27,12 +17,15 @@ import { LeadStatus, LeadSource, LeadRating } from "@/services/leads";
 import { PageHeader } from "@/components/common/PageHeader";
 import { App } from "antd";
 import Link from "next/link";
+import { useI18n } from "@/i18n/provider";
+import { getErrorMessage } from "@/utils/error";
 
 const { Text } = Typography;
 
 export default function LeadsPage() {
   const router = useRouter();
   const { message } = App.useApp();
+  const { t, locale } = useI18n();
   const [searchText, setSearchText] = useState("");
   const [filters, setFilters] = useState<Partial<LeadListParams>>({});
   const [pagination, setPagination] = useState({ current: 1, pageSize: 20 });
@@ -43,13 +36,38 @@ export default function LeadsPage() {
     ...filters,
     page: pagination.current,
     pageSize: pagination.pageSize,
-    q: searchText,
+    q: searchText
   });
 
   // 删除线索
   const deleteLead = useDeleteLead();
   // 创建草稿
   const createDraft = useCreateLeadDraft();
+
+  const statusLabels: Record<string, string> = {
+    NEW: t("lead.status.new"),
+    ASSIGNED: t("lead.status.assigned"),
+    WORKING: t("lead.status.working"),
+    QUALIFIED: t("lead.status.qualified"),
+    CONVERTED: t("lead.status.converted"),
+    DISQUALIFIED: t("lead.status.disqualified"),
+    DRAFT: t("lead.status.draft")
+  };
+
+  const ratingLabels: Record<string, string> = {
+    HOT: t("lead.rating.hot"),
+    WARM: t("lead.rating.warm"),
+    COLD: t("lead.rating.cold")
+  };
+
+  const sourceLabels: Record<string, string> = {
+    WEBSITE: t("lead.source.website"),
+    REFERRAL: t("lead.source.referral"),
+    COLD_CALL: t("lead.source.cold_call"),
+    TRADE_SHOW: t("lead.source.trade_show"),
+    SOCIAL_MEDIA: t("lead.source.social_media"),
+    OTHER: t("lead.source.other")
+  };
 
   // 处理表格变化
   const handleTableChange = (pagination: any) => {
@@ -75,7 +93,7 @@ export default function LeadsPage() {
       const draft = await createDraft.mutateAsync(undefined);
       router.push(`/crm/leads/${draft.id}?operationType=edit`);
     } catch {
-      message.error("创建草稿失败");
+      message.error(t("lead.messages.draft_create_failed"));
     } finally {
       setCreating(false);
     }
@@ -95,9 +113,9 @@ export default function LeadsPage() {
   const handleDelete = async (id: string) => {
     try {
       await deleteLead.mutateAsync(id);
-      message.success("删除成功");
+      message.success(t("lead.messages.delete_success"));
     } catch (error) {
-      message.error("删除失败");
+      message.error(getErrorMessage(error, t("lead.messages.delete_failed")));
     }
   };
 
@@ -108,83 +126,83 @@ export default function LeadsPage() {
     WORKING: "green",
     QUALIFIED: "purple",
     CONVERTED: "gold",
-    DISQUALIFIED: "red",
+    DISQUALIFIED: "red"
   };
 
   // 优先级颜色
   const ratingColors: Record<string, string> = {
     HOT: "red",
     WARM: "orange",
-    COLD: "blue",
+    COLD: "blue"
   };
 
   // 表格列配置
   const columns = [
     {
-      title: "编号",
+      title: t("common.serial_id"),
       dataIndex: "serialId",
       key: "serialId",
-      width: 80,
+      width: 80
     },
     {
-      title: "线索名称",
+      title: t("leads.table.name"),
       dataIndex: "name",
       key: "name",
       render: (text: string, record: Lead) => (
         <Link href={`/crm/leads/${record.id}`}>{text}</Link>
-      ),
+      )
     },
     {
-      title: "公司",
+      title: t("leads.table.company"),
       dataIndex: "company",
-      key: "company",
+      key: "company"
     },
     {
-      title: "联系方式",
+      title: t("leads.table.contact"),
       key: "contact",
       render: (_: unknown, record: Lead) => (
         <Space direction="vertical" size={0}>
           <Text>{record.email}</Text>
           <Text type="secondary">{record.phone}</Text>
         </Space>
-      ),
+      )
     },
     {
-      title: "状态",
+      title: t("common.status"),
       dataIndex: "status",
       key: "status",
       render: (status: string) => (
-        <Tag color={statusColors[status]}>{status}</Tag>
-      ),
+        <Tag color={statusColors[status]}>{statusLabels[status] || status}</Tag>
+      )
     },
     {
-      title: "优先级",
+      title: t("leads.table.rating"),
       dataIndex: "rating",
       key: "rating",
       render: (rating: string) => (
-        <Tag color={ratingColors[rating]}>{rating}</Tag>
-      ),
+        <Tag color={ratingColors[rating]}>{ratingLabels[rating] || rating}</Tag>
+      )
     },
     {
-      title: "预期金额",
+      title: t("leads.table.expected_value"),
       dataIndex: "expectedValue",
       key: "expectedValue",
-      render: (value: number) =>
-        value ? `¥${value.toLocaleString()}` : "-",
+      render: (value: number) => (value ? `¥${value.toLocaleString(locale)}` : "-")
     },
     {
-      title: "来源",
+      title: t("leads.table.source"),
       dataIndex: "source",
       key: "source",
+      render: (source: string) => sourceLabels[source] || source || "-"
     },
     {
-      title: "创建时间",
+      title: t("common.created_at"),
       dataIndex: "createdAt",
       key: "createdAt",
-      render: (date: string) => new Date(date).toLocaleString("zh-CN"),
+      render: (date: string) => new Date(date).toLocaleString(locale)
     },
     {
-      title: "操作",
+      title: t("common.actions"),
       key: "action",
       render: (_: unknown, record: Lead) => (
         <Space size="small">
@@ -192,31 +210,33 @@ export default function LeadsPage() {
             type="text"
             icon={<EyeOutlined />}
             onClick={() => handleView(record.id)}
+            aria-label={t("common.view")}
           />
           <Button
             type="text"
             icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
+            aria-label={t("common.edit")}
           />
           <Popconfirm
-            title="确认删除"
-            description="确定要删除这条线索吗？"
+            title={t("common.delete_confirm_title")}
+            description={t("lead.messages.delete_confirm")}
             onConfirm={() => handleDelete(record.id)}
-            okText="确认"
-            cancelText="取消"
+            okText={t("common.confirm")}
+            cancelText={t("common.cancel")}
           >
-            <Button type="text" danger icon={<DeleteOutlined />} />
+            <Button type="text" danger icon={<DeleteOutlined />} aria-label={t("common.delete")} />
           </Popconfirm>
         </Space>
-      ),
-    },
+      )
+    }
   ];
 
   return (
     <div>
       <PageHeader
-        title="线索管理"
-        description="管理和跟进销售线索"
+        title={t("leads.page.title")}
+        description={t("leads.page.description")}
         extra={[
           <Button
             key="create"
@@ -225,8 +245,8 @@ export default function LeadsPage() {
             onClick={handleCreate}
             loading={creating}
           >
-            新建线索
-          </Button>,
+            {t("leads.actions.create")}
+          </Button>
         ]}
       />
 
@@ -234,49 +254,46 @@ export default function LeadsPage() {
         {/* 筛选栏 */}
         <Space wrap style={{ marginBottom: 16 }}>
           <Input.Search
-            placeholder="搜索编号/线索名称"
+            placeholder={t("leads.filters.search_placeholder")}
             allowClear
             style={{ width: 200 }}
             onSearch={handleSearch}
             enterButton={<SearchOutlined />}
           />
           <Select
-            placeholder="状态"
+            placeholder={t("leads.filters.status_placeholder")}
             allowClear
             style={{ width: 120 }}
             onChange={(value) => handleFilterChange("status", value)}
             options={Object.entries(LeadStatus)
               .filter(([key]) => key !== "DRAFT")
               .map(([key, value]) => ({
-                label: key,
-                value,
+                label: statusLabels[key] || key,
+                value
               }))}
           />
           <Select
-            placeholder="优先级"
+            placeholder={t("leads.filters.rating_placeholder")}
             allowClear
             style={{ width: 120 }}
             onChange={(value) => handleFilterChange("rating", value)}
             options={Object.entries(LeadRating).map(([key, value]) => ({
-              label: key,
-              value,
+              label: ratingLabels[key] || key,
+              value
             }))}
           />
           <Select
-            placeholder="来源"
+            placeholder={t("leads.filters.source_placeholder")}
             allowClear
             style={{ width: 140 }}
             onChange={(value) => handleFilterChange("source", value)}
             options={Object.entries(LeadSource).map(([key, value]) => ({
-              label: key.replace("_", " "),
-              value,
+              label: sourceLabels[key] || key.replace("_", " "),
+              value
             }))}
           />
-          <Button
-            icon={<ReloadOutlined />}
-            onClick={() => refetch()}
-          >
-            刷新
+          <Button icon={<ReloadOutlined />} onClick={() => refetch()}>
+            {t("common.refresh")}
           </Button>
         </Space>
 
@@ -292,12 +309,11 @@ export default function LeadsPage() {
             total: data?.total || 0,
             showSizeChanger: true,
             showQuickJumper: true,
-            showTotal: (total) => `共 ${total} 条`,
+            showTotal: (total) => t("common.total_count", { total })
           }}
           onChange={handleTableChange}
         />
       </Card>
-
     </div>
   );
 }

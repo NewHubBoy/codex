@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { PageHeader } from '@/components/common/PageHeader';
 import { useActivity } from '@/hooks/useActivities';
 import { AttachmentTable } from '@/components/business/AttachmentTable';
+import { useI18n } from '@/i18n/provider';
 
 const { Text } = Typography;
 
@@ -16,26 +17,27 @@ const statusColors: Record<string, string> = {
   CANCELLED: 'red',
 };
 
-const statusLabels: Record<string, string> = {
-  OPEN: '进行中',
-  COMPLETED: '已完成',
-  CANCELLED: '已取消',
-};
-
-const relatedTypeLabels: Record<string, string> = {
-  Lead: '线索',
-  Opportunity: '商机',
-  Account: '客户',
-  Contact: '联系人',
-  Ticket: '工单',
-};
-
 export default function ActivityDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { t, locale } = useI18n();
   const id = params.id as string;
 
   const { data: activity, isLoading } = useActivity(id);
+
+  const statusLabels: Record<string, string> = {
+    OPEN: t('activity.status.open'),
+    COMPLETED: t('activity.status.completed'),
+    CANCELLED: t('activity.status.cancelled'),
+  };
+
+  const relatedTypeLabels: Record<string, string> = {
+    Lead: t('related.lead'),
+    Opportunity: t('related.opportunity'),
+    Account: t('related.account'),
+    Contact: t('related.contact'),
+    Ticket: t('related.ticket'),
+  };
 
   if (isLoading) {
     return (
@@ -48,7 +50,7 @@ export default function ActivityDetailPage() {
   if (!activity) {
     return (
       <Card>
-        <Text type="secondary">未找到该活动</Text>
+        <Text type="secondary">{t('activity.messages.not_found')}</Text>
       </Card>
     );
   }
@@ -71,40 +73,53 @@ export default function ActivityDetailPage() {
     if (activity.relatedType === 'Ticket') {
       return <Link href={`/crm/tickets/${activity.relatedId}`}>{relatedDisplay}</Link>;
     }
+    if (activity.relatedType === 'Opportunity') {
+      return <Link href={`/crm/opportunities/${activity.relatedId}`}>{relatedDisplay}</Link>;
+    }
+    if (activity.relatedType === 'Account') {
+      return <Link href={`/crm/accounts/${activity.relatedId}`}>{relatedDisplay}</Link>;
+    }
+    if (activity.relatedType === 'Contact') {
+      return <Link href={`/crm/contacts/${activity.relatedId}`}>{relatedDisplay}</Link>;
+    }
     return relatedDisplay;
   };
 
   const tabItems = [
     {
       key: 'owner',
-      label: '负责人信息',
+      label: t('common.owner_info'),
       children: (
         <Descriptions column={2} bordered>
-          <Descriptions.Item label="负责人">{activity.owner?.name || '-'}</Descriptions.Item>
-          <Descriptions.Item label="负责人邮箱">{activity.owner?.email || '-'}</Descriptions.Item>
+          <Descriptions.Item label={t('common.owner_name')}>
+            {activity.owner?.name || '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label={t('common.owner_email')}>
+            {activity.owner?.email || '-'}
+          </Descriptions.Item>
         </Descriptions>
       ),
     },
     {
       key: 'attachments',
-      label: '附件',
+      label: t('common.attachments'),
       children: <AttachmentTable relatedType="Activity" relatedId={id} />,
     },
     {
       key: 'system',
-      label: '系统信息',
+      label: t('common.system_info'),
       children: (
         <Descriptions column={2} bordered>
-          <Descriptions.Item label="创建时间">
-            {new Date(activity.createdAt).toLocaleString('zh-CN')}
+          <Descriptions.Item label={t('common.created_at')}>
+            {new Date(activity.createdAt).toLocaleString(locale)}
           </Descriptions.Item>
-          <Descriptions.Item label="最后更新时间">
-            {new Date(activity.updatedAt).toLocaleString('zh-CN')}
+          <Descriptions.Item label={t('common.updated_at')}>
+            {new Date(activity.updatedAt).toLocaleString(locale)}
           </Descriptions.Item>
-          <Descriptions.Item label="编号" span={2}>
+          <Descriptions.Item label={t('common.serial_id')} span={2}>
             {activity.serialId}
           </Descriptions.Item>
-          <Descriptions.Item label="ID" span={2}>
+          <Descriptions.Item label={t('common.id')} span={2}>
             <Text copyable style={{ fontFamily: 'monospace' }}>
               {activity.id}
             </Text>
@@ -117,32 +132,38 @@ export default function ActivityDetailPage() {
   return (
     <div>
       <PageHeader
-        title={activity.subject || '活动详情'}
+        title={activity.subject || t('activities.detail.title')}
         extra={[
           <Button key="back" icon={<ArrowLeftOutlined />} onClick={() => router.back()}>
-            返回
+            {t('common.back')}
           </Button>,
         ]}
       />
 
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
-        <Card title="基本信息">
+        <Card title={t('common.basic_info')}>
           <Descriptions column={2} bordered>
-            <Descriptions.Item label="主题">{activity.subject || '-'}</Descriptions.Item>
-            <Descriptions.Item label="类型">{activity.type || '-'}</Descriptions.Item>
-            <Descriptions.Item label="状态">
+            <Descriptions.Item label={t('activity.fields.subject')}>
+              {activity.subject || '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label={t('common.type')}>
+              {activity.type || '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label={t('common.status')}>
               <Tag color={statusColors[activity.status] || 'default'}>
                 {statusLabels[activity.status] || activity.status}
               </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="关联对象">{renderRelated()}</Descriptions.Item>
-            <Descriptions.Item label="截止时间">
-              {activity.dueAt ? new Date(activity.dueAt).toLocaleString('zh-CN') : '-'}
+            <Descriptions.Item label={t('activity.fields.related')}>
+              {renderRelated()}
             </Descriptions.Item>
-            <Descriptions.Item label="完成时间">
-              {activity.completedAt ? new Date(activity.completedAt).toLocaleString('zh-CN') : '-'}
+            <Descriptions.Item label={t('common.due_at')}>
+              {activity.dueAt ? new Date(activity.dueAt).toLocaleString(locale) : '-'}
             </Descriptions.Item>
-            <Descriptions.Item label="结果" span={2}>
+            <Descriptions.Item label={t('common.completed_at')}>
+              {activity.completedAt ? new Date(activity.completedAt).toLocaleString(locale) : '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label={t('activity.fields.outcome')} span={2}>
               {activity.outcome || '-'}
             </Descriptions.Item>
           </Descriptions>

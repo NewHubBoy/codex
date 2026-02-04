@@ -18,6 +18,7 @@ interface User {
   email: string;
   name: string;
   tenantId: string;
+  locale?: string;
 }
 
 interface AuthState {

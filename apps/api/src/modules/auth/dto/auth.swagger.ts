@@ -6,6 +6,9 @@ export class LoginRequestDto {
 
   @ApiProperty({ example: "Admin#123" })
   password!: string;
+
+  @ApiProperty({ required: false, example: "zh-CN" })
+  locale?: string;
 }
 
 export class RefreshRequestDto {

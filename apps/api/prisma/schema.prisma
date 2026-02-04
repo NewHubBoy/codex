@@ -65,6 +65,7 @@ model User {
   tenantId  String
   email     String
   name      String
+  locale    String     @default("zh-CN")
   status    UserStatus @default(ACTIVE)
   passwordHash     String?
   refreshTokenHash String?

@@ -20,12 +20,14 @@ import { NumberRangesModule } from "./modules/number-ranges/number-ranges.module
 import { WorkflowsModule } from "./modules/workflows/workflows.module";
 import { FieldsModule } from "./modules/fields/fields.module";
 import { TenantMiddleware } from "./common/middleware/tenant.middleware";
+import { I18nModule } from "./common/i18n/i18n.module";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 
 @Module({
   imports: [
     PrismaModule,
+    I18nModule,
     AuthModule,
     TenantsModule,
     OrgUnitsModule,

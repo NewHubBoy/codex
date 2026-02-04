@@ -28,7 +28,12 @@ export class AuthController {
   async login(@Req() req: Request, @Body() body: unknown) {
     const ctx = getRequestContext(req);
     const input = LoginInputSchema.parse(body);
-    return this.authService.login(ctx.tenantId, input.email, input.password);
+    return this.authService.login(
+      ctx.tenantId,
+      input.email,
+      input.password,
+      input.locale
+    );
   }
 
   @Post("refresh")

@@ -1,4 +1,5 @@
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
+import { DEFAULT_LOCALE, resolveLocale } from "@/i18n/locale";
 
 // API 基础配置
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
@@ -27,6 +28,8 @@ api.interceptors.request.use(
       // 添加 tenant-id（默认租户）
       const tenantId = localStorage.getItem("tenantId") || "00000000-0000-0000-0000-000000000001";
       config.headers["x-tenant-id"] = tenantId;
+      const locale = resolveLocale() ?? DEFAULT_LOCALE;
+      config.headers["x-locale"] = locale;
     }
     return config;
   },
@@ -47,6 +50,18 @@ api.interceptors.response.use(
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
       window.location.href = "/login";
+    }
+    const data = error.response?.data as
+      | { message?: string | { message?: string } | string[] }
+      | undefined;
+    const nestedMessage =
+      typeof data?.message === "string"
+        ? data.message
+        : Array.isArray(data?.message)
+          ? data?.message.join(", ")
+          : data?.message?.message;
+    if (typeof nestedMessage === "string" && nestedMessage.trim()) {
+      error.message = nestedMessage;
     }
     return Promise.reject(error);
   }

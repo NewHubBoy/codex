@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import type { BulkLeadStatusInput, CreateLeadInput, UpdateLeadInput } from "@crm/shared";
 import { PrismaService } from "../../prisma/prisma.service";
 import type { RequestContext } from "../../common/request-context";
@@ -8,6 +8,8 @@ import { OutboxService } from "../../common/services/outbox.service";
 import type { ListQuery } from "../../common/list-query";
 import { parseSerialId, parseSort } from "../../common/list-query";
 import { assertTransition } from "../../common/status-transitions";
+import { I18nService } from "../../common/i18n/i18n.service";
+import { badRequest, notFound } from "../../common/i18n/i18n-error";
 
 @Injectable()
 export class LeadsService {
@@ -15,12 +17,18 @@ export class LeadsService {
     private readonly prisma: PrismaService,
     private readonly dataScope: DataScopeService,
     private readonly audit: AuditLogService,
-    private readonly outbox: OutboxService
+    private readonly outbox: OutboxService,
+    private readonly i18n: I18nService
   ) {}
 
   async create(ctx: RequestContext, input: CreateLeadInput) {
     if (input.status === "DRAFT") {
-      throw new BadRequestException("Use draft flow to create leads");
+      throw badRequest(
+        this.i18n,
+        ctx.locale,
+        "LEAD_DRAFT_CREATE_FORBIDDEN",
+        "lead.draft.create_forbidden"
+      );
     }
     const lead = await this.prisma.lead.create({
       data: {
@@ -97,7 +105,7 @@ export class LeadsService {
       where: { id, tenantId: ctx.tenantId, ...scopeFilter }
     });
     if (!lead) {
-      throw new NotFoundException("Lead not found");
+      throw notFound(this.i18n, ctx.locale, "LEAD_NOT_FOUND", "lead.not_found");
     }
     return lead;
   }
@@ -105,19 +113,38 @@ export class LeadsService {
   async update(ctx: RequestContext, id: string, input: UpdateLeadInput) {
     const existing = await this.get(ctx, id);
     if (existing.status === "DRAFT") {
-      throw new BadRequestException("Draft lead must be submitted before update");
+      throw badRequest(
+        this.i18n,
+        ctx.locale,
+        "LEAD_DRAFT_UPDATE_FORBIDDEN",
+        "lead.draft.update_forbidden"
+      );
     }
     if (input.status) {
       if (input.status === "DRAFT") {
-        throw new BadRequestException("Lead status cannot be set to DRAFT");
+        throw badRequest(
+          this.i18n,
+          ctx.locale,
+          "LEAD_STATUS_DRAFT_FORBIDDEN",
+          "lead.status.draft_forbidden"
+        );
       }
-      assertTransition("Lead", existing.status, input.status);
+      assertTransition("Lead", existing.status, input.status, ({ entity, from, to }) =>
+        badRequest(this.i18n, ctx.locale, "LEAD_STATUS_TRANSITION_INVALID", "lead.status.transition_invalid", {
+          entity,
+          from,
+          to
+        })
+      );
       if (input.status === "CONVERTED") {
         const accountId = input.accountId ?? existing.accountId;
         const contactId = input.contactId ?? existing.contactId;
         if (!accountId && !contactId) {
-          throw new BadRequestException(
-            "accountId or contactId is required when status is CONVERTED"
+          throw badRequest(
+            this.i18n,
+            ctx.locale,
+            "LEAD_CONVERT_MISSING_ACCOUNT_CONTACT",
+            "lead.convert.missing_account_contact"
           );
         }
       }
@@ -143,19 +170,38 @@ export class LeadsService {
   async submitDraft(ctx: RequestContext, id: string, input: CreateLeadInput) {
     const existing = await this.get(ctx, id);
     if (existing.status !== "DRAFT") {
-      throw new BadRequestException("Lead is not in draft status");
+      throw badRequest(
+        this.i18n,
+        ctx.locale,
+        "LEAD_NOT_DRAFT",
+        "lead.draft.not_in_draft"
+      );
     }
     const status = input.status ?? "NEW";
     if (status === "DRAFT") {
-      throw new BadRequestException("Draft lead must be submitted with a non-draft status");
+      throw badRequest(
+        this.i18n,
+        ctx.locale,
+        "LEAD_DRAFT_SUBMIT_INVALID_STATUS",
+        "lead.draft.submit_invalid_status"
+      );
     }
-    assertTransition("Lead", existing.status, status);
+    assertTransition("Lead", existing.status, status, ({ entity, from, to }) =>
+      badRequest(this.i18n, ctx.locale, "LEAD_STATUS_TRANSITION_INVALID", "lead.status.transition_invalid", {
+        entity,
+        from,
+        to
+      })
+    );
     if (status === "CONVERTED") {
       const accountId = input.accountId ?? existing.accountId;
       const contactId = input.contactId ?? existing.contactId;
       if (!accountId && !contactId) {
-        throw new BadRequestException(
-          "accountId or contactId is required when status is CONVERTED"
+        throw badRequest(
+          this.i18n,
+          ctx.locale,
+          "LEAD_CONVERT_MISSING_ACCOUNT_CONTACT",
+          "lead.convert.missing_account_contact"
         );
       }
     }
@@ -189,7 +235,12 @@ export class LeadsService {
 
   async bulkUpdateStatus(ctx: RequestContext, input: BulkLeadStatusInput) {
     if (input.status === "DRAFT") {
-      throw new BadRequestException("Lead status cannot be set to DRAFT");
+      throw badRequest(
+        this.i18n,
+        ctx.locale,
+        "LEAD_STATUS_DRAFT_FORBIDDEN",
+        "lead.status.draft_forbidden"
+      );
     }
     const scopeFilter = await this.dataScope.buildOrgScopeFilter(ctx);
     const leads = await this.prisma.lead.findMany({
@@ -202,17 +253,30 @@ export class LeadsService {
     if (leads.length !== input.ids.length) {
       const found = new Set(leads.map((lead) => lead.id));
       const missing = input.ids.filter((id) => !found.has(id));
-      throw new NotFoundException(`Leads not found: ${missing.join(", ")}`);
+      throw notFound(this.i18n, ctx.locale, "LEAD_BULK_NOT_FOUND", "lead.bulk.not_found", {
+        ids: missing.join(", ")
+      });
     }
     if (input.dryRun) {
       for (const lead of leads) {
-        assertTransition("Lead", lead.status, input.status);
+        assertTransition("Lead", lead.status, input.status, ({ entity, from, to }) =>
+          badRequest(
+            this.i18n,
+            ctx.locale,
+            "LEAD_STATUS_TRANSITION_INVALID",
+            "lead.status.transition_invalid",
+            { entity, from, to }
+          )
+        );
         if (input.status === "CONVERTED") {
           const accountId = input.accountId ?? lead.accountId;
           const contactId = input.contactId ?? lead.contactId;
           if (!accountId && !contactId) {
-            throw new BadRequestException(
-              "accountId or contactId is required when status is CONVERTED"
+            throw badRequest(
+              this.i18n,
+              ctx.locale,
+              "LEAD_CONVERT_MISSING_ACCOUNT_CONTACT",
+              "lead.convert.missing_account_contact"
             );
           }
         }
@@ -222,13 +286,24 @@ export class LeadsService {
     const updated = await this.prisma.$transaction(async (tx) => {
       const results = [];
       for (const lead of leads) {
-        assertTransition("Lead", lead.status, input.status);
+        assertTransition("Lead", lead.status, input.status, ({ entity, from, to }) =>
+          badRequest(
+            this.i18n,
+            ctx.locale,
+            "LEAD_STATUS_TRANSITION_INVALID",
+            "lead.status.transition_invalid",
+            { entity, from, to }
+          )
+        );
         if (input.status === "CONVERTED") {
           const accountId = input.accountId ?? lead.accountId;
           const contactId = input.contactId ?? lead.contactId;
           if (!accountId && !contactId) {
-            throw new BadRequestException(
-              "accountId or contactId is required when status is CONVERTED"
+            throw badRequest(
+              this.i18n,
+              ctx.locale,
+              "LEAD_CONVERT_MISSING_ACCOUNT_CONTACT",
+              "lead.convert.missing_account_contact"
             );
           }
         }

@@ -15,6 +15,8 @@ async function bootstrap() {
       "Content-Type",
       "Authorization",
       "x-tenant-id",
+      "x-locale",
+      "x-org-unit-id",
       "Accept",
       "Origin",
     ],
