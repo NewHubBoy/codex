@@ -2,28 +2,17 @@
 
 import { useRouter } from "next/navigation";
 import { Card, Row, Col, Statistic, List, Tag, Typography, Space, Button } from "antd";
-import { RocketOutlined, ShoppingCartOutlined, FileTextOutlined, AlertOutlined, ArrowUpOutlined, ArrowDownOutlined } from "@ant-design/icons";
+import { RocketOutlined, ShoppingCartOutlined, FileTextOutlined, AlertOutlined } from "@ant-design/icons";
 import { useAuth } from "@/hooks/useAuth";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useAlertSummary } from "@/hooks/useAlerts";
 import { useI18n } from "@/i18n/provider";
+import { useLeads } from "@/hooks/useLeads";
+import { useOpportunities } from "@/hooks/useOpportunities";
+import { useQuotes } from "@/hooks/useQuotes";
+import { useTickets } from "@/hooks/useTickets";
 
 const { Text } = Typography;
-
-// 模拟数据 - 后续替换为真实 API
-const mockStats = {
-  leads: { total: 128, growth: 12.5 },
-  opportunities: { total: 45, growth: 8.3 },
-  quotes: { total: 32, growth: -3.2 },
-  tickets: { total: 18, growth: 15.7 },
-};
-
-const mockRecentLeads = [
-  { id: "1", name: "张三", company: "某科技有限公司", status: "NEW", createdAt: "2024-01-15" },
-  { id: "2", name: "李四", company: "某贸易公司", status: "WORKING", createdAt: "2024-01-14" },
-  { id: "3", name: "王五", company: "某制造企业", status: "QUALIFIED", createdAt: "2024-01-13" },
-  { id: "4", name: "赵六", company: "某服务公司", status: "ASSIGNED", createdAt: "2024-01-12" },
-];
 
 const statusColors: Record<string, string> = {
   NEW: "blue",
@@ -37,8 +26,24 @@ const statusColors: Record<string, string> = {
 export default function DashboardPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { data: alertSummary, isLoading: alertLoading, refetch } = useAlertSummary();
+  const { data: leadsSummary } = useLeads({ page: 1, pageSize: 1 });
+  const { data: opportunitiesSummary } = useOpportunities({ page: 1, pageSize: 1 });
+  const { data: quotesSummary } = useQuotes({ page: 1, pageSize: 1 });
+  const { data: ticketsSummary } = useTickets({ page: 1, pageSize: 1 });
+  const { data: recentLeads } = useLeads({ page: 1, pageSize: 5, sort: "createdAt:desc" });
+
+  const leadStatusLabels: Record<string, string> = {
+    NEW: t("lead.status.new"),
+    ASSIGNED: t("lead.status.assigned"),
+    WORKING: t("lead.status.working"),
+    INTERESTED: t("lead.status.interested"),
+    QUALIFIED: t("lead.status.qualified"),
+    CONVERTED: t("lead.status.converted"),
+    DISQUALIFIED: t("lead.status.disqualified"),
+    DRAFT: t("lead.status.draft"),
+  };
 
   const buildLeadAlertLink = (type: "first" | "next" | "inactive") => {
     const params = new URLSearchParams();
@@ -70,65 +75,41 @@ export default function DashboardPage() {
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={12} lg={6}>
           <Card>
-            <Statistic
-              title={t("dashboard.stats.leads")}
-              value={mockStats.leads.total}
-              prefix={<RocketOutlined style={{ color: "#1677ff" }} />}
-              suffix={
-                <Text type={mockStats.leads.growth > 0 ? "success" : "danger"} style={{ fontSize: 14 }}>
-                  {mockStats.leads.growth > 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
-                  {Math.abs(mockStats.leads.growth)}%
-                </Text>
-              }
-            />
-          </Card>
-        </Col>
+              <Statistic
+                title={t("dashboard.stats.leads")}
+                value={leadsSummary?.total ?? 0}
+                prefix={<RocketOutlined style={{ color: "#1677ff" }} />}
+              />
+            </Card>
+          </Col>
         <Col xs={24} sm={12} lg={6}>
           <Card>
-            <Statistic
-              title={t("dashboard.stats.opportunities")}
-              value={mockStats.opportunities.total}
-              prefix={<ShoppingCartOutlined style={{ color: "#52c41a" }} />}
-              suffix={
-                <Text type={mockStats.opportunities.growth > 0 ? "success" : "danger"} style={{ fontSize: 14 }}>
-                  {mockStats.opportunities.growth > 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
-                  {Math.abs(mockStats.opportunities.growth)}%
-                </Text>
-              }
-            />
-          </Card>
-        </Col>
+              <Statistic
+                title={t("dashboard.stats.opportunities")}
+                value={opportunitiesSummary?.total ?? 0}
+                prefix={<ShoppingCartOutlined style={{ color: "#52c41a" }} />}
+              />
+            </Card>
+          </Col>
         <Col xs={24} sm={12} lg={6}>
           <Card>
-            <Statistic
-              title={t("dashboard.stats.quotes")}
-              value={mockStats.quotes.total}
-              prefix={<FileTextOutlined style={{ color: "#faad14" }} />}
-              suffix={
-                <Text type={mockStats.quotes.growth > 0 ? "success" : "danger"} style={{ fontSize: 14 }}>
-                  {mockStats.quotes.growth > 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
-                  {Math.abs(mockStats.quotes.growth)}%
-                </Text>
-              }
-            />
-          </Card>
-        </Col>
+              <Statistic
+                title={t("dashboard.stats.quotes")}
+                value={quotesSummary?.total ?? 0}
+                prefix={<FileTextOutlined style={{ color: "#faad14" }} />}
+              />
+            </Card>
+          </Col>
         <Col xs={24} sm={12} lg={6}>
           <Card>
-            <Statistic
-              title={t("dashboard.stats.tickets")}
-              value={mockStats.tickets.total}
-              prefix={<AlertOutlined style={{ color: "#ff4d4f" }} />}
-              suffix={
-                <Text type={mockStats.tickets.growth > 0 ? "danger" : "success"} style={{ fontSize: 14 }}>
-                  {mockStats.tickets.growth > 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
-                  {Math.abs(mockStats.tickets.growth)}%
-                </Text>
-              }
-            />
-          </Card>
-        </Col>
-      </Row>
+              <Statistic
+                title={t("dashboard.stats.tickets")}
+                value={ticketsSummary?.total ?? 0}
+                prefix={<AlertOutlined style={{ color: "#ff4d4f" }} />}
+              />
+            </Card>
+          </Col>
+        </Row>
 
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col span={24}>
@@ -211,19 +192,23 @@ export default function DashboardPage() {
           >
             <List
               itemLayout="horizontal"
-              dataSource={mockRecentLeads}
+              dataSource={recentLeads?.data || []}
               renderItem={(item) => (
                 <List.Item>
                   <List.Item.Meta
                     title={
                       <Space>
                         <a>{item.name}</a>
-                        <Tag color={statusColors[item.status]}>{item.status}</Tag>
+                        <Tag color={statusColors[item.status] || "default"}>
+                          {leadStatusLabels[item.status] || item.status}
+                        </Tag>
                       </Space>
                     }
-                    description={item.company}
+                    description={item.companyName || "-"}
                   />
-                  <Text type="secondary">{item.createdAt}</Text>
+                  <Text type="secondary">
+                    {item.createdAt ? new Date(item.createdAt).toLocaleDateString(locale) : "-"}
+                  </Text>
                 </List.Item>
               )}
             />
