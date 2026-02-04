@@ -80,10 +80,10 @@ export function useResetUserPassword() {
 }
 
 // Roles
-export function useRoles() {
+export function useRoles(params?: { page?: number; pageSize?: number; q?: string }) {
   return useQuery({
-    queryKey: ["roles"],
-    queryFn: () => roles.list(),
+    queryKey: ["roles", params],
+    queryFn: () => roles.list(params),
   });
 }
 
@@ -130,10 +130,10 @@ export function useDeleteRole() {
   });
 }
 
-export function usePermissions() {
+export function usePermissions(params?: { page?: number; pageSize?: number; q?: string }) {
   return useQuery({
-    queryKey: ["permissions"],
-    queryFn: () => roles.getPermissions(),
+    queryKey: ["permissions", params],
+    queryFn: () => roles.getPermissions(params),
   });
 }
 

@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { useRoles, useDeleteRole } from "@/hooks/useSystem";
 
 export default function RolesPage() {
-  const { data: roles, isLoading } = useRoles();
+  const { data, isLoading } = useRoles();
   const deleteRole = useDeleteRole();
   const { message } = App.useApp();
 
@@ -93,7 +93,7 @@ export default function RolesPage() {
       <Card>
         <Table
           columns={columns}
-          dataSource={roles}
+          dataSource={data?.data || []}
           rowKey="id"
           loading={isLoading}
           pagination={false}

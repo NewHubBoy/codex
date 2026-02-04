@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Card, Form, InputNumber, Select, Button, Space, App, Typography } from "antd";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useAlertSettings, useUpdateAlertSettings } from "@/hooks/useAlerts";
+import { useI18n } from "@/i18n/provider";
 
 const { Text } = Typography;
 
@@ -12,6 +13,7 @@ export default function AlertSettingsPage() {
   const { message } = App.useApp();
   const { data, isLoading } = useAlertSettings();
   const updateSettings = useUpdateAlertSettings();
+  const { t } = useI18n();
   const [hasOrgUnit, setHasOrgUnit] = useState(false);
 
   useEffect(() => {
@@ -35,7 +37,7 @@ export default function AlertSettingsPage() {
     try {
       const values = await form.validateFields();
       await updateSettings.mutateAsync(values);
-      message.success("预警阈值已更新");
+      message.success(t("alerts.settings.updated"));
     } catch (error) {
       if (error instanceof Error) {
         message.error(error.message);
@@ -46,36 +48,36 @@ export default function AlertSettingsPage() {
   return (
     <div>
       <PageHeader
-        title="预警阈值设置"
-        description="配置线索停滞与商机停滞的阈值（按用户/组织/租户生效）"
+        title={t("alerts.settings.title")}
+        description={t("alerts.settings.description")}
       />
 
       <Card loading={isLoading}>
         <Form form={form} layout="vertical">
           <Form.Item
-            label="生效范围"
+            label={t("alerts.settings.scope_label")}
             name="scopeType"
-            rules={[{ required: true, message: "请选择生效范围" }]}
+            rules={[{ required: true, message: t("alerts.settings.scope_required") }]}
           >
             <Select
               options={[
-                { label: "当前用户", value: "USER" },
-                { label: "当前组织", value: "ORG_UNIT", disabled: !hasOrgUnit },
-                { label: "全租户", value: "TENANT" },
+                { label: t("alerts.settings.scope_user"), value: "USER" },
+                { label: t("alerts.settings.scope_org"), value: "ORG_UNIT", disabled: !hasOrgUnit },
+                { label: t("alerts.settings.scope_tenant"), value: "TENANT" },
               ]}
             />
           </Form.Item>
           <Form.Item
-            label="线索停滞天数"
+            label={t("alerts.settings.inactive_label")}
             name="inactiveDays"
-            rules={[{ required: true, message: "请输入线索停滞天数" }]}
+            rules={[{ required: true, message: t("alerts.settings.inactive_required") }]}
           >
             <InputNumber min={1} max={365} style={{ width: 200 }} />
           </Form.Item>
           <Form.Item
-            label="商机停滞天数"
+            label={t("alerts.settings.stale_label")}
             name="staleDays"
-            rules={[{ required: true, message: "请输入商机停滞天数" }]}
+            rules={[{ required: true, message: t("alerts.settings.stale_required") }]}
           >
             <InputNumber min={1} max={365} style={{ width: 200 }} />
           </Form.Item>
@@ -83,10 +85,10 @@ export default function AlertSettingsPage() {
 
         <Space>
           <Button type="primary" onClick={handleSave} loading={updateSettings.isPending}>
-            保存
+            {t("common.save")}
           </Button>
           <Text type="secondary">
-            默认优先级：用户 &gt; 组织 &gt; 租户 &gt; 默认值（7 天）
+            {t("alerts.settings.priority_hint")}
           </Text>
         </Space>
       </Card>

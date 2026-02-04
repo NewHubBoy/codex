@@ -87,9 +87,11 @@ export const users = {
   },
 };
 
+export type RoleListResponse = PaginatedResponse<Role>;
+
 export const roles = {
-  list: async (): Promise<Role[]> => {
-    return api.get("/rbac/roles");
+  list: async (params?: { page?: number; pageSize?: number; q?: string }): Promise<RoleListResponse> => {
+    return api.get("/rbac/roles", { params });
   },
 
   get: async (id: string): Promise<Role> => {
@@ -109,8 +111,8 @@ export const roles = {
   },
 
   // 获取所有权限
-  getPermissions: async (): Promise<Permission[]> => {
-    return api.get("/rbac/permissions");
+  getPermissions: async (params?: { page?: number; pageSize?: number; q?: string }): Promise<PaginatedResponse<Permission>> => {
+    return api.get("/rbac/permissions", { params });
   },
 };
 
