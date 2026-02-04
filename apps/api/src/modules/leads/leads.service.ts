@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import type { Prisma } from "@prisma/client";
 import type { BulkLeadStatusInput, CreateLeadInput, UpdateLeadInput } from "@crm/shared";
 import { PrismaService } from "../../prisma/prisma.service";
 import type { RequestContext } from "../../common/request-context";
@@ -30,21 +31,65 @@ export class LeadsService {
         "lead.draft.create_forbidden"
       );
     }
-    const lead = await this.prisma.lead.create({
-      data: {
-        tenantId: ctx.tenantId,
-        orgUnitId: ctx.orgUnitId,
-        ownerId: ctx.userId,
-        status: input.status ?? undefined,
-        name: input.name,
-        source: input.source,
-        rating: input.rating,
-        expectedValue: input.expectedValue,
-        accountId: input.accountId ?? undefined,
-        contactId: input.contactId ?? undefined,
-        description: input.description
+    const shouldConvert = input.status === "QUALIFIED" || input.status === "CONVERTED";
+    const leadData = {
+      tenantId: ctx.tenantId,
+      orgUnitId: ctx.orgUnitId,
+      ownerId: ctx.userId,
+      status: input.status ?? undefined,
+      name: input.name,
+      source: input.source,
+      rating: input.rating,
+      expectedValue: input.expectedValue,
+      contactName: input.contactName,
+      companyName: input.companyName,
+      phone: input.phone,
+      email: input.email,
+      initialNeed: input.initialNeed,
+      firstFollowUpDueAt: input.firstFollowUpDueAt
+        ? new Date(input.firstFollowUpDueAt)
+        : undefined,
+      disqualifyReason: input.disqualifyReason,
+      disqualifyNote: input.disqualifyNote,
+      accountId: input.accountId ?? undefined,
+      contactId: input.contactId ?? undefined,
+      description: input.description
+    };
+    if (shouldConvert) {
+      const { lead: convertedLead, account, contact, opportunity } =
+        await this.prisma.$transaction(async (tx) => {
+          const createdLead = await tx.lead.create({ data: leadData });
+          return this.convertLead(ctx, createdLead, input, tx);
+        });
+      await this.audit.log(ctx, "create", "Lead", convertedLead.id, `Created ${convertedLead.name}`);
+      await this.outbox.enqueue(ctx, "Lead", convertedLead.id, "lead.created", {
+        name: convertedLead.name
+      });
+      if (account) {
+        await this.audit.log(ctx, "create", "Account", account.id, `Created ${account.name}`);
+        await this.outbox.enqueue(ctx, "Account", account.id, "account.created", {
+          name: account.name
+        });
       }
-    });
+      if (contact) {
+        await this.audit.log(ctx, "create", "Contact", contact.id, `Created ${contact.name}`);
+        await this.outbox.enqueue(ctx, "Contact", contact.id, "contact.created", {
+          name: contact.name
+        });
+      }
+      await this.audit.log(
+        ctx,
+        "create",
+        "Opportunity",
+        opportunity.id,
+        `Created ${opportunity.name}`
+      );
+      await this.outbox.enqueue(ctx, "Opportunity", opportunity.id, "opportunity.created", {
+        name: opportunity.name
+      });
+      return convertedLead;
+    }
+    const lead = await this.prisma.lead.create({ data: leadData });
     await this.audit.log(ctx, "create", "Lead", lead.id, `Created ${lead.name}`);
     await this.outbox.enqueue(ctx, "Lead", lead.id, "lead.created", { name: lead.name });
     return lead;
@@ -74,13 +119,40 @@ export class LeadsService {
       qFilters.push({ serialId });
     }
     const statusFilter = query.status ?? { not: "DRAFT" };
+    const now = new Date();
+    const terminalStatuses = ["CONVERTED", "DISQUALIFIED", "DRAFT"];
+    const andFilters: Record<string, unknown>[] = [];
+    if (query.overdueFirstFollowUp) {
+      andFilters.push({
+        firstFollowUpDueAt: { lt: now },
+        lastActivityAt: null,
+        status: { notIn: terminalStatuses }
+      });
+    }
+    if (query.overdueNextFollowUp) {
+      andFilters.push({
+        nextFollowUpAt: { lt: now },
+        status: { notIn: terminalStatuses }
+      });
+    }
+    if (query.inactiveDays) {
+      const cutoff = new Date(now.getTime() - query.inactiveDays * 24 * 60 * 60 * 1000);
+      andFilters.push({
+        status: { notIn: terminalStatuses },
+        OR: [
+          { lastActivityAt: { lt: cutoff } },
+          { lastActivityAt: null, createdAt: { lt: cutoff } }
+        ]
+      });
+    }
     const where = {
       tenantId: ctx.tenantId,
       ...scopeFilter,
       status: statusFilter,
       ownerId: query.ownerId,
       orgUnitId: query.orgUnitId,
-      ...(qFilters.length ? { OR: qFilters } : {})
+      ...(qFilters.length ? { OR: qFilters } : {}),
+      ...(andFilters.length ? { AND: andFilters } : {})
     };
     const [data, total] = await this.prisma.$transaction([
       this.prisma.lead.findMany({
@@ -136,18 +208,37 @@ export class LeadsService {
           to
         })
       );
-      if (input.status === "CONVERTED") {
-        const accountId = input.accountId ?? existing.accountId;
-        const contactId = input.contactId ?? existing.contactId;
-        if (!accountId && !contactId) {
-          throw badRequest(
-            this.i18n,
-            ctx.locale,
-            "LEAD_CONVERT_MISSING_ACCOUNT_CONTACT",
-            "lead.convert.missing_account_contact"
-          );
-        }
+    }
+    if (input.status === "QUALIFIED" || input.status === "CONVERTED") {
+      const { lead, account, contact, opportunity } =
+        await this.prisma.$transaction(async (tx) =>
+          this.convertLead(ctx, existing, input, tx)
+        );
+      await this.audit.log(ctx, "update", "Lead", lead.id, `Updated ${lead.name}`);
+      await this.outbox.enqueue(ctx, "Lead", lead.id, "lead.updated", { name: lead.name });
+      if (account) {
+        await this.audit.log(ctx, "create", "Account", account.id, `Created ${account.name}`);
+        await this.outbox.enqueue(ctx, "Account", account.id, "account.created", {
+          name: account.name
+        });
       }
+      if (contact) {
+        await this.audit.log(ctx, "create", "Contact", contact.id, `Created ${contact.name}`);
+        await this.outbox.enqueue(ctx, "Contact", contact.id, "contact.created", {
+          name: contact.name
+        });
+      }
+      await this.audit.log(
+        ctx,
+        "create",
+        "Opportunity",
+        opportunity.id,
+        `Created ${opportunity.name}`
+      );
+      await this.outbox.enqueue(ctx, "Opportunity", opportunity.id, "opportunity.created", {
+        name: opportunity.name
+      });
+      return lead;
     }
     const lead = await this.prisma.lead.update({
       where: { id },
@@ -156,6 +247,16 @@ export class LeadsService {
         source: input.source,
         rating: input.rating,
         expectedValue: input.expectedValue,
+        contactName: input.contactName,
+        companyName: input.companyName,
+        phone: input.phone,
+        email: input.email,
+        initialNeed: input.initialNeed,
+        firstFollowUpDueAt: input.firstFollowUpDueAt
+          ? new Date(input.firstFollowUpDueAt)
+          : undefined,
+        disqualifyReason: input.disqualifyReason ?? undefined,
+        disqualifyNote: input.disqualifyNote ?? undefined,
         accountId: input.accountId ?? undefined,
         contactId: input.contactId ?? undefined,
         description: input.description ?? undefined,
@@ -193,17 +294,36 @@ export class LeadsService {
         to
       })
     );
-    if (status === "CONVERTED") {
-      const accountId = input.accountId ?? existing.accountId;
-      const contactId = input.contactId ?? existing.contactId;
-      if (!accountId && !contactId) {
-        throw badRequest(
-          this.i18n,
-          ctx.locale,
-          "LEAD_CONVERT_MISSING_ACCOUNT_CONTACT",
-          "lead.convert.missing_account_contact"
+    if (status === "QUALIFIED" || status === "CONVERTED") {
+      const { lead, account, contact, opportunity } =
+        await this.prisma.$transaction(async (tx) =>
+          this.convertLead(ctx, existing, { ...input, status }, tx)
         );
+      await this.audit.log(ctx, "create", "Lead", lead.id, `Created ${lead.name}`);
+      await this.outbox.enqueue(ctx, "Lead", lead.id, "lead.created", { name: lead.name });
+      if (account) {
+        await this.audit.log(ctx, "create", "Account", account.id, `Created ${account.name}`);
+        await this.outbox.enqueue(ctx, "Account", account.id, "account.created", {
+          name: account.name
+        });
       }
+      if (contact) {
+        await this.audit.log(ctx, "create", "Contact", contact.id, `Created ${contact.name}`);
+        await this.outbox.enqueue(ctx, "Contact", contact.id, "contact.created", {
+          name: contact.name
+        });
+      }
+      await this.audit.log(
+        ctx,
+        "create",
+        "Opportunity",
+        opportunity.id,
+        `Created ${opportunity.name}`
+      );
+      await this.outbox.enqueue(ctx, "Opportunity", opportunity.id, "opportunity.created", {
+        name: opportunity.name
+      });
+      return lead;
     }
     const lead = await this.prisma.lead.update({
       where: { id },
@@ -212,6 +332,16 @@ export class LeadsService {
         source: input.source,
         rating: input.rating,
         expectedValue: input.expectedValue,
+        contactName: input.contactName,
+        companyName: input.companyName,
+        phone: input.phone,
+        email: input.email,
+        initialNeed: input.initialNeed,
+        firstFollowUpDueAt: input.firstFollowUpDueAt
+          ? new Date(input.firstFollowUpDueAt)
+          : undefined,
+        disqualifyReason: input.disqualifyReason,
+        disqualifyNote: input.disqualifyNote,
         accountId: input.accountId ?? undefined,
         contactId: input.contactId ?? undefined,
         description: input.description ?? undefined,
@@ -268,21 +398,17 @@ export class LeadsService {
             { entity, from, to }
           )
         );
-        if (input.status === "CONVERTED") {
-          const accountId = input.accountId ?? lead.accountId;
-          const contactId = input.contactId ?? lead.contactId;
-          if (!accountId && !contactId) {
-            throw badRequest(
-              this.i18n,
-              ctx.locale,
-              "LEAD_CONVERT_MISSING_ACCOUNT_CONTACT",
-              "lead.convert.missing_account_contact"
-            );
-          }
+        if (input.status === "QUALIFIED" || input.status === "CONVERTED") {
+          this.assertLeadConversionReady(ctx, lead, input);
         }
       }
       return { updated: leads.length, ids: leads.map((lead) => lead.id) };
     }
+    const conversions: Array<{
+      account?: { id: string; name: string };
+      contact?: { id: string; name: string };
+      opportunity: { id: string; name: string };
+    }> = [];
     const updated = await this.prisma.$transaction(async (tx) => {
       const results = [];
       for (const lead of leads) {
@@ -295,17 +421,11 @@ export class LeadsService {
             { entity, from, to }
           )
         );
-        if (input.status === "CONVERTED") {
-          const accountId = input.accountId ?? lead.accountId;
-          const contactId = input.contactId ?? lead.contactId;
-          if (!accountId && !contactId) {
-            throw badRequest(
-              this.i18n,
-              ctx.locale,
-              "LEAD_CONVERT_MISSING_ACCOUNT_CONTACT",
-              "lead.convert.missing_account_contact"
-            );
-          }
+        if (input.status === "QUALIFIED" || input.status === "CONVERTED") {
+          const conversion = await this.convertLead(ctx, lead, input, tx);
+          results.push(conversion.lead);
+          conversions.push(conversion);
+          continue;
         }
         const row = await tx.lead.update({
           where: { id: lead.id },
@@ -319,12 +439,199 @@ export class LeadsService {
       }
       return results;
     });
+    const finalStatus = input.status === "QUALIFIED" ? "CONVERTED" : input.status;
+    for (const conversion of conversions) {
+      if (conversion.account) {
+        await this.audit.log(
+          ctx,
+          "create",
+          "Account",
+          conversion.account.id,
+          `Created ${conversion.account.name}`
+        );
+        await this.outbox.enqueue(ctx, "Account", conversion.account.id, "account.created", {
+          name: conversion.account.name
+        });
+      }
+      if (conversion.contact) {
+        await this.audit.log(
+          ctx,
+          "create",
+          "Contact",
+          conversion.contact.id,
+          `Created ${conversion.contact.name}`
+        );
+        await this.outbox.enqueue(ctx, "Contact", conversion.contact.id, "contact.created", {
+          name: conversion.contact.name
+        });
+      }
+      await this.audit.log(
+        ctx,
+        "create",
+        "Opportunity",
+        conversion.opportunity.id,
+        `Created ${conversion.opportunity.name}`
+      );
+      await this.outbox.enqueue(ctx, "Opportunity", conversion.opportunity.id, "opportunity.created", {
+        name: conversion.opportunity.name
+      });
+    }
     for (const lead of updated) {
-      await this.audit.log(ctx, "update", "Lead", lead.id, `Status -> ${input.status}`);
+      await this.audit.log(ctx, "update", "Lead", lead.id, `Status -> ${finalStatus}`);
       await this.outbox.enqueue(ctx, "Lead", lead.id, "lead.status.bulk", {
-        status: input.status
+        status: finalStatus
       });
     }
     return { updated: updated.length, ids: updated.map((lead) => lead.id) };
+  }
+
+  private getLeadSnapshot(existing: Record<string, unknown>, input: Record<string, unknown>) {
+    const asString = (value: unknown) => (typeof value === "string" ? value : undefined);
+    const asNumber = (value: unknown) =>
+      typeof value === "number" ? value : undefined;
+    const asDateString = (value: unknown) =>
+      typeof value === "string" ? value : undefined;
+    const existingFollowUp =
+      existing.firstFollowUpDueAt instanceof Date
+        ? existing.firstFollowUpDueAt.toISOString()
+        : undefined;
+    return {
+      name: asString(input.name) ?? asString(existing.name),
+      contactName: asString(input.contactName) ?? asString(existing.contactName),
+      companyName: asString(input.companyName) ?? asString(existing.companyName),
+      phone: asString(input.phone) ?? asString(existing.phone),
+      email: asString(input.email) ?? asString(existing.email),
+      source: asString(input.source) ?? asString(existing.source),
+      initialNeed: asString(input.initialNeed) ?? asString(existing.initialNeed),
+      expectedValue: asNumber(input.expectedValue) ?? asNumber(existing.expectedValue),
+      firstFollowUpDueAt:
+        asDateString(input.firstFollowUpDueAt) ?? existingFollowUp,
+      accountId: asString(input.accountId) ?? asString(existing.accountId),
+      contactId: asString(input.contactId) ?? asString(existing.contactId)
+    };
+  }
+
+  private assertLeadConversionReady(
+    ctx: RequestContext,
+    existing: Record<string, unknown>,
+    input: Record<string, unknown>
+  ) {
+    const snapshot = this.getLeadSnapshot(existing, input);
+    const missing = [];
+    if (!snapshot.companyName && !snapshot.accountId) {
+      missing.push("companyName");
+    }
+    if (!snapshot.contactName && !snapshot.contactId) {
+      missing.push("contactName");
+    }
+    if (!snapshot.phone && !snapshot.email && !snapshot.contactId) {
+      missing.push("phone/email");
+    }
+    if (!snapshot.source) {
+      missing.push("source");
+    }
+    if (!snapshot.firstFollowUpDueAt) {
+      missing.push("firstFollowUpDueAt");
+    }
+    if (missing.length) {
+      throw badRequest(
+        this.i18n,
+        ctx.locale,
+        "LEAD_CONVERT_MISSING_FIELDS",
+        "lead.convert.missing_fields",
+        { fields: missing.join(", ") }
+      );
+    }
+    const bantScore = [
+      snapshot.initialNeed,
+      snapshot.expectedValue !== undefined ? "yes" : undefined,
+      snapshot.contactName ?? snapshot.contactId,
+      snapshot.firstFollowUpDueAt
+    ].filter(Boolean).length;
+    if (bantScore < 2) {
+      throw badRequest(
+        this.i18n,
+        ctx.locale,
+        "LEAD_CONVERT_BANT_INSUFFICIENT",
+        "lead.convert.bant_insufficient"
+      );
+    }
+  }
+
+  private async convertLead(
+    ctx: RequestContext,
+    existing: Record<string, unknown>,
+    input: Record<string, unknown>,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma
+  ) {
+    const snapshot = this.getLeadSnapshot(existing, input);
+    this.assertLeadConversionReady(ctx, existing, input);
+    let accountId = snapshot.accountId;
+    let contactId = snapshot.contactId;
+    let account;
+    let contact;
+    if (!accountId) {
+      account = await tx.account.create({
+        data: {
+          tenantId: ctx.tenantId,
+          orgUnitId: ctx.orgUnitId,
+          ownerId: ctx.userId,
+          name: snapshot.companyName ?? snapshot.name ?? "Account"
+        }
+      });
+      accountId = account.id;
+    }
+    if (!contactId) {
+      contact = await tx.contact.create({
+        data: {
+          tenantId: ctx.tenantId,
+          orgUnitId: ctx.orgUnitId,
+          ownerId: ctx.userId,
+          accountId: accountId,
+          name: snapshot.contactName ?? "Contact",
+          email: snapshot.email,
+          phone: snapshot.phone
+        }
+      });
+      contactId = contact.id;
+    }
+    const opportunity = await tx.opportunity.create({
+      data: {
+        tenantId: ctx.tenantId,
+        orgUnitId: ctx.orgUnitId,
+        ownerId: ctx.userId,
+        status: "OPEN",
+        name: snapshot.name ?? "Opportunity",
+        stage: "Qualification",
+        amount: snapshot.expectedValue,
+        accountId: accountId,
+        contactId: contactId ?? undefined,
+        leadId: existing.id as string
+      }
+    });
+    const lead = await tx.lead.update({
+      where: { id: existing.id as string },
+      data: {
+        name: input.name as string | undefined,
+        source: input.source as string | undefined,
+        rating: input.rating as string | undefined,
+        expectedValue: input.expectedValue as number | undefined,
+        contactName: input.contactName as string | undefined,
+        companyName: input.companyName as string | undefined,
+        phone: input.phone as string | undefined,
+        email: input.email as string | undefined,
+        initialNeed: input.initialNeed as string | undefined,
+        firstFollowUpDueAt: input.firstFollowUpDueAt
+          ? new Date(input.firstFollowUpDueAt as string)
+          : undefined,
+        disqualifyReason: input.disqualifyReason as string | undefined,
+        disqualifyNote: input.disqualifyNote as string | undefined,
+        accountId: accountId ?? undefined,
+        contactId: contactId ?? undefined,
+        description: input.description as string | undefined,
+        status: "CONVERTED"
+      }
+    });
+    return { lead, account, contact, opportunity };
   }
 }

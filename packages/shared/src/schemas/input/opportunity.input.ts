@@ -12,7 +12,7 @@ export const CreateOpportunityInputSchema = z.object({
   status: OpportunityStatusSchema.optional(),
   expectedCloseDate: DateTimeSchema.optional(),
   probability: z.number().optional(),
-  accountId: IdSchema.nullish(),
+  accountId: IdSchema,
   contactId: IdSchema.nullish(),
   leadId: IdSchema.nullish(),
   reasonLost: z.string().optional()

@@ -10,6 +10,10 @@ export interface ListQuery {
   relatedType?: string;
   relatedId?: string;
   sort?: string;
+  overdueFirstFollowUp?: boolean;
+  overdueNextFollowUp?: boolean;
+  inactiveDays?: number;
+  staleDays?: number;
 }
 
 export function parseListQuery(query: Record<string, unknown>): ListQuery {
@@ -36,6 +40,18 @@ export function parseListQuery(query: Record<string, unknown>): ListQuery {
       ? query.relatedId.trim()
       : undefined;
   const sort = typeof query.sort === "string" && query.sort.trim() ? query.sort.trim() : undefined;
+  const overdueFirstFollowUp =
+    query.overdueFirstFollowUp === "true" ||
+    query.overdueFirstFollowUp === "1" ||
+    query.overdueFirstFollowUp === true;
+  const overdueNextFollowUp =
+    query.overdueNextFollowUp === "true" ||
+    query.overdueNextFollowUp === "1" ||
+    query.overdueNextFollowUp === true;
+  const inactiveDaysRaw = Number.parseInt(String(query.inactiveDays ?? ""), 10);
+  const inactiveDays = Number.isFinite(inactiveDaysRaw) && inactiveDaysRaw > 0 ? inactiveDaysRaw : undefined;
+  const staleDaysRaw = Number.parseInt(String(query.staleDays ?? ""), 10);
+  const staleDays = Number.isFinite(staleDaysRaw) && staleDaysRaw > 0 ? staleDaysRaw : undefined;
   return {
     page,
     pageSize,
@@ -47,7 +63,11 @@ export function parseListQuery(query: Record<string, unknown>): ListQuery {
     orgUnitId,
     relatedType,
     relatedId,
-    sort
+    sort,
+    overdueFirstFollowUp,
+    overdueNextFollowUp,
+    inactiveDays,
+    staleDays
   };
 }
 

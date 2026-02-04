@@ -22,6 +22,7 @@ export class ActivitiesService {
   ) {}
 
   async create(ctx: RequestContext, input: CreateActivityInput) {
+    this.assertLeadActivityRequired(ctx, input);
     const activity = await this.prisma.activity.create({
       data: {
         tenantId: ctx.tenantId,
@@ -30,13 +31,26 @@ export class ActivitiesService {
         status: input.status ?? undefined,
         type: input.type,
         subject: input.subject,
+        content: input.content,
         relatedType: input.relatedType,
         relatedId: input.relatedId,
         dueAt: input.dueAt ? new Date(input.dueAt) : undefined,
         completedAt: input.completedAt ? new Date(input.completedAt) : undefined,
-        outcome: input.outcome
+        outcome: input.outcome,
+        nextFollowUpAt: input.nextFollowUpAt
+          ? new Date(input.nextFollowUpAt)
+          : undefined
       }
     });
+    if (activity.relatedType === "Lead" && activity.relatedId) {
+      await this.prisma.lead.update({
+        where: { id: activity.relatedId },
+        data: {
+          lastActivityAt: activity.completedAt ?? activity.createdAt,
+          nextFollowUpAt: activity.nextFollowUpAt ?? undefined
+        }
+      });
+    }
     await this.audit.log(
       ctx,
       "create",
@@ -104,6 +118,7 @@ export class ActivitiesService {
 
   async update(ctx: RequestContext, id: string, input: UpdateActivityInput) {
     const existing = await this.get(ctx, id);
+    this.assertLeadActivityRequired(ctx, input, existing);
     if (input.status) {
       assertTransition("Activity", existing.status, input.status, ({ entity, from, to }) =>
         badRequest(
@@ -133,14 +148,27 @@ export class ActivitiesService {
       data: {
         type: input.type,
         subject: input.subject,
+        content: input.content,
         relatedType: input.relatedType,
         relatedId: input.relatedId,
         dueAt: input.dueAt ? new Date(input.dueAt) : undefined,
         completedAt: input.completedAt ? new Date(input.completedAt) : undefined,
         outcome: input.outcome,
+        nextFollowUpAt: input.nextFollowUpAt
+          ? new Date(input.nextFollowUpAt)
+          : undefined,
         status: input.status
       }
     });
+    if (activity.relatedType === "Lead" && activity.relatedId) {
+      await this.prisma.lead.update({
+        where: { id: activity.relatedId },
+        data: {
+          lastActivityAt: activity.completedAt ?? activity.createdAt,
+          nextFollowUpAt: activity.nextFollowUpAt ?? undefined
+        }
+      });
+    }
     await this.audit.log(
       ctx,
       "update",
@@ -168,5 +196,44 @@ export class ActivitiesService {
       subject: activity.subject
     });
     return activity;
+  }
+
+  private assertLeadActivityRequired(
+    ctx: RequestContext,
+    input: Record<string, unknown>,
+    existing?: Record<string, unknown>
+  ) {
+    const relatedType = (input.relatedType ?? existing?.relatedType) as string | undefined;
+    if (relatedType !== "Lead") {
+      return;
+    }
+    const type = (input.type ?? existing?.type) as string | undefined;
+    const completedAt =
+      (input.completedAt as string | undefined) ??
+      (existing?.completedAt instanceof Date
+        ? existing.completedAt.toISOString()
+        : undefined);
+    const outcome = (input.outcome ?? existing?.outcome) as string | undefined;
+    const content = (input.content ?? existing?.content) as string | undefined;
+    const nextFollowUpAt =
+      (input.nextFollowUpAt as string | undefined) ??
+      (existing?.nextFollowUpAt instanceof Date
+        ? existing.nextFollowUpAt.toISOString()
+        : undefined);
+    const missing = [];
+    if (!type) missing.push("type");
+    if (!completedAt) missing.push("completedAt");
+    if (!outcome) missing.push("outcome");
+    if (!content) missing.push("content");
+    if (!nextFollowUpAt) missing.push("nextFollowUpAt");
+    if (missing.length) {
+      throw badRequest(
+        this.i18n,
+        ctx.locale,
+        "ACTIVITY_LEAD_MISSING_FIELDS",
+        "activity.lead.missing_fields",
+        { fields: missing.join(", ") }
+      );
+    }
   }
 }

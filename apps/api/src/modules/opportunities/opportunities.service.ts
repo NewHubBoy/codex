@@ -22,6 +22,14 @@ export class OpportunitiesService {
   ) {}
 
   async create(ctx: RequestContext, input: CreateOpportunityInput) {
+    if (!input.accountId) {
+      throw badRequest(
+        this.i18n,
+        ctx.locale,
+        "OPPORTUNITY_MISSING_ACCOUNT",
+        "opportunity.missing_account"
+      );
+    }
     const opportunity = await this.prisma.opportunity.create({
       data: {
         tenantId: ctx.tenantId,
@@ -36,10 +44,11 @@ export class OpportunitiesService {
           ? new Date(input.expectedCloseDate)
           : undefined,
         probability: input.probability,
-        accountId: input.accountId ?? undefined,
+        accountId: input.accountId,
         contactId: input.contactId ?? undefined,
         leadId: input.leadId ?? undefined,
-        reasonLost: input.reasonLost
+        reasonLost: input.reasonLost,
+        lastStageChangedAt: new Date()
       }
     });
     await this.audit.log(
@@ -66,13 +75,22 @@ export class OpportunitiesService {
     if (serialId !== undefined) {
       qFilters.push({ serialId });
     }
+    const andFilters: Record<string, unknown>[] = [];
+    if (query.staleDays) {
+      const cutoff = new Date(Date.now() - query.staleDays * 24 * 60 * 60 * 1000);
+      andFilters.push({
+        status: { notIn: ["WON", "LOST"] },
+        lastStageChangedAt: { lt: cutoff }
+      });
+    }
     const where = {
       tenantId: ctx.tenantId,
       ...scopeFilter,
       status: query.status,
       ownerId: query.ownerId,
       orgUnitId: query.orgUnitId,
-      ...(qFilters.length ? { OR: qFilters } : {})
+      ...(qFilters.length ? { OR: qFilters } : {}),
+      ...(andFilters.length ? { AND: andFilters } : {})
     };
     const [data, total] = await this.prisma.$transaction([
       this.prisma.opportunity.findMany({
@@ -166,7 +184,9 @@ export class OpportunitiesService {
         contactId: input.contactId ?? undefined,
         leadId: input.leadId ?? undefined,
         reasonLost: input.reasonLost ?? undefined,
-        status: input.status
+        status: input.status,
+        lastStageChangedAt:
+          input.stage && input.stage !== existing.stage ? new Date() : undefined
       }
     });
     await this.audit.log(

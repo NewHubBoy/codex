@@ -32,6 +32,9 @@ export class OpportunityDto {
 
   @ApiProperty({ required: false })
   probability?: number | null;
+
+  @ApiProperty({ required: false })
+  lastStageChangedAt?: string | null;
 }
 
 export class CreateOpportunityDto {
@@ -61,8 +64,8 @@ export class CreateOpportunityDto {
   })
   status?: string;
 
-  @ApiProperty({ required: false })
-  accountId?: string | null;
+  @ApiProperty()
+  accountId!: string;
 
   @ApiProperty({ required: false })
   contactId?: string | null;

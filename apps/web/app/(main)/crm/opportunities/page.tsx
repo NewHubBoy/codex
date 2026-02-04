@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Table, Button, Space, Tag, Input, Select, Card } from "antd";
+import { Table, Button, Space, Tag, Input, Select, Card, type TablePaginationConfig } from "antd";
 import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useOpportunities } from "@/hooks/useOpportunities";
 import Link from "next/link";
 import { useI18n } from "@/i18n/provider";
+import type { Opportunity } from "@/services/opportunities";
 
 const { Search } = Input;
 
@@ -25,12 +26,14 @@ export default function OpportunitiesPage() {
   const [pageSize, setPageSize] = useState(20);
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("");
+  const [staleDays, setStaleDays] = useState<number | undefined>(undefined);
 
   const { data, isLoading } = useOpportunities({
     page,
     pageSize,
     q: q || undefined,
-    status: status || undefined
+    status: status || undefined,
+    staleDays
   });
 
   const stageLabels: Record<string, string> = {
@@ -53,7 +56,7 @@ export default function OpportunitiesPage() {
       title: t("opportunities.table.name"),
       dataIndex: "name",
       key: "name",
-      render: (text: string, record: any) => (
+      render: (text: string, record: Opportunity) => (
         <Link href={`/crm/opportunities/${record.id}`}>{text}</Link>
       )
     },
@@ -77,6 +80,27 @@ export default function OpportunitiesPage() {
           {stageLabels[stage] || stage}
         </Tag>
       )
+    },
+    {
+      title: t("opportunities.table.alert"),
+      key: "alert",
+      render: (_: unknown, record: Opportunity) => {
+        const threshold = staleDays ?? 7;
+        if (!record.lastStageChangedAt) {
+          return "-";
+        }
+        if (record.status === "WON" || record.status === "LOST") {
+          return "-";
+        }
+        const isStale =
+          new Date(record.lastStageChangedAt).getTime() <
+          Date.now() - threshold * 24 * 60 * 60 * 1000;
+        return isStale ? (
+          <Tag color="red">{t("opportunities.alert.stale", { days: threshold })}</Tag>
+        ) : (
+          "-"
+        );
+      }
     },
     {
       title: t("opportunities.table.expected_close_date"),
@@ -133,6 +157,18 @@ export default function OpportunitiesPage() {
               { label: stageLabels.LOST, value: "LOST" }
             ]}
           />
+          <Select
+            placeholder={t("opportunities.filters.stale_placeholder")}
+            allowClear
+            style={{ width: 160 }}
+            value={staleDays}
+            onChange={(value) => setStaleDays(value)}
+            options={[
+              { label: t("opportunities.filters.stale_days", { days: 7 }), value: 7 },
+              { label: t("opportunities.filters.stale_days", { days: 14 }), value: 14 },
+              { label: t("opportunities.filters.stale_days", { days: 30 }), value: 30 }
+            ]}
+          />
         </Space>
 
         <Table
@@ -148,7 +184,7 @@ export default function OpportunitiesPage() {
             showQuickJumper: true,
             showTotal: (total) => t("common.total_count", { total })
           }}
-          onChange={(pagination) => {
+          onChange={(pagination: TablePaginationConfig) => {
             setPage(pagination.current || 1);
             setPageSize(pagination.pageSize || 20);
           }}

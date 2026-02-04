@@ -2,7 +2,19 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Table, Button, Space, Tag, Input, Select, Card, Typography, Popconfirm } from "antd";
+import {
+  Table,
+  Button,
+  Space,
+  Tag,
+  Input,
+  Select,
+  Card,
+  Typography,
+  Popconfirm,
+  InputNumber,
+  type TablePaginationConfig
+} from "antd";
 import {
   PlusOutlined,
   SearchOutlined,
@@ -30,6 +42,8 @@ export default function LeadsPage() {
   const [filters, setFilters] = useState<Partial<LeadListParams>>({});
   const [pagination, setPagination] = useState({ current: 1, pageSize: 20 });
   const [creating, setCreating] = useState(false);
+  const [alertFilter, setAlertFilter] = useState<string | undefined>(undefined);
+  const [inactiveDays, setInactiveDays] = useState(7);
 
   // 查询线索列表
   const { data, isLoading, refetch } = useLeads({
@@ -48,6 +62,7 @@ export default function LeadsPage() {
     NEW: t("lead.status.new"),
     ASSIGNED: t("lead.status.assigned"),
     WORKING: t("lead.status.working"),
+    INTERESTED: t("lead.status.interested"),
     QUALIFIED: t("lead.status.qualified"),
     CONVERTED: t("lead.status.converted"),
     DISQUALIFIED: t("lead.status.disqualified"),
@@ -70,7 +85,7 @@ export default function LeadsPage() {
   };
 
   // 处理表格变化
-  const handleTableChange = (pagination: any) => {
+  const handleTableChange = (pagination: TablePaginationConfig) => {
     setPagination({ current: pagination.current || 1, pageSize: pagination.pageSize || 20 });
   };
 
@@ -84,6 +99,41 @@ export default function LeadsPage() {
   const handleFilterChange = (key: string, value: string) => {
     setFilters({ ...filters, [key]: value || undefined });
     setPagination({ ...pagination, current: 1 });
+  };
+
+  const handleAlertFilterChange = (value?: string) => {
+    setAlertFilter(value);
+    setFilters((prev) => {
+      const next = {
+        ...prev,
+        overdueFirstFollowUp: undefined,
+        overdueNextFollowUp: undefined,
+        inactiveDays: undefined
+      };
+      if (value === "first") {
+        next.overdueFirstFollowUp = true;
+      } else if (value === "next") {
+        next.overdueNextFollowUp = true;
+      } else if (value === "inactive") {
+        next.inactiveDays = inactiveDays;
+      }
+      return next;
+    });
+    setPagination((prev) => ({ ...prev, current: 1 }));
+  };
+
+  const handleInactiveDaysChange = (value: number | null) => {
+    const days = value && value > 0 ? value : 7;
+    setInactiveDays(days);
+    if (alertFilter === "inactive") {
+      setFilters((prev) => ({
+        ...prev,
+        overdueFirstFollowUp: undefined,
+        overdueNextFollowUp: undefined,
+        inactiveDays: days
+      }));
+      setPagination((prev) => ({ ...prev, current: 1 }));
+    }
   };
 
   // 处理新建 - 创建草稿后跳转详情页编辑
@@ -124,6 +174,7 @@ export default function LeadsPage() {
     NEW: "blue",
     ASSIGNED: "cyan",
     WORKING: "green",
+    INTERESTED: "orange",
     QUALIFIED: "purple",
     CONVERTED: "gold",
     DISQUALIFIED: "red"
@@ -134,6 +185,50 @@ export default function LeadsPage() {
     HOT: "red",
     WARM: "orange",
     COLD: "blue"
+  };
+
+  const terminalStatuses = new Set(["CONVERTED", "DISQUALIFIED", "DRAFT"]);
+  const now = Date.now();
+  const staleCutoff = now - inactiveDays * 24 * 60 * 60 * 1000;
+
+  const renderAlertTags = (lead: Lead) => {
+    if (terminalStatuses.has(lead.status)) {
+      return "-";
+    }
+    const tags: JSX.Element[] = [];
+    const firstFollowUpOverdue =
+      !!lead.firstFollowUpDueAt &&
+      !lead.lastActivityAt &&
+      new Date(lead.firstFollowUpDueAt).getTime() < now;
+    const nextFollowUpOverdue =
+      !!lead.nextFollowUpAt && new Date(lead.nextFollowUpAt).getTime() < now;
+    const inactive =
+      (lead.lastActivityAt
+        ? new Date(lead.lastActivityAt).getTime() < staleCutoff
+        : new Date(lead.createdAt).getTime() < staleCutoff);
+
+    if (firstFollowUpOverdue) {
+      tags.push(
+        <Tag color="volcano" key="first">
+          {t("leads.alert.first_overdue")}
+        </Tag>
+      );
+    }
+    if (nextFollowUpOverdue) {
+      tags.push(
+        <Tag color="orange" key="next">
+          {t("leads.alert.next_overdue")}
+        </Tag>
+      );
+    }
+    if (inactive) {
+      tags.push(
+        <Tag color="red" key="inactive">
+          {t("leads.alert.inactive", { days: inactiveDays })}
+        </Tag>
+      );
+    }
+    return tags.length ? <Space size={4}>{tags}</Space> : "-";
   };
 
   // 表格列配置
@@ -154,16 +249,17 @@ export default function LeadsPage() {
     },
     {
       title: t("leads.table.company"),
-      dataIndex: "company",
-      key: "company"
+      dataIndex: "companyName",
+      key: "companyName"
     },
     {
       title: t("leads.table.contact"),
       key: "contact",
       render: (_: unknown, record: Lead) => (
         <Space direction="vertical" size={0}>
-          <Text>{record.email}</Text>
-          <Text type="secondary">{record.phone}</Text>
+          <Text>{record.contactName || "-"}</Text>
+          <Text type="secondary">{record.email || "-"}</Text>
+          <Text type="secondary">{record.phone || "-"}</Text>
         </Space>
       )
     },
@@ -174,6 +270,11 @@ export default function LeadsPage() {
       render: (status: string) => (
         <Tag color={statusColors[status]}>{statusLabels[status] || status}</Tag>
       )
+    },
+    {
+      title: t("leads.table.alert"),
+      key: "alert",
+      render: (_: unknown, record: Lead) => renderAlertTags(record)
     },
     {
       title: t("leads.table.rating"),
@@ -291,6 +392,27 @@ export default function LeadsPage() {
               label: sourceLabels[key] || key.replace("_", " "),
               value
             }))}
+          />
+          <Select
+            placeholder={t("leads.filters.alert_placeholder")}
+            allowClear
+            style={{ width: 150 }}
+            value={alertFilter}
+            onChange={handleAlertFilterChange}
+            options={[
+              { label: t("leads.alert.first_overdue"), value: "first" },
+              { label: t("leads.alert.next_overdue"), value: "next" },
+              { label: t("leads.alert.inactive_short"), value: "inactive" }
+            ]}
+          />
+          <InputNumber
+            min={1}
+            max={365}
+            value={inactiveDays}
+            onChange={handleInactiveDaysChange}
+            disabled={alertFilter !== "inactive"}
+            placeholder={t("leads.filters.inactive_days_placeholder")}
+            style={{ width: 120 }}
           />
           <Button icon={<ReloadOutlined />} onClick={() => refetch()}>
             {t("common.refresh")}

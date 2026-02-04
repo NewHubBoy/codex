@@ -3,6 +3,7 @@ export const LEAD_STATUSES = [
   "NEW",
   "ASSIGNED",
   "WORKING",
+  "INTERESTED",
   "QUALIFIED",
   "CONVERTED",
   "DISQUALIFIED"

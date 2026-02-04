@@ -11,6 +11,7 @@ export function useOpportunities(params?: {
   leadId?: string;
   ownerId?: string;
   orgUnitId?: string;
+  staleDays?: number;
 }) {
   return useQuery({
     queryKey: ["opportunities", params],

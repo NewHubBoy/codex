@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Drawer, Form, Input, Select, InputNumber, Button, Space, App } from "antd";
+import { Drawer, Form, Input, Select, InputNumber, Button, Space, App, DatePicker } from "antd";
 import {
   useCreateLeadDraft,
   useSubmitLead,
@@ -10,6 +10,7 @@ import {
 } from "@/hooks/useLeads";
 import type { Lead } from "@/services/leads";
 import { LeadSource, LeadRating } from "@/services/leads";
+import dayjs from "dayjs";
 
 interface LeadDrawerProps {
   open: boolean;
@@ -42,12 +43,17 @@ export function LeadDrawer({ open, lead, onClose, onSuccess }: LeadDrawerProps) 
       setDraftSubmitted(false);
       form.setFieldsValue({
         name: lead.name,
-        company: lead.company,
+        contactName: lead.contactName,
+        companyName: lead.companyName,
         email: lead.email,
         phone: lead.phone,
         source: lead.source,
         rating: lead.rating,
         expectedValue: lead.expectedValue,
+        initialNeed: lead.initialNeed,
+        firstFollowUpDueAt: lead.firstFollowUpDueAt
+          ? dayjs(lead.firstFollowUpDueAt)
+          : undefined,
         description: lead.description,
         ownerId: lead.ownerId,
       });
@@ -76,11 +82,19 @@ export function LeadDrawer({ open, lead, onClose, onSuccess }: LeadDrawerProps) 
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
+      const payload = {
+        ...values,
+        email: values.email || undefined,
+        phone: values.phone || undefined,
+        firstFollowUpDueAt: values.firstFollowUpDueAt
+          ? values.firstFollowUpDueAt.toISOString()
+          : undefined,
+      };
 
       if (isEditing) {
         await updateLead.mutateAsync({
           id: lead.id,
-          data: values,
+          data: payload,
         });
         message.success("更新成功");
       } else {
@@ -90,7 +104,7 @@ export function LeadDrawer({ open, lead, onClose, onSuccess }: LeadDrawerProps) 
         }
         await submitDraft.mutateAsync({
           id: draftLead.id,
-          data: values,
+          data: payload,
         });
         setDraftSubmitted(true);
         setDraftLead(null);
@@ -150,7 +164,19 @@ export function LeadDrawer({ open, lead, onClose, onSuccess }: LeadDrawerProps) 
           <Input placeholder="请输入线索名称" />
         </Form.Item>
 
-        <Form.Item name="company" label="公司">
+        <Form.Item
+          name="contactName"
+          label="联系人姓名"
+          rules={[{ required: true, message: "请输入联系人姓名" }]}
+        >
+          <Input placeholder="请输入联系人姓名" />
+        </Form.Item>
+
+        <Form.Item
+          name="companyName"
+          label="公司"
+          rules={[{ required: true, message: "请输入公司名称" }]}
+        >
           <Input placeholder="请输入公司名称" />
         </Form.Item>
 
@@ -161,6 +187,14 @@ export function LeadDrawer({ open, lead, onClose, onSuccess }: LeadDrawerProps) 
             style={{ flex: 1 }}
             rules={[
               { type: "email", message: "请输入有效的邮箱地址" },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (value || getFieldValue("phone")) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(new Error("电话或邮箱至少填写一个"));
+                },
+              }),
             ]}
           >
             <Input placeholder="请输入邮箱" />
@@ -170,6 +204,16 @@ export function LeadDrawer({ open, lead, onClose, onSuccess }: LeadDrawerProps) 
             name="phone"
             label="电话"
             style={{ flex: 1 }}
+            rules={[
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (value || getFieldValue("email")) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(new Error("电话或邮箱至少填写一个"));
+                },
+              }),
+            ]}
           >
             <Input placeholder="请输入电话" />
           </Form.Item>
@@ -180,6 +224,7 @@ export function LeadDrawer({ open, lead, onClose, onSuccess }: LeadDrawerProps) 
             name="source"
             label="来源"
             style={{ flex: 1 }}
+            rules={[{ required: true, message: "请选择来源" }]}
           >
             <Select
               placeholder="请选择来源"
@@ -204,6 +249,22 @@ export function LeadDrawer({ open, lead, onClose, onSuccess }: LeadDrawerProps) 
             />
           </Form.Item>
         </Space>
+
+        <Form.Item
+          name="initialNeed"
+          label="初步需求"
+          rules={[{ required: true, message: "请输入初步需求" }]}
+        >
+          <Input.TextArea rows={3} placeholder="请输入初步需求" />
+        </Form.Item>
+
+        <Form.Item
+          name="firstFollowUpDueAt"
+          label="首次跟进截止时间"
+          rules={[{ required: true, message: "请选择首次跟进截止时间" }]}
+        >
+          <DatePicker style={{ width: "100%" }} showTime />
+        </Form.Item>
 
         <Form.Item name="expectedValue" label="预期金额">
           <InputNumber

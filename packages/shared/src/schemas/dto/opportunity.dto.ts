@@ -8,10 +8,11 @@ export const OpportunityDTOSchema = BaseEntitySchema.extend({
   currency: z.string().optional(),
   expectedCloseDate: DateTimeSchema.optional(),
   probability: z.number().optional(),
-  accountId: IdSchema.nullish(),
+  accountId: IdSchema,
   contactId: IdSchema.nullish(),
   leadId: IdSchema.nullish(),
-  reasonLost: z.string().optional()
+  reasonLost: z.string().optional(),
+  lastStageChangedAt: DateTimeSchema.optional()
 });
 
 export type OpportunityDTO = z.infer<typeof OpportunityDTOSchema>;

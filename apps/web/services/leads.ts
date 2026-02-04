@@ -54,6 +54,9 @@ export interface LeadListParams {
   orgUnitId?: string;
   startDate?: string;
   endDate?: string;
+  overdueFirstFollowUp?: boolean;
+  overdueNextFollowUp?: boolean;
+  inactiveDays?: number;
 }
 
 // 线索列表响应
@@ -63,9 +66,16 @@ export type LeadListResponse = PaginatedResponse<Lead>;
 export type Lead = LeadDTO & {
   source?: LeadSourceType;
   rating?: LeadRatingType;
-  company?: string;
+  companyName?: string;
+  contactName?: string;
   email?: string;
   phone?: string;
+  initialNeed?: string;
+  firstFollowUpDueAt?: string;
+  lastActivityAt?: string;
+  nextFollowUpAt?: string;
+  disqualifyReason?: string;
+  disqualifyNote?: string;
   owner?: {
     id: string;
     name: string;
@@ -77,9 +87,14 @@ export type Lead = LeadDTO & {
 export type CreateLeadParams = CreateLeadInput & {
   source?: LeadSourceType;
   rating?: LeadRatingType;
-  company?: string;
+  companyName?: string;
+  contactName?: string;
   email?: string;
   phone?: string;
+  initialNeed?: string;
+  firstFollowUpDueAt?: string;
+  disqualifyReason?: string;
+  disqualifyNote?: string;
   ownerId?: string;
 };
 
@@ -87,7 +102,20 @@ export type CreateLeadDraftParams = Partial<CreateLeadParams>;
 
 // 更新线索参数
 export type UpdateLeadParams = UpdateLeadInput &
-  Partial<Pick<CreateLeadParams, "company" | "email" | "phone" | "ownerId">> & {
+  Partial<
+    Pick<
+      CreateLeadParams,
+      | "companyName"
+      | "contactName"
+      | "email"
+      | "phone"
+      | "initialNeed"
+      | "firstFollowUpDueAt"
+      | "disqualifyReason"
+      | "disqualifyNote"
+      | "ownerId"
+    >
+  > & {
     status?: LeadStatusType;
     source?: LeadSourceType;
     rating?: LeadRatingType;

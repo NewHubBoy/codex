@@ -24,6 +24,7 @@ export const opportunities = {
     leadId?: string;
     ownerId?: string;
     orgUnitId?: string;
+    staleDays?: number;
   }): Promise<OpportunityListResponse> => {
     return api.get("/opportunities", { params });
   },

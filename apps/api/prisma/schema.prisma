@@ -219,6 +219,16 @@ model Lead {
   source         String?
   rating         String?
   expectedValue  Float?
+  contactName    String?
+  companyName    String?
+  phone          String?
+  email          String?
+  initialNeed    String?
+  firstFollowUpDueAt DateTime?
+  lastActivityAt DateTime?
+  nextFollowUpAt DateTime?
+  disqualifyReason String?
+  disqualifyNote String?
   accountId      String?
   contactId      String?
   description    String?
@@ -234,6 +244,9 @@ model Lead {
   @@index([ownerId])
   @@index([accountId])
   @@index([contactId])
+  @@index([firstFollowUpDueAt])
+  @@index([nextFollowUpAt])
+  @@index([lastActivityAt])
 }
 
 model Opportunity {
@@ -253,6 +266,7 @@ model Opportunity {
   contactId          String?
   leadId             String?
   reasonLost         String?
+  lastStageChangedAt DateTime @default(now())
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
@@ -268,6 +282,7 @@ model Opportunity {
   @@index([accountId])
   @@index([contactId])
   @@index([leadId])
+  @@index([lastStageChangedAt])
 }
 
 model Activity {
@@ -279,11 +294,13 @@ model Activity {
   status      String   @default("OPEN")
   type        String?
   subject     String?
+  content     String?
   relatedType String?
   relatedId   String?
   dueAt       DateTime?
   completedAt DateTime?
   outcome     String?
+  nextFollowUpAt DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

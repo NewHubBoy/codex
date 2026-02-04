@@ -28,6 +28,7 @@ const statusColors: Record<string, string> = {
   NEW: 'blue',
   ASSIGNED: 'cyan',
   WORKING: 'green',
+  INTERESTED: 'orange',
   QUALIFIED: 'purple',
   CONVERTED: 'gold',
 };

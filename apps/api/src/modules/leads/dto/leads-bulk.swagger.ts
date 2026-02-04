@@ -1,9 +1,11 @@
 import { ApiProperty } from "@nestjs/swagger";
 
 const LEAD_STATUSES = [
+  "DRAFT",
   "NEW",
   "ASSIGNED",
   "WORKING",
+  "INTERESTED",
   "QUALIFIED",
   "CONVERTED",
   "DISQUALIFIED"

@@ -22,6 +22,9 @@ export class ActivityDto {
   subject?: string | null;
 
   @ApiProperty({ required: false })
+  content?: string | null;
+
+  @ApiProperty({ required: false })
   relatedType?: string | null;
 
   @ApiProperty({ required: false })
@@ -35,6 +38,9 @@ export class ActivityDto {
 
   @ApiProperty({ required: false })
   outcome?: string | null;
+
+  @ApiProperty({ required: false })
+  nextFollowUpAt?: string | null;
 }
 
 export class CreateActivityDto {
@@ -43,6 +49,9 @@ export class CreateActivityDto {
 
   @ApiProperty({ required: false })
   subject?: string;
+
+  @ApiProperty({ required: false })
+  content?: string;
 
   @ApiProperty({ required: false })
   relatedType?: string;
@@ -58,6 +67,9 @@ export class CreateActivityDto {
 
   @ApiProperty({ required: false })
   outcome?: string;
+
+  @ApiProperty({ required: false })
+  nextFollowUpAt?: string;
 
   @ApiProperty({
     required: false,
@@ -75,6 +87,9 @@ export class UpdateActivityDto {
   subject?: string;
 
   @ApiProperty({ required: false })
+  content?: string;
+
+  @ApiProperty({ required: false })
   relatedType?: string;
 
   @ApiProperty({ required: false })
@@ -88,6 +103,9 @@ export class UpdateActivityDto {
 
   @ApiProperty({ required: false })
   outcome?: string;
+
+  @ApiProperty({ required: false })
+  nextFollowUpAt?: string;
 
   @ApiProperty({
     required: false,

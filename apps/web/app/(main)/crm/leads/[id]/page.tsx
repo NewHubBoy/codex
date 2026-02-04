@@ -16,6 +16,7 @@ import {
   Input,
   Select,
   InputNumber,
+  DatePicker,
 } from 'antd';
 import { ArrowLeftOutlined, EditOutlined, DeleteOutlined, SwapOutlined } from '@ant-design/icons';
 import { useLead, useDeleteLead, useUpdateLead, useSubmitLead } from '@/hooks/useLeads';
@@ -26,6 +27,7 @@ import { AttachmentTable } from '@/components/business/AttachmentTable';
 import { ActivityTable } from '@/components/business/ActivityTable';
 import { useI18n } from '@/i18n/provider';
 import { getErrorMessage } from '@/utils/error';
+import dayjs from 'dayjs';
 
 const { Text } = Typography;
 
@@ -33,6 +35,7 @@ const statusColors: Record<string, string> = {
   NEW: 'blue',
   ASSIGNED: 'cyan',
   WORKING: 'green',
+  INTERESTED: 'orange',
   QUALIFIED: 'purple',
   CONVERTED: 'gold',
   DISQUALIFIED: 'red',
@@ -66,6 +69,7 @@ export default function LeadDetailPage() {
     NEW: t('lead.status.new'),
     ASSIGNED: t('lead.status.assigned'),
     WORKING: t('lead.status.working'),
+    INTERESTED: t('lead.status.interested'),
     QUALIFIED: t('lead.status.qualified'),
     CONVERTED: t('lead.status.converted'),
     DISQUALIFIED: t('lead.status.disqualified'),
@@ -100,12 +104,17 @@ export default function LeadDetailPage() {
     if (lead) {
       form.setFieldsValue({
         name: lead.name,
-        company: lead.company,
+        contactName: lead.contactName,
+        companyName: lead.companyName,
         email: lead.email,
         phone: lead.phone,
         source: lead.source,
         rating: lead.rating,
         expectedValue: lead.expectedValue,
+        initialNeed: lead.initialNeed,
+        firstFollowUpDueAt: lead.firstFollowUpDueAt
+          ? dayjs(lead.firstFollowUpDueAt)
+          : undefined,
         description: lead.description,
         ownerId: lead.ownerId,
         status: lead.status === 'DRAFT' ? undefined : lead.status,
@@ -129,14 +138,22 @@ export default function LeadDetailPage() {
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
+      const payload = {
+        ...values,
+        email: values.email || undefined,
+        phone: values.phone || undefined,
+        firstFollowUpDueAt: values.firstFollowUpDueAt
+          ? values.firstFollowUpDueAt.toISOString()
+          : undefined,
+      };
       if (!lead) {
         return;
       }
       if (isDraft) {
-        await submitLead.mutateAsync({ id, data: values });
+        await submitLead.mutateAsync({ id, data: payload });
         message.success(t('lead.messages.create_success'));
       } else {
-        await updateLead.mutateAsync({ id, data: values });
+        await updateLead.mutateAsync({ id, data: payload });
         message.success(t('lead.messages.update_success'));
       }
       setIsEditing(false);
@@ -162,12 +179,17 @@ export default function LeadDetailPage() {
     if (lead) {
       form.setFieldsValue({
         name: lead.name,
-        company: lead.company,
+        contactName: lead.contactName,
+        companyName: lead.companyName,
         email: lead.email,
         phone: lead.phone,
         source: lead.source,
         rating: lead.rating,
         expectedValue: lead.expectedValue,
+        initialNeed: lead.initialNeed,
+        firstFollowUpDueAt: lead.firstFollowUpDueAt
+          ? dayjs(lead.firstFollowUpDueAt)
+          : undefined,
         description: lead.description,
         ownerId: lead.ownerId,
         status: lead.status === 'DRAFT' ? undefined : lead.status,
@@ -295,11 +317,27 @@ export default function LeadDetailPage() {
         <Card title={t('common.basic_info')}>
           {isEditing ? (
             <Form form={form} layout="vertical" requiredMark="optional">
-              <Form.Item name="name" label={t('lead.fields.name')} rules={[{ required: true, message: t('lead.validation.name_required') }]}>
+              <Form.Item
+                name="name"
+                label={t('lead.fields.name')}
+                rules={[{ required: true, message: t('lead.validation.name_required') }]}
+              >
                 <Input placeholder={t('lead.placeholders.name')} />
               </Form.Item>
 
-              <Form.Item name="company" label={t('lead.fields.company')}>
+              <Form.Item
+                name="contactName"
+                label={t('lead.fields.contact_name')}
+                rules={[{ required: true, message: t('lead.validation.contact_name_required') }]}
+              >
+                <Input placeholder={t('lead.placeholders.contact_name')} />
+              </Form.Item>
+
+              <Form.Item
+                name="companyName"
+                label={t('lead.fields.company')}
+                rules={[{ required: true, message: t('lead.validation.company_required') }]}
+              >
                 <Input placeholder={t('lead.placeholders.company')} />
               </Form.Item>
 
@@ -308,18 +346,47 @@ export default function LeadDetailPage() {
                   name="email"
                   label={t('lead.fields.email')}
                   style={{ flex: 1 }}
-                  rules={[{ type: 'email', message: t('lead.validation.email_invalid') }]}
+                  rules={[
+                    { type: 'email', message: t('lead.validation.email_invalid') },
+                    ({ getFieldValue }) => ({
+                      validator(_, value) {
+                        if (value || getFieldValue('phone')) {
+                          return Promise.resolve();
+                        }
+                        return Promise.reject(new Error(t('lead.validation.contact_required')));
+                      },
+                    }),
+                  ]}
                 >
                   <Input placeholder={t('lead.placeholders.email')} />
                 </Form.Item>
 
-                <Form.Item name="phone" label={t('lead.fields.phone')} style={{ flex: 1 }}>
+                <Form.Item
+                  name="phone"
+                  label={t('lead.fields.phone')}
+                  style={{ flex: 1 }}
+                  rules={[
+                    ({ getFieldValue }) => ({
+                      validator(_, value) {
+                        if (value || getFieldValue('email')) {
+                          return Promise.resolve();
+                        }
+                        return Promise.reject(new Error(t('lead.validation.contact_required')));
+                      },
+                    }),
+                  ]}
+                >
                   <Input placeholder={t('lead.placeholders.phone')} />
                 </Form.Item>
               </Space>
 
               <Space style={{ width: '100%' }} size={16}>
-                <Form.Item name="source" label={t('lead.fields.source')} style={{ flex: 1 }}>
+                <Form.Item
+                  name="source"
+                  label={t('lead.fields.source')}
+                  style={{ flex: 1 }}
+                  rules={[{ required: true, message: t('lead.validation.source_required') }]}
+                >
                   <Select
                     placeholder={t('lead.placeholders.source')}
                     options={Object.entries(LeadSource).map(([key, value]) => ({
@@ -339,6 +406,31 @@ export default function LeadDetailPage() {
                   />
                 </Form.Item>
               </Space>
+
+              <Form.Item
+                name="initialNeed"
+                label={t('lead.fields.initial_need')}
+                rules={[{ required: true, message: t('lead.validation.initial_need_required') }]}
+              >
+                <Input.TextArea rows={3} placeholder={t('lead.placeholders.initial_need')} />
+              </Form.Item>
+
+              <Form.Item
+                name="firstFollowUpDueAt"
+                label={t('lead.fields.first_follow_up_due_at')}
+                rules={[
+                  {
+                    required: true,
+                    message: t('lead.validation.first_follow_up_due_at_required'),
+                  },
+                ]}
+              >
+                <DatePicker
+                  style={{ width: '100%' }}
+                  showTime
+                  placeholder={t('lead.placeholders.first_follow_up_due_at')}
+                />
+              </Form.Item>
 
               <Form.Item name="expectedValue" label={t('lead.fields.expected_value')}>
                 <InputNumber
@@ -370,7 +462,12 @@ export default function LeadDetailPage() {
           ) : (
             <Descriptions column={2} bordered>
               <Descriptions.Item label={t('lead.fields.name')}>{lead.name}</Descriptions.Item>
-              <Descriptions.Item label={t('lead.fields.company')}>{lead.company || '-'}</Descriptions.Item>
+              <Descriptions.Item label={t('lead.fields.contact_name')}>
+                {lead.contactName || '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('lead.fields.company')}>
+                {lead.companyName || '-'}
+              </Descriptions.Item>
               <Descriptions.Item label={t('lead.fields.email')}>{lead.email || '-'}</Descriptions.Item>
               <Descriptions.Item label={t('lead.fields.phone')}>{lead.phone || '-'}</Descriptions.Item>
               <Descriptions.Item label={t('lead.fields.status')}>
@@ -386,6 +483,14 @@ export default function LeadDetailPage() {
               </Descriptions.Item>
               <Descriptions.Item label={t('lead.fields.expected_value')}>
                 {lead.expectedValue ? `¥${lead.expectedValue.toLocaleString(locale)}` : '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('lead.fields.initial_need')} span={2}>
+                {lead.initialNeed || '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('lead.fields.first_follow_up_due_at')}>
+                {lead.firstFollowUpDueAt
+                  ? new Date(lead.firstFollowUpDueAt).toLocaleString(locale)
+                  : '-'}
               </Descriptions.Item>
               <Descriptions.Item label={t('lead.fields.description')} span={2}>
                 {lead.description || '-'}

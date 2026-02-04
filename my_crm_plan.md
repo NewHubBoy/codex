@@ -1,4 +1,4 @@
-# 现代化 CRM（对标 SAP C4C）优化版计划 v1.1
+# 现代化 CRM（对标 SAP C4C）优化版计划 v1.2
 
 ## 0. 项目进度（自动记录）
 ### 已完成
@@ -11,10 +11,14 @@
 - 批量状态接口：Lead / Ticket（含 dryRun）
 - 最小回归脚本：`pnpm -C apps/api status:regress`
 - 详情页统一布局（基本信息 + Tabs），覆盖主菜单各对象详情页
+- 线索→商机流程脑图要点纳入计划（状态/必填/转化规则/SLA/预警）
+- 字段与权限范围确认（Lead/Opportunity/Account/Contact/Activity）
+- Lead/Activity SLA 字段与预警过滤（首响/下次跟进）+ Opportunity 停滞预警（阶段久未变化）
 
 ### 待完成（可选）
 - 扩展批量状态到其他对象（Opportunity/Quote/Order/Delivery/Activity）
 - 状态流与流程配置联动（基于 ProcessDefinition/Transition 动态校验）
+- Lead 转化规则（BANT 2–3 项）与强制校验落地
 - 更完整回归脚本 / 测试
 
 ### TODO（后续补细节）
@@ -22,6 +26,7 @@
 - 状态变更的必填字段校验补齐（如 Quote/Order/Delivery/Ticket 各阶段）
 - 统一状态常量与前后端共享（避免魔法字符串）
 - 统一业务对象 Draft 流程（前端先建草稿拿 UUID；提交时校验必填并转正式；列表默认不含草稿；可定期清理草稿）
+- Lead 无法联系/无意向原因字典与统计
 
 ## 1. 目标与范围
 - 定位：面向 B2B 的现代化 CRM + 轻量 ERP 前端系统
@@ -93,21 +98,28 @@
 - 负责人（owner）
 - 公司主体（company_name，可先写在 Lead.company）
 - 备注/描述（description）
+- 首次跟进截止时间（first_follow_up_due_at）
 
 **验证需求 / 跟进（Activity 驱动）**
 - 每次电话/邮件/拜访/备注 = Activity 记录（relatedType=Lead, relatedId=leadId）
-- Lead 状态流：New → Assigned → Working → Qualified（有意向）→ Converted
-- 进入 Qualified 的基本条件：已完成至少 1 次有效跟进 + 需求明确
+- Lead 状态流（对齐脑图）：新建 → 待跟进 → 已联系 → 有意向 → 已确认（QUALIFIED）→ 已转化（CONVERTED）
+- 分支状态：已联系/有意向 → 无意向 或 无法联系（需原因）
+- 进入有意向的基本条件：已完成至少 1 次有效跟进 + 需求明确
+- Activity 必填：跟进方式、跟进时间、跟进内容、跟进结果、下次跟进时间（next_follow_up_at）
 
 **转化规则（Lead → Customer/Contact/Opportunity）**
 - 创建 Customer（Account）：公司主体 + 行业/规模/等级（可从 Lead 或补录）
 - 创建 Contact：至少 1 个（决策人/影响人/使用人/付款人等角色）
 - 创建 Opportunity：初始金额、阶段、成交概率、预计成交时间
 - Lead 设为 CONVERTED，并回写关联的 accountId / contactId / opportunityId（若已有）
+- 转化条件（BANT 轻量）：Need/ Budget/ Authority/ Time 满足 2–3 项
+- 转化强制校验：客户名称、联系人姓名+联系方式、商机负责人
+- 规则补充：Lead 状态变更为 已确认（QUALIFIED）时自动生成 Opportunity，并将 Lead 状态置为 已转化（CONVERTED）
 
 **可选补充**
 - Lead 转化前可允许“半结构化”数据；转化时补齐关键字段
 - 转化失败原因（Disqualified）需记录原因与标签
+- 线索池回收：超时未跟进自动回收
 
 ### 4.2 详情页布局规范（v1）
 - 统一详情页结构：上方「基本信息」Card，下方 Tabs 切换模块
@@ -174,8 +186,9 @@
 
 ## 9. 标准状态流（可扩展，参考 C4C 常见做法）
 ### Lead（线索）
-- New → Assigned → Working → Qualified → Converted
-- 分支：Working → Disqualified（原因/标签可配置）
+- 新建 → 待跟进 → 已联系 → 有意向 → 已确认（QUALIFIED）→ 已转化（CONVERTED）
+- 分支：已联系/有意向 → 无意向 或 无法联系（原因/标签可配置）
+- 兼容映射（如需）：New=新建，Working=待跟进/已联系，Qualified=已确认，Converted=已转化，Disqualified=无意向/无法联系
 
 ### Opportunity（商机阶段）
 - Qualification → Needs Analysis → Proposal → Negotiation → Won/Lost
@@ -220,6 +233,7 @@
 ### 10.5 销售与服务对象
 - Lead: source, status, rating, expected_value, account_id, contact_id, converted_opportunity_id
   - 规划补充字段（v1 目标）：initial_need, company_name, contact_name, phone, email
+- Lead 补充字段：first_follow_up_due_at, disqualify_reason, disqualify_note
 - Opportunity: stage, amount, currency, expected_close_date, probability, primary_quote_id, reason_lost
 - Quote: number, version, status, valid_from, valid_to, total_amount, opportunity_id, account_id, contact_id
 - QuoteItem: quote_id, product_id, qty, unit_price, discount, tax, line_total
@@ -228,6 +242,7 @@
 - Delivery: order_id, status, delivered_at, delivery_notes, delivered_qty
 - Ticket: number, type, priority, status, sla_due_at, account_id, contact_id, order_id
 - Activity: type, subject, related_type, related_id, due_at, completed_at, outcome
+- Activity 补充字段：content, next_follow_up_at（必填）
 
 ### 10.6 价格、回款与发票（v1 建表）
 - PriceBook: name, type, currency, valid_from, valid_to, scope
@@ -357,4 +372,7 @@
 8) 里程碑顺序是否保持当前版本？
 
 ---
-下一步：你确认对象字段与权限范围后，我可以输出“表结构草图 + 接口清单 + 任务拆解”。
+下一步（建议顺序）：
+- 落地 Lead 状态与转化规则（BANT 2–3 项）与必填校验
+- 补 Lead/Activity SLA 与停滞预警（首响/二次跟进/超时回收）
+- 输出“表结构草图 + 接口清单 + 任务拆解”（基于上述确认）

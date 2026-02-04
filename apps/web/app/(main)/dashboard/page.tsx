@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Card, Row, Col, Statistic, List, Tag, Typography, Space } from "antd";
+import { Card, Row, Col, Statistic, List, Tag, Typography, Space, Button } from "antd";
 import { RocketOutlined, ShoppingCartOutlined, FileTextOutlined, AlertOutlined, ArrowUpOutlined, ArrowDownOutlined } from "@ant-design/icons";
 import { useAuth } from "@/hooks/useAuth";
 import { PageHeader } from "@/components/common/PageHeader";
+import { useAlertSummary } from "@/hooks/useAlerts";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 // 模拟数据 - 后续替换为真实 API
 const mockStats = {
@@ -28,6 +28,7 @@ const statusColors: Record<string, string> = {
   NEW: "blue",
   ASSIGNED: "cyan",
   WORKING: "green",
+  INTERESTED: "orange",
   QUALIFIED: "purple",
   CONVERTED: "gold",
 };
@@ -35,6 +36,10 @@ const statusColors: Record<string, string> = {
 export default function DashboardPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const { data: alertSummary, isLoading: alertLoading, refetch } = useAlertSummary({
+    inactiveDays: 7,
+    staleDays: 7,
+  });
 
   return (
     <div>
@@ -100,6 +105,50 @@ export default function DashboardPage() {
                 </Text>
               }
             />
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col span={24}>
+          <Card
+            title="预警汇总"
+            extra={
+              <Button size="small" onClick={() => refetch()} loading={alertLoading}>
+                刷新
+              </Button>
+            }
+          >
+            <Row gutter={[16, 16]}>
+              <Col xs={24} sm={12} lg={6}>
+                <Statistic
+                  title="首响超时"
+                  value={alertSummary?.leadFirstFollowUpOverdue ?? 0}
+                  prefix={<AlertOutlined style={{ color: "#fa8c16" }} />}
+                />
+              </Col>
+              <Col xs={24} sm={12} lg={6}>
+                <Statistic
+                  title="下次跟进超时"
+                  value={alertSummary?.leadNextFollowUpOverdue ?? 0}
+                  prefix={<AlertOutlined style={{ color: "#faad14" }} />}
+                />
+              </Col>
+              <Col xs={24} sm={12} lg={6}>
+                <Statistic
+                  title={`线索停滞(${alertSummary?.inactiveDays ?? 7}天)`}
+                  value={alertSummary?.leadInactive ?? 0}
+                  prefix={<AlertOutlined style={{ color: "#f5222d" }} />}
+                />
+              </Col>
+              <Col xs={24} sm={12} lg={6}>
+                <Statistic
+                  title={`商机停滞(${alertSummary?.staleDays ?? 7}天)`}
+                  value={alertSummary?.opportunityStale ?? 0}
+                  prefix={<AlertOutlined style={{ color: "#cf1322" }} />}
+                />
+              </Col>
+            </Row>
           </Card>
         </Col>
       </Row>

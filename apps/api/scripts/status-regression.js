@@ -41,7 +41,15 @@ async function run() {
   const leadCreate = await request("/leads", {
     method: "POST",
     headers: authHeaders,
-    body: JSON.stringify({ name: `Lead-${Date.now()}` })
+    body: JSON.stringify({
+      name: `Lead-${Date.now()}`,
+      contactName: "Test Contact",
+      companyName: "Test Company",
+      source: "WEBSITE",
+      initialNeed: "Test need",
+      firstFollowUpDueAt: new Date(Date.now() + 3600_000).toISOString(),
+      phone: "1234567890"
+    })
   });
   if (!leadCreate.ok) throw new Error(`Create lead failed: ${JSON.stringify(leadCreate.data)}`);
   const leadId = leadCreate.data.id;

@@ -7,12 +7,14 @@ const ActivityStatusSchema = z.enum(ACTIVITY_STATUSES);
 export const CreateActivityInputSchema = z.object({
   type: z.string().optional(),
   subject: z.string().optional(),
+  content: z.string().optional(),
   relatedType: z.string().optional(),
   relatedId: z.string().optional(),
   status: ActivityStatusSchema.optional(),
   dueAt: DateTimeSchema.optional(),
   completedAt: DateTimeSchema.optional(),
-  outcome: z.string().optional()
+  outcome: z.string().optional(),
+  nextFollowUpAt: DateTimeSchema.optional()
 });
 
 export const UpdateActivityInputSchema = CreateActivityInputSchema.partial();

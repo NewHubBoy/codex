@@ -9,5 +9,6 @@ export * from "./orders";
 export * from "./deliveries";
 export * from "./tickets";
 export * from "./products";
+export * from "./alerts";
 export * from "./system";
 export * from "./types";
