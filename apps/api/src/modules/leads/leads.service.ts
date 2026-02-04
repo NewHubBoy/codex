@@ -566,6 +566,12 @@ export class LeadsService {
   ) {
     const snapshot = this.getLeadSnapshot(existing, input);
     this.assertLeadConversionReady(ctx, existing, input);
+    const existingOpportunity = await tx.opportunity.findFirst({
+      where: {
+        tenantId: ctx.tenantId,
+        leadId: existing.id as string
+      }
+    });
     let accountId = snapshot.accountId;
     let contactId = snapshot.contactId;
     let account;
@@ -595,20 +601,29 @@ export class LeadsService {
       });
       contactId = contact.id;
     }
-    const opportunity = await tx.opportunity.create({
-      data: {
-        tenantId: ctx.tenantId,
-        orgUnitId: ctx.orgUnitId,
-        ownerId: ctx.userId,
-        status: "OPEN",
-        name: snapshot.name ?? "Opportunity",
-        stage: "Qualification",
-        amount: snapshot.expectedValue,
-        accountId: accountId,
-        contactId: contactId ?? undefined,
-        leadId: existing.id as string
-      }
-    });
+    const opportunity = existingOpportunity
+      ? await tx.opportunity.update({
+          where: { id: existingOpportunity.id },
+          data: {
+            accountId: accountId ?? existingOpportunity.accountId ?? undefined,
+            contactId: contactId ?? existingOpportunity.contactId ?? undefined,
+            amount: snapshot.expectedValue ?? existingOpportunity.amount ?? undefined
+          }
+        })
+      : await tx.opportunity.create({
+          data: {
+            tenantId: ctx.tenantId,
+            orgUnitId: ctx.orgUnitId,
+            ownerId: ctx.userId,
+            status: "OPEN",
+            name: snapshot.name ?? "Opportunity",
+            stage: "Qualification",
+            amount: snapshot.expectedValue,
+            accountId: accountId,
+            contactId: contactId ?? undefined,
+            leadId: existing.id as string
+          }
+        });
     const lead = await tx.lead.update({
       where: { id: existing.id as string },
       data: {
