@@ -30,6 +30,7 @@ export class OpportunitiesService {
         "opportunity.missing_account"
       );
     }
+    // 创建时写入阶段变更时间，后续用于停滞预警
     const opportunity = await this.prisma.opportunity.create({
       data: {
         tenantId: ctx.tenantId,
@@ -70,13 +71,16 @@ export class OpportunitiesService {
     const serialId = parseSerialId(query.q);
     const qFilters: Record<string, unknown>[] = [];
     if (query.q) {
+      // 支持名称模糊搜索
       qFilters.push({ name: { contains: query.q, mode: "insensitive" as const } });
     }
     if (serialId !== undefined) {
+      // 支持按编号精确搜索
       qFilters.push({ serialId });
     }
     const andFilters: Record<string, unknown>[] = [];
     if (query.staleDays) {
+      // 停滞筛选：阶段在阈值天数内没有变化
       const cutoff = new Date(Date.now() - query.staleDays * 24 * 60 * 60 * 1000);
       andFilters.push({
         status: { notIn: ["WON", "LOST"] },
@@ -128,6 +132,7 @@ export class OpportunitiesService {
   async update(ctx: RequestContext, id: string, input: UpdateOpportunityInput) {
     const existing = await this.get(ctx, id);
     if (input.status) {
+      // 状态变更需通过状态机校验，并补齐必要字段
       assertTransition("Opportunity", existing.status, input.status, ({ entity, from, to }) =>
         badRequest(
           this.i18n,
@@ -138,6 +143,7 @@ export class OpportunitiesService {
         )
       );
       if (input.status === "WON") {
+        // 赢单必须有金额和预计成交时间
         const amount = input.amount ?? existing.amount;
         const closeDate = input.expectedCloseDate ?? existing.expectedCloseDate?.toISOString();
         if (amount === undefined || amount === null) {
@@ -158,6 +164,7 @@ export class OpportunitiesService {
         }
       }
       if (input.status === "LOST") {
+        // 输单必须填写原因
         const reasonLost = input.reasonLost ?? existing.reasonLost;
         if (!reasonLost) {
           throw badRequest(
@@ -185,6 +192,7 @@ export class OpportunitiesService {
         leadId: input.leadId ?? undefined,
         reasonLost: input.reasonLost ?? undefined,
         status: input.status,
+        // 仅当阶段变化时更新，用于停滞预警判断
         lastStageChangedAt:
           input.stage && input.stage !== existing.stage ? new Date() : undefined
       }

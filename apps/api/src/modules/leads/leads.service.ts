@@ -113,9 +113,11 @@ export class LeadsService {
     const serialId = parseSerialId(query.q);
     const qFilters: Record<string, unknown>[] = [];
     if (query.q) {
+      // 支持名称模糊搜索
       qFilters.push({ name: { contains: query.q, mode: "insensitive" as const } });
     }
     if (serialId !== undefined) {
+      // 支持按编号精确搜索
       qFilters.push({ serialId });
     }
     const statusFilter = query.status ?? { not: "DRAFT" };
@@ -123,6 +125,7 @@ export class LeadsService {
     const terminalStatuses = ["CONVERTED", "DISQUALIFIED", "DRAFT"];
     const andFilters: Record<string, unknown>[] = [];
     if (query.overdueFirstFollowUp) {
+      // 首次跟进超时：到期且还未产生任何跟进记录
       andFilters.push({
         firstFollowUpDueAt: { lt: now },
         lastActivityAt: null,
@@ -130,6 +133,7 @@ export class LeadsService {
       });
     }
     if (query.overdueNextFollowUp) {
+      // 下次跟进超时：已设置下次跟进时间但已过期
       andFilters.push({
         nextFollowUpAt: { lt: now },
         status: { notIn: terminalStatuses }
@@ -137,6 +141,7 @@ export class LeadsService {
     }
     if (query.inactiveDays) {
       const cutoff = new Date(now.getTime() - query.inactiveDays * 24 * 60 * 60 * 1000);
+      // 停滞：最后跟进时间或创建时间早于阈值
       andFilters.push({
         status: { notIn: terminalStatuses },
         OR: [
@@ -210,6 +215,7 @@ export class LeadsService {
       );
     }
     if (input.status === "QUALIFIED" || input.status === "CONVERTED") {
+      // 进入 QUALIFIED/CONVERTED 时执行转化逻辑，并确保幂等
       const { lead, account, contact, opportunity } =
         await this.prisma.$transaction(async (tx) =>
           this.convertLead(ctx, existing, input, tx)
@@ -295,6 +301,7 @@ export class LeadsService {
       })
     );
     if (status === "QUALIFIED" || status === "CONVERTED") {
+      // 草稿提交时也支持转化，保持与更新逻辑一致
       const { lead, account, contact, opportunity } =
         await this.prisma.$transaction(async (tx) =>
           this.convertLead(ctx, existing, { ...input, status }, tx)
@@ -517,6 +524,7 @@ export class LeadsService {
     input: Record<string, unknown>
   ) {
     const snapshot = this.getLeadSnapshot(existing, input);
+    // 转化前的最小校验：客户、联系人、联系方式、来源、首响时间
     const missing = [];
     if (!snapshot.companyName && !snapshot.accountId) {
       missing.push("companyName");
@@ -548,6 +556,7 @@ export class LeadsService {
       snapshot.contactName ?? snapshot.contactId,
       snapshot.firstFollowUpDueAt
     ].filter(Boolean).length;
+    // 轻量 BANT 规则：满足 2 项以上才允许转化
     if (bantScore < 2) {
       throw badRequest(
         this.i18n,
@@ -566,6 +575,7 @@ export class LeadsService {
   ) {
     const snapshot = this.getLeadSnapshot(existing, input);
     this.assertLeadConversionReady(ctx, existing, input);
+    // 如果已存在关联商机则复用，避免重复创建
     const existingOpportunity = await tx.opportunity.findFirst({
       where: {
         tenantId: ctx.tenantId,

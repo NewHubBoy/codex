@@ -43,6 +43,7 @@ export class ActivitiesService {
       }
     });
     if (activity.relatedType === "Lead" && activity.relatedId) {
+      // 线索相关的活动会回写最近跟进时间与下次跟进时间
       await this.prisma.lead.update({
         where: { id: activity.relatedId },
         data: {
@@ -70,12 +71,14 @@ export class ActivitiesService {
     const serialId = parseSerialId(query.q);
     const qFilters: Record<string, unknown>[] = [];
     if (query.q) {
+      // 支持主题/类型模糊搜索
       qFilters.push(
         { subject: { contains: query.q, mode: "insensitive" as const } },
         { type: { contains: query.q, mode: "insensitive" as const } }
       );
     }
     if (serialId !== undefined) {
+      // 支持按编号精确搜索
       qFilters.push({ serialId });
     }
     const where = {
@@ -120,6 +123,7 @@ export class ActivitiesService {
     const existing = await this.get(ctx, id);
     this.assertLeadActivityRequired(ctx, input, existing);
     if (input.status) {
+      // 状态流校验与完成时间必填校验
       assertTransition("Activity", existing.status, input.status, ({ entity, from, to }) =>
         badRequest(
           this.i18n,
@@ -161,6 +165,7 @@ export class ActivitiesService {
       }
     });
     if (activity.relatedType === "Lead" && activity.relatedId) {
+      // 更新 Lead 的 SLA 字段
       await this.prisma.lead.update({
         where: { id: activity.relatedId },
         data: {
@@ -207,6 +212,7 @@ export class ActivitiesService {
     if (relatedType !== "Lead") {
       return;
     }
+    // Lead 的活动必须包含跟进信息，用于 SLA 与预警
     const type = (input.type ?? existing?.type) as string | undefined;
     const completedAt =
       (input.completedAt as string | undefined) ??
