@@ -21,6 +21,8 @@ module.exports = [
   { code: "config:workflow:write", name: "Workflow Config Write", type: "ACTION" },
   { code: "config:field:read", name: "Field Config Read", type: "ACTION" },
   { code: "config:field:write", name: "Field Config Write", type: "ACTION" },
+  { code: "alert:read", name: "Alert Config Read", type: "ACTION" },
+  { code: "alert:write", name: "Alert Config Write", type: "ACTION" },
   { code: "account:read", name: "Account Read", type: "ACTION" },
   { code: "account:write", name: "Account Write", type: "ACTION" },
   { code: "contact:read", name: "Contact Read", type: "ACTION" },

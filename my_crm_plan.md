@@ -14,6 +14,14 @@
 - 线索→商机流程脑图要点纳入计划（状态/必填/转化规则/SLA/预警）
 - 字段与权限范围确认（Lead/Opportunity/Account/Contact/Activity）
 - Lead/Activity SLA 字段与预警过滤（首响/下次跟进）+ Opportunity 停滞预警（阶段久未变化）
+- 预警汇总接口 `/alerts/summary` + Dashboard 预警卡片 + 列表预警/停滞筛选与标识
+- 线索 QUALIFIED → 自动生成商机并将 Lead 置为 CONVERTED（含必填校验）
+- 预警/停滞 API 联调（后端接口验证通过）
+- 输出“表结构草图 + 接口清单 + 任务拆解”（已写入 docs/lead-opportunity-sla-spec.md）
+- 前端实测验收完成（Dashboard 预警卡片 + Leads/Opportunities 预警筛选与标识）
+- Bug 修复与回归完成（验收问题已闭环）
+- 预警阈值可配置（组织/用户级）：新增设置接口 + 默认生效逻辑
+- 预警阈值设置页面（Settings/Alerts）
 
 ### 待完成（可选）
 - 扩展批量状态到其他对象（Opportunity/Quote/Order/Delivery/Activity）
@@ -27,6 +35,7 @@
 - 统一状态常量与前后端共享（避免魔法字符串）
 - 统一业务对象 Draft 流程（前端先建草稿拿 UUID；提交时校验必填并转正式；列表默认不含草稿；可定期清理草稿）
 - Lead 无法联系/无意向原因字典与统计
+- 预警阈值可配置（默认 7 天，可按组织/用户配置）
 
 ## 1. 目标与范围
 - 定位：面向 B2B 的现代化 CRM + 轻量 ERP 前端系统
@@ -373,6 +382,4 @@
 
 ---
 下一步（建议顺序）：
-- 落地 Lead 状态与转化规则（BANT 2–3 项）与必填校验
-- 补 Lead/Activity SLA 与停滞预警（首响/二次跟进/超时回收）
-- 输出“表结构草图 + 接口清单 + 任务拆解”（基于上述确认）
+- 预警汇总卡片支持一键跳转对应列表筛选

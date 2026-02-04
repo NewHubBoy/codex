@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Table, Button, Space, Tag, Input, Select, Card, type TablePaginationConfig } from "antd";
 import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
@@ -8,6 +8,8 @@ import { useOpportunities } from "@/hooks/useOpportunities";
 import Link from "next/link";
 import { useI18n } from "@/i18n/provider";
 import type { Opportunity } from "@/services/opportunities";
+import { useAlertSettings } from "@/hooks/useAlerts";
+import { useSearchParams } from "next/navigation";
 
 const { Search } = Input;
 
@@ -22,11 +24,24 @@ const statusColors: Record<string, string> = {
 
 export default function OpportunitiesPage() {
   const { t, locale } = useI18n();
+  const searchParams = useSearchParams();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("");
   const [staleDays, setStaleDays] = useState<number | undefined>(undefined);
+  const { data: alertSettings } = useAlertSettings();
+
+  useEffect(() => {
+    if (!searchParams) {
+      return;
+    }
+    const stale = searchParams.get("staleDays");
+    const parsed = stale ? Number.parseInt(stale, 10) : undefined;
+    if (parsed && parsed > 0) {
+      setStaleDays(parsed);
+    }
+  }, [searchParams]);
 
   const { data, isLoading } = useOpportunities({
     page,
@@ -85,7 +100,7 @@ export default function OpportunitiesPage() {
       title: t("opportunities.table.alert"),
       key: "alert",
       render: (_: unknown, record: Opportunity) => {
-        const threshold = staleDays ?? 7;
+        const threshold = staleDays ?? alertSettings?.staleDays ?? 7;
         if (!record.lastStageChangedAt) {
           return "-";
         }

@@ -35,6 +35,7 @@ model Tenant {
   orders       Order[]
   deliveries   Delivery[]
   tickets      Ticket[]
+  alertSettings AlertSetting[]
 }
 
 model OrgUnit {
@@ -336,6 +337,22 @@ model Attachment {
   @@index([tenantId])
   @@index([ownerId])
   @@index([orgUnitId])
+}
+
+model AlertSetting {
+  id           String            @id @default(uuid())
+  tenantId     String
+  scopeType    AlertSettingScope
+  scopeId      String
+  inactiveDays Int               @default(7)
+  staleDays    Int               @default(7)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, scopeType, scopeId])
+  @@index([tenantId])
 }
 
 model AttachmentLink {
@@ -706,4 +723,10 @@ enum OutboxStatus {
   PROCESSING
   SENT
   FAILED
+}
+
+enum AlertSettingScope {
+  TENANT
+  ORG_UNIT
+  USER
 }

@@ -132,6 +132,12 @@ const settingsMenuItems: MenuItem[] = [
     icon: <TeamOutlined />,
     permission: 'ORG_UNIT_READ',
   },
+  {
+    key: '/settings/alerts',
+    label: '预警阈值',
+    icon: <AlertOutlined />,
+    permission: 'ALERT_READ',
+  },
 ];
 
 export function Sidebar() {

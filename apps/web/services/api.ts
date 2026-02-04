@@ -28,6 +28,10 @@ api.interceptors.request.use(
       // 添加 tenant-id（默认租户）
       const tenantId = localStorage.getItem("tenantId") || "00000000-0000-0000-0000-000000000001";
       config.headers["x-tenant-id"] = tenantId;
+      const orgUnitId = localStorage.getItem("orgUnitId");
+      if (orgUnitId) {
+        config.headers["x-org-unit-id"] = orgUnitId;
+      }
       const locale = resolveLocale() ?? DEFAULT_LOCALE;
       config.headers["x-locale"] = locale;
     }

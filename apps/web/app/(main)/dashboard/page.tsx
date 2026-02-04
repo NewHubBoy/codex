@@ -36,10 +36,26 @@ const statusColors: Record<string, string> = {
 export default function DashboardPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const { data: alertSummary, isLoading: alertLoading, refetch } = useAlertSummary({
-    inactiveDays: 7,
-    staleDays: 7,
-  });
+  const { data: alertSummary, isLoading: alertLoading, refetch } = useAlertSummary();
+
+  const buildLeadAlertLink = (type: "first" | "next" | "inactive") => {
+    const params = new URLSearchParams();
+    if (type === "first") {
+      params.set("alert", "first");
+    } else if (type === "next") {
+      params.set("alert", "next");
+    } else {
+      params.set("alert", "inactive");
+      params.set("inactiveDays", String(alertSummary?.inactiveDays ?? 7));
+    }
+    return `/crm/leads?${params.toString()}`;
+  };
+
+  const buildOpportunityAlertLink = () => {
+    const params = new URLSearchParams();
+    params.set("staleDays", String(alertSummary?.staleDays ?? 7));
+    return `/crm/opportunities?${params.toString()}`;
+  };
 
   return (
     <div>
@@ -121,32 +137,60 @@ export default function DashboardPage() {
           >
             <Row gutter={[16, 16]}>
               <Col xs={24} sm={12} lg={6}>
-                <Statistic
-                  title="首响超时"
-                  value={alertSummary?.leadFirstFollowUpOverdue ?? 0}
-                  prefix={<AlertOutlined style={{ color: "#fa8c16" }} />}
-                />
+                <Card
+                  size="small"
+                  hoverable
+                  onClick={() => router.push(buildLeadAlertLink("first"))}
+                  style={{ cursor: "pointer" }}
+                >
+                  <Statistic
+                    title="首响超时"
+                    value={alertSummary?.leadFirstFollowUpOverdue ?? 0}
+                    prefix={<AlertOutlined style={{ color: "#fa8c16" }} />}
+                  />
+                </Card>
               </Col>
               <Col xs={24} sm={12} lg={6}>
-                <Statistic
-                  title="下次跟进超时"
-                  value={alertSummary?.leadNextFollowUpOverdue ?? 0}
-                  prefix={<AlertOutlined style={{ color: "#faad14" }} />}
-                />
+                <Card
+                  size="small"
+                  hoverable
+                  onClick={() => router.push(buildLeadAlertLink("next"))}
+                  style={{ cursor: "pointer" }}
+                >
+                  <Statistic
+                    title="下次跟进超时"
+                    value={alertSummary?.leadNextFollowUpOverdue ?? 0}
+                    prefix={<AlertOutlined style={{ color: "#faad14" }} />}
+                  />
+                </Card>
               </Col>
               <Col xs={24} sm={12} lg={6}>
-                <Statistic
-                  title={`线索停滞(${alertSummary?.inactiveDays ?? 7}天)`}
-                  value={alertSummary?.leadInactive ?? 0}
-                  prefix={<AlertOutlined style={{ color: "#f5222d" }} />}
-                />
+                <Card
+                  size="small"
+                  hoverable
+                  onClick={() => router.push(buildLeadAlertLink("inactive"))}
+                  style={{ cursor: "pointer" }}
+                >
+                  <Statistic
+                    title={`线索停滞(${alertSummary?.inactiveDays ?? 7}天)`}
+                    value={alertSummary?.leadInactive ?? 0}
+                    prefix={<AlertOutlined style={{ color: "#f5222d" }} />}
+                  />
+                </Card>
               </Col>
               <Col xs={24} sm={12} lg={6}>
-                <Statistic
-                  title={`商机停滞(${alertSummary?.staleDays ?? 7}天)`}
-                  value={alertSummary?.opportunityStale ?? 0}
-                  prefix={<AlertOutlined style={{ color: "#cf1322" }} />}
-                />
+                <Card
+                  size="small"
+                  hoverable
+                  onClick={() => router.push(buildOpportunityAlertLink())}
+                  style={{ cursor: "pointer" }}
+                >
+                  <Statistic
+                    title={`商机停滞(${alertSummary?.staleDays ?? 7}天)`}
+                    value={alertSummary?.opportunityStale ?? 0}
+                    prefix={<AlertOutlined style={{ color: "#cf1322" }} />}
+                  />
+                </Card>
               </Col>
             </Row>
           </Card>

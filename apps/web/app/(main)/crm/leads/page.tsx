@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Table,
@@ -24,6 +24,7 @@ import {
   EyeOutlined
 } from "@ant-design/icons";
 import { useLeads, useDeleteLead, useCreateLeadDraft } from "@/hooks/useLeads";
+import { useAlertSettings } from "@/hooks/useAlerts";
 import type { Lead, LeadListParams } from "@/services/leads";
 import { LeadStatus, LeadSource, LeadRating } from "@/services/leads";
 import { PageHeader } from "@/components/common/PageHeader";
@@ -31,11 +32,13 @@ import { App } from "antd";
 import Link from "next/link";
 import { useI18n } from "@/i18n/provider";
 import { getErrorMessage } from "@/utils/error";
+import { useSearchParams } from "next/navigation";
 
 const { Text } = Typography;
 
 export default function LeadsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { message } = App.useApp();
   const { t, locale } = useI18n();
   const [searchText, setSearchText] = useState("");
@@ -44,6 +47,37 @@ export default function LeadsPage() {
   const [creating, setCreating] = useState(false);
   const [alertFilter, setAlertFilter] = useState<string | undefined>(undefined);
   const [inactiveDays, setInactiveDays] = useState(7);
+  const { data: alertSettings } = useAlertSettings();
+  const hasInitRef = useRef(false);
+
+  useEffect(() => {
+    if (hasInitRef.current) {
+      return;
+    }
+    if (alertSettings?.inactiveDays) {
+      setInactiveDays(alertSettings.inactiveDays);
+      hasInitRef.current = true;
+    }
+  }, [alertSettings]);
+
+  useEffect(() => {
+    if (!searchParams) {
+      return;
+    }
+    const alert = searchParams.get("alert") || undefined;
+    const inactive = searchParams.get("inactiveDays");
+    const inactiveParsed = inactive ? Number.parseInt(inactive, 10) : undefined;
+    if (alert) {
+      setAlertFilter(alert);
+      if (alert === "inactive" && inactiveParsed && inactiveParsed > 0) {
+        setInactiveDays(inactiveParsed);
+      }
+      handleAlertFilterChange(alert);
+    }
+    if (inactiveParsed && inactiveParsed > 0) {
+      setInactiveDays(inactiveParsed);
+    }
+  }, [searchParams]);
 
   // 查询线索列表
   const { data, isLoading, refetch } = useLeads({
