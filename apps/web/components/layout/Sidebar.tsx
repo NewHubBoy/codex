@@ -19,6 +19,7 @@ import {
   ClockCircleOutlined,
 } from '@ant-design/icons';
 import { useEffect } from 'react';
+import { useI18n } from '@/i18n/provider';
 
 const { Sider: AntSider } = Layout;
 const { Title } = Typography;
@@ -33,108 +34,108 @@ interface MenuItem {
 }
 
 // CRM 菜单配置
-const crmMenuItems: MenuItem[] = [
+const crmMenuItems = (t: (key: string) => string): MenuItem[] => [
   {
     key: '/dashboard',
-    label: '工作台',
+    label: t('menu.dashboard'),
     icon: <DashboardOutlined />,
   },
   {
     key: '/crm/leads',
-    label: '线索管理',
+    label: t('menu.leads'),
     icon: <RocketOutlined />,
     permission: 'LEAD_READ',
   },
   {
     key: '/crm/activities',
-    label: '活动管理',
+    label: t('menu.activities'),
     icon: <ClockCircleOutlined />,
     permission: 'ACTIVITY_READ',
   },
   {
     key: '/crm/opportunities',
-    label: '商机管理',
+    label: t('menu.opportunities'),
     icon: <ShoppingCartOutlined />,
     permission: 'OPPORTUNITY_READ',
   },
   {
     key: '/crm/accounts',
-    label: '客户管理',
+    label: t('menu.accounts'),
     icon: <ShopOutlined />,
     permission: 'ACCOUNT_READ',
   },
   {
     key: '/crm/contacts',
-    label: '联系人',
+    label: t('menu.contacts'),
     icon: <ContactsOutlined />,
     permission: 'CONTACT_READ',
   },
   {
     key: '/crm/quotes',
-    label: '报价单',
+    label: t('menu.quotes'),
     icon: <FileTextOutlined />,
     permission: 'QUOTE_READ',
   },
   {
     key: '/crm/orders',
-    label: '订单管理',
+    label: t('menu.orders'),
     icon: <FileProtectOutlined />,
     permission: 'ORDER_READ',
   },
   {
     key: '/crm/deliveries',
-    label: '交付管理',
+    label: t('menu.deliveries'),
     icon: <CalendarOutlined />,
     permission: 'DELIVERY_READ',
   },
   {
     key: '/crm/tickets',
-    label: '工单管理',
+    label: t('menu.tickets'),
     icon: <AlertOutlined />,
     permission: 'TICKET_READ',
   },
 ];
 
-const productMenuItems: MenuItem[] = [
+const productMenuItems = (t: (key: string) => string): MenuItem[] => [
   {
     key: '/crm/products',
-    label: '产品管理',
+    label: t('menu.products'),
     icon: <ExperimentOutlined />,
     permission: 'PRODUCT_READ',
   },
 ];
 
-const reportMenuItems: MenuItem[] = [
+const reportMenuItems = (t: (key: string) => string): MenuItem[] => [
   {
     key: '/reports',
-    label: '报表分析',
+    label: t('menu.reports'),
     icon: <BarChartOutlined />,
     permission: 'REPORT_READ',
   },
 ];
 
-const settingsMenuItems: MenuItem[] = [
+const settingsMenuItems = (t: (key: string) => string): MenuItem[] => [
   {
     key: '/settings/users',
-    label: '用户管理',
+    label: t('menu.users'),
     icon: <TeamOutlined />,
     permission: 'USER_READ',
   },
   {
     key: '/settings/roles',
-    label: '角色权限',
+    label: t('menu.roles'),
     icon: <SettingOutlined />,
     permission: 'RBAC_READ',
   },
   {
     key: '/settings/org-units',
-    label: '组织架构',
+    label: t('menu.org_units'),
     icon: <TeamOutlined />,
     permission: 'ORG_UNIT_READ',
   },
   {
     key: '/settings/alerts',
-    label: '预警阈值',
+    label: t('menu.alerts'),
     icon: <AlertOutlined />,
     permission: 'ALERT_READ',
   },
@@ -143,9 +144,15 @@ const settingsMenuItems: MenuItem[] = [
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const { t } = useI18n();
 
   // 收集所有菜单项
-  const allMenuItems: MenuItem[] = [...crmMenuItems, ...productMenuItems, ...reportMenuItems, ...settingsMenuItems];
+  const allMenuItems: MenuItem[] = [
+    ...crmMenuItems(t),
+    ...productMenuItems(t),
+    ...reportMenuItems(t),
+    ...settingsMenuItems(t),
+  ];
 
   // 查找父菜单以确定展开项
   const findOpenKeys = (path: string): string[] => {

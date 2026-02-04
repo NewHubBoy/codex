@@ -6,6 +6,7 @@ import { RocketOutlined, ShoppingCartOutlined, FileTextOutlined, AlertOutlined, 
 import { useAuth } from "@/hooks/useAuth";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useAlertSummary } from "@/hooks/useAlerts";
+import { useI18n } from "@/i18n/provider";
 
 const { Text } = Typography;
 
@@ -36,6 +37,7 @@ const statusColors: Record<string, string> = {
 export default function DashboardPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useI18n();
   const { data: alertSummary, isLoading: alertLoading, refetch } = useAlertSummary();
 
   const buildLeadAlertLink = (type: "first" | "next" | "inactive") => {
@@ -59,14 +61,17 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <PageHeader title={`欢迎回来，${user?.name || "用户"}`} description="这是您的工作台，这里展示关键业务数据概览。" />
+      <PageHeader
+        title={t("dashboard.welcome", { name: user?.name || t("common.user") })}
+        description={t("dashboard.description")}
+      />
 
       {/* 统计卡片 */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="线索总数"
+              title={t("dashboard.stats.leads")}
               value={mockStats.leads.total}
               prefix={<RocketOutlined style={{ color: "#1677ff" }} />}
               suffix={
@@ -81,7 +86,7 @@ export default function DashboardPage() {
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="商机总数"
+              title={t("dashboard.stats.opportunities")}
               value={mockStats.opportunities.total}
               prefix={<ShoppingCartOutlined style={{ color: "#52c41a" }} />}
               suffix={
@@ -96,7 +101,7 @@ export default function DashboardPage() {
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="报价单数"
+              title={t("dashboard.stats.quotes")}
               value={mockStats.quotes.total}
               prefix={<FileTextOutlined style={{ color: "#faad14" }} />}
               suffix={
@@ -111,7 +116,7 @@ export default function DashboardPage() {
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="待处理工单"
+              title={t("dashboard.stats.tickets")}
               value={mockStats.tickets.total}
               prefix={<AlertOutlined style={{ color: "#ff4d4f" }} />}
               suffix={
@@ -128,10 +133,10 @@ export default function DashboardPage() {
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col span={24}>
           <Card
-            title="预警汇总"
+            title={t("dashboard.alerts.title")}
             extra={
               <Button size="small" onClick={() => refetch()} loading={alertLoading}>
-                刷新
+                {t("common.refresh")}
               </Button>
             }
           >
@@ -144,7 +149,7 @@ export default function DashboardPage() {
                   style={{ cursor: "pointer" }}
                 >
                   <Statistic
-                    title="首响超时"
+                    title={t("dashboard.alerts.first_overdue")}
                     value={alertSummary?.leadFirstFollowUpOverdue ?? 0}
                     prefix={<AlertOutlined style={{ color: "#fa8c16" }} />}
                   />
@@ -158,7 +163,7 @@ export default function DashboardPage() {
                   style={{ cursor: "pointer" }}
                 >
                   <Statistic
-                    title="下次跟进超时"
+                    title={t("dashboard.alerts.next_overdue")}
                     value={alertSummary?.leadNextFollowUpOverdue ?? 0}
                     prefix={<AlertOutlined style={{ color: "#faad14" }} />}
                   />
@@ -172,7 +177,7 @@ export default function DashboardPage() {
                   style={{ cursor: "pointer" }}
                 >
                   <Statistic
-                    title={`线索停滞(${alertSummary?.inactiveDays ?? 7}天)`}
+                    title={t("dashboard.alerts.lead_inactive", { days: alertSummary?.inactiveDays ?? 7 })}
                     value={alertSummary?.leadInactive ?? 0}
                     prefix={<AlertOutlined style={{ color: "#f5222d" }} />}
                   />
@@ -186,7 +191,7 @@ export default function DashboardPage() {
                   style={{ cursor: "pointer" }}
                 >
                   <Statistic
-                    title={`商机停滞(${alertSummary?.staleDays ?? 7}天)`}
+                    title={t("dashboard.alerts.opportunity_stale", { days: alertSummary?.staleDays ?? 7 })}
                     value={alertSummary?.opportunityStale ?? 0}
                     prefix={<AlertOutlined style={{ color: "#cf1322" }} />}
                   />
@@ -200,7 +205,10 @@ export default function DashboardPage() {
       {/* 最近线索 */}
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={12}>
-          <Card title="最近线索" extra={<a onClick={() => router.push("/crm/leads")}>查看全部</a>}>
+          <Card
+            title={t("dashboard.recent_leads")}
+            extra={<a onClick={() => router.push("/crm/leads")}>{t("common.view_all")}</a>}
+          >
             <List
               itemLayout="horizontal"
               dataSource={mockRecentLeads}
@@ -222,30 +230,30 @@ export default function DashboardPage() {
           </Card>
         </Col>
         <Col xs={24} lg={12}>
-          <Card title="快捷操作">
+          <Card title={t("dashboard.quick_actions")}>
             <Space direction="vertical" style={{ width: "100%" }}>
               <Card size="small" hoverable onClick={() => router.push("/crm/leads/create")}>
                 <Space>
                   <RocketOutlined style={{ fontSize: 20, color: "#1677ff" }} />
-                  <Text strong>新建线索</Text>
+                  <Text strong>{t("dashboard.actions.new_lead")}</Text>
                 </Space>
               </Card>
               <Card size="small" hoverable onClick={() => router.push("/crm/opportunities")}>
                 <Space>
                   <ShoppingCartOutlined style={{ fontSize: 20, color: "#52c41a" }} />
-                  <Text strong>查看商机</Text>
+                  <Text strong>{t("dashboard.actions.view_opportunities")}</Text>
                 </Space>
               </Card>
               <Card size="small" hoverable onClick={() => router.push("/crm/quotes")}>
                 <Space>
                   <FileTextOutlined style={{ fontSize: 20, color: "#faad14" }} />
-                  <Text strong>创建报价</Text>
+                  <Text strong>{t("dashboard.actions.create_quote")}</Text>
                 </Space>
               </Card>
               <Card size="small" hoverable onClick={() => router.push("/crm/tickets")}>
                 <Space>
                   <AlertOutlined style={{ fontSize: 20, color: "#ff4d4f" }} />
-                  <Text strong>处理工单</Text>
+                  <Text strong>{t("dashboard.actions.handle_ticket")}</Text>
                 </Space>
               </Card>
             </Space>
