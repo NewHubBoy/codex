@@ -115,6 +115,7 @@ export default function LeadDetailPage() {
         firstFollowUpDueAt: lead.firstFollowUpDueAt
           ? dayjs(lead.firstFollowUpDueAt)
           : undefined,
+        nextFollowUpAt: lead.nextFollowUpAt ? dayjs(lead.nextFollowUpAt) : undefined,
         description: lead.description,
         ownerId: lead.ownerId,
         status: lead.status === 'DRAFT' ? undefined : lead.status,
@@ -144,6 +145,9 @@ export default function LeadDetailPage() {
         phone: values.phone || undefined,
         firstFollowUpDueAt: values.firstFollowUpDueAt
           ? values.firstFollowUpDueAt.toISOString()
+          : undefined,
+        nextFollowUpAt: values.nextFollowUpAt
+          ? values.nextFollowUpAt.toISOString()
           : undefined,
       };
       if (!lead) {
@@ -190,6 +194,7 @@ export default function LeadDetailPage() {
         firstFollowUpDueAt: lead.firstFollowUpDueAt
           ? dayjs(lead.firstFollowUpDueAt)
           : undefined,
+        nextFollowUpAt: lead.nextFollowUpAt ? dayjs(lead.nextFollowUpAt) : undefined,
         description: lead.description,
         ownerId: lead.ownerId,
         status: lead.status === 'DRAFT' ? undefined : lead.status,
@@ -316,148 +321,165 @@ export default function LeadDetailPage() {
         {/* 基本信息 */}
         <Card title={t('common.basic_info')}>
           {isEditing ? (
-            <Form form={form} layout="vertical" requiredMark="optional">
-              <Form.Item
-                name="name"
-                label={t('lead.fields.name')}
-                rules={[{ required: true, message: t('lead.validation.name_required') }]}
-              >
-                <Input placeholder={t('lead.placeholders.name')} />
-              </Form.Item>
-
-              <Form.Item
-                name="contactName"
-                label={t('lead.fields.contact_name')}
-                rules={[{ required: true, message: t('lead.validation.contact_name_required') }]}
-              >
-                <Input placeholder={t('lead.placeholders.contact_name')} />
-              </Form.Item>
-
-              <Form.Item
-                name="companyName"
-                label={t('lead.fields.company')}
-                rules={[{ required: true, message: t('lead.validation.company_required') }]}
-              >
-                <Input placeholder={t('lead.placeholders.company')} />
-              </Form.Item>
-
-              <Space style={{ width: '100%' }} size={16}>
-                <Form.Item
-                  name="email"
-                  label={t('lead.fields.email')}
-                  style={{ flex: 1 }}
-                  rules={[
-                    { type: 'email', message: t('lead.validation.email_invalid') },
-                    ({ getFieldValue }) => ({
-                      validator(_, value) {
-                        if (value || getFieldValue('phone')) {
-                          return Promise.resolve();
-                        }
-                        return Promise.reject(new Error(t('lead.validation.contact_required')));
+            <Form form={form} requiredMark="optional">
+              <Descriptions column={2} bordered>
+                <Descriptions.Item label={t('lead.fields.name')}>
+                  <Form.Item
+                    name="name"
+                    rules={[{ required: true, message: t('lead.validation.name_required') }]}
+                    noStyle
+                  >
+                    <Input placeholder={t('lead.placeholders.name')} />
+                  </Form.Item>
+                </Descriptions.Item>
+                <Descriptions.Item label={t('lead.fields.contact_name')}>
+                  <Form.Item
+                    name="contactName"
+                    rules={[{ required: true, message: t('lead.validation.contact_name_required') }]}
+                    noStyle
+                  >
+                    <Input placeholder={t('lead.placeholders.contact_name')} />
+                  </Form.Item>
+                </Descriptions.Item>
+                <Descriptions.Item label={t('lead.fields.company')}>
+                  <Form.Item
+                    name="companyName"
+                    rules={[{ required: true, message: t('lead.validation.company_required') }]}
+                    noStyle
+                  >
+                    <Input placeholder={t('lead.placeholders.company')} />
+                  </Form.Item>
+                </Descriptions.Item>
+                <Descriptions.Item label={t('lead.fields.email')}>
+                  <Form.Item
+                    name="email"
+                    rules={[
+                      { type: 'email', message: t('lead.validation.email_invalid') },
+                      ({ getFieldValue }) => ({
+                        validator(_, value) {
+                          if (value || getFieldValue('phone')) {
+                            return Promise.resolve();
+                          }
+                          return Promise.reject(new Error(t('lead.validation.contact_required')));
+                        },
+                      }),
+                    ]}
+                    noStyle
+                  >
+                    <Input placeholder={t('lead.placeholders.email')} />
+                  </Form.Item>
+                </Descriptions.Item>
+                <Descriptions.Item label={t('lead.fields.phone')}>
+                  <Form.Item
+                    name="phone"
+                    rules={[
+                      ({ getFieldValue }) => ({
+                        validator(_, value) {
+                          if (value || getFieldValue('email')) {
+                            return Promise.resolve();
+                          }
+                          return Promise.reject(new Error(t('lead.validation.contact_required')));
+                        },
+                      }),
+                    ]}
+                    noStyle
+                  >
+                    <Input placeholder={t('lead.placeholders.phone')} />
+                  </Form.Item>
+                </Descriptions.Item>
+                <Descriptions.Item label={t('lead.fields.status')}>
+                  <Form.Item name="status" noStyle>
+                    <Select
+                      allowClear
+                      placeholder={t('lead.placeholders.status')}
+                      options={Object.entries(LeadStatus)
+                        .filter(([key]) => key !== 'DRAFT')
+                        .map(([key, value]) => ({
+                          label: statusLabels[key] + ' - ' + key || key,
+                          value,
+                        }))}
+                    />
+                  </Form.Item>
+                </Descriptions.Item>
+                <Descriptions.Item label={t('lead.fields.rating')}>
+                  <Form.Item name="rating" noStyle>
+                    <Select
+                      placeholder={t('lead.placeholders.rating')}
+                      options={Object.entries(LeadRating).map(([key, value]) => ({
+                        label: ratingLabels[key] || key,
+                        value,
+                      }))}
+                    />
+                  </Form.Item>
+                </Descriptions.Item>
+                <Descriptions.Item label={t('lead.fields.source')}>
+                  <Form.Item
+                    name="source"
+                    rules={[{ required: true, message: t('lead.validation.source_required') }]}
+                    noStyle
+                  >
+                    <Select
+                      placeholder={t('lead.placeholders.source')}
+                      options={Object.entries(LeadSource).map(([key, value]) => ({
+                        label: sourceLabels[key] || key.replace('_', ' '),
+                        value,
+                      }))}
+                    />
+                  </Form.Item>
+                </Descriptions.Item>
+                <Descriptions.Item label={t('lead.fields.expected_value')}>
+                  <Form.Item name="expectedValue" noStyle>
+                    <InputNumber
+                      style={{ width: '100%' }}
+                      placeholder={t('lead.placeholders.expected_value')}
+                      min={0}
+                      precision={2}
+                      prefix="¥"
+                    />
+                  </Form.Item>
+                </Descriptions.Item>
+                <Descriptions.Item label={t('lead.fields.first_follow_up_due_at')}>
+                  <Form.Item
+                    name="firstFollowUpDueAt"
+                    rules={[
+                      {
+                        required: true,
+                        message: t('lead.validation.first_follow_up_due_at_required'),
                       },
-                    }),
-                  ]}
-                >
-                  <Input placeholder={t('lead.placeholders.email')} />
-                </Form.Item>
-
-                <Form.Item
-                  name="phone"
-                  label={t('lead.fields.phone')}
-                  style={{ flex: 1 }}
-                  rules={[
-                    ({ getFieldValue }) => ({
-                      validator(_, value) {
-                        if (value || getFieldValue('email')) {
-                          return Promise.resolve();
-                        }
-                        return Promise.reject(new Error(t('lead.validation.contact_required')));
-                      },
-                    }),
-                  ]}
-                >
-                  <Input placeholder={t('lead.placeholders.phone')} />
-                </Form.Item>
-              </Space>
-
-              <Space style={{ width: '100%' }} size={16}>
-                <Form.Item
-                  name="source"
-                  label={t('lead.fields.source')}
-                  style={{ flex: 1 }}
-                  rules={[{ required: true, message: t('lead.validation.source_required') }]}
-                >
-                  <Select
-                    placeholder={t('lead.placeholders.source')}
-                    options={Object.entries(LeadSource).map(([key, value]) => ({
-                      label: sourceLabels[key] || key.replace('_', ' '),
-                      value,
-                    }))}
-                  />
-                </Form.Item>
-
-                <Form.Item name="rating" label={t('lead.fields.rating')} style={{ flex: 1 }}>
-                  <Select
-                    placeholder={t('lead.placeholders.rating')}
-                    options={Object.entries(LeadRating).map(([key, value]) => ({
-                      label: ratingLabels[key] || key,
-                      value,
-                    }))}
-                  />
-                </Form.Item>
-              </Space>
-
-              <Form.Item
-                name="initialNeed"
-                label={t('lead.fields.initial_need')}
-                rules={[{ required: true, message: t('lead.validation.initial_need_required') }]}
-              >
-                <Input.TextArea rows={3} placeholder={t('lead.placeholders.initial_need')} />
-              </Form.Item>
-
-              <Form.Item
-                name="firstFollowUpDueAt"
-                label={t('lead.fields.first_follow_up_due_at')}
-                rules={[
-                  {
-                    required: true,
-                    message: t('lead.validation.first_follow_up_due_at_required'),
-                  },
-                ]}
-              >
-                <DatePicker
-                  style={{ width: '100%' }}
-                  showTime
-                  placeholder={t('lead.placeholders.first_follow_up_due_at')}
-                />
-              </Form.Item>
-
-              <Form.Item name="expectedValue" label={t('lead.fields.expected_value')}>
-                <InputNumber
-                  style={{ width: '100%' }}
-                  placeholder={t('lead.placeholders.expected_value')}
-                  min={0}
-                  precision={2}
-                  prefix="¥"
-                />
-              </Form.Item>
-
-              <Form.Item name="status" label={t('lead.fields.status')}>
-                <Select
-                  allowClear
-                  placeholder={t('lead.placeholders.status')}
-                  options={Object.entries(LeadStatus)
-                    .filter(([key]) => key !== 'DRAFT')
-                    .map(([key, value]) => ({
-                      label: statusLabels[key] +  " - " + key || key,
-                      value,
-                    }))}
-                />
-              </Form.Item>
-
-              <Form.Item name="description" label={t('lead.fields.description')}>
-                <Input.TextArea rows={4} placeholder={t('lead.placeholders.description')} />
-              </Form.Item>
+                    ]}
+                    noStyle
+                  >
+                    <DatePicker
+                      style={{ width: '100%' }}
+                      showTime
+                      placeholder={t('lead.placeholders.first_follow_up_due_at')}
+                    />
+                  </Form.Item>
+                </Descriptions.Item>
+                <Descriptions.Item label={t('lead.fields.next_follow_up_at')}>
+                  <Form.Item name="nextFollowUpAt" noStyle>
+                    <DatePicker
+                      style={{ width: '100%' }}
+                      showTime
+                      placeholder={t('lead.placeholders.next_follow_up_at')}
+                    />
+                  </Form.Item>
+                </Descriptions.Item>
+                <Descriptions.Item label={t('lead.fields.initial_need')} span={2}>
+                  <Form.Item
+                    name="initialNeed"
+                    rules={[{ required: true, message: t('lead.validation.initial_need_required') }]}
+                    noStyle
+                  >
+                    <Input.TextArea rows={3} placeholder={t('lead.placeholders.initial_need')} />
+                  </Form.Item>
+                </Descriptions.Item>
+                <Descriptions.Item label={t('lead.fields.description')} span={2}>
+                  <Form.Item name="description" noStyle>
+                    <Input.TextArea rows={4} placeholder={t('lead.placeholders.description')} />
+                  </Form.Item>
+                </Descriptions.Item>
+              </Descriptions>
             </Form>
           ) : (
             <Descriptions column={2} bordered>
@@ -490,6 +512,14 @@ export default function LeadDetailPage() {
               <Descriptions.Item label={t('lead.fields.first_follow_up_due_at')}>
                 {lead.firstFollowUpDueAt
                   ? new Date(lead.firstFollowUpDueAt).toLocaleString(locale)
+                  : '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('lead.fields.last_activity_at')}>
+                {lead.lastActivityAt ? new Date(lead.lastActivityAt).toLocaleString(locale) : '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('lead.fields.next_follow_up_at')}>
+                {lead.nextFollowUpAt
+                  ? new Date(lead.nextFollowUpAt).toLocaleString(locale)
                   : '-'}
               </Descriptions.Item>
               <Descriptions.Item label={t('lead.fields.description')} span={2}>
