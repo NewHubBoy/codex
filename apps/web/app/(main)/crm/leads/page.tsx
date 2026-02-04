@@ -145,11 +145,11 @@ export default function LeadsPage() {
         inactiveDays: undefined
       };
       if (value === "first") {
-        next.overdueFirstFollowUp = true;
+        (next.overdueFirstFollowUp as unknown) = true;
       } else if (value === "next") {
-        next.overdueNextFollowUp = true;
+        (next.overdueNextFollowUp as unknown) = true;
       } else if (value === "inactive") {
-        next.inactiveDays = inactiveDays;
+        (next.inactiveDays as unknown) = inactiveDays;
       }
       return next;
     });
