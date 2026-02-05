@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { useApproveApprovalTask, useApprovalTasks, useRejectApprovalTask } from "@/hooks/useApprovals";
 import type { ApprovalTask } from "@/services/approvals";
 import { useI18n } from "@/i18n/provider";
+import Link from "next/link";
 
 const { Text } = Typography;
 
@@ -16,6 +17,11 @@ const statusColors: Record<string, string> = {
   REJECTED: "error",
   CANCELLED: "default",
   WAITING: "default",
+};
+
+const entityLabels: Record<string, string> = {
+  Quote: "报价单",
+  Order: "订单",
 };
 
 export default function ApprovalsPage() {
@@ -69,13 +75,25 @@ export default function ApprovalsPage() {
         title: "对象",
         dataIndex: ["instance", "entityType"],
         key: "entityType",
-        render: (_value, record) => record.instance?.entityType || "-",
+        render: (_value, record) =>
+          entityLabels[record.instance?.entityType || ""] || record.instance?.entityType || "-",
       },
       {
         title: "对象ID",
         dataIndex: ["instance", "entityId"],
         key: "entityId",
-        render: (_value, record) => record.instance?.entityId || "-",
+        render: (_value, record) => {
+          const entityId = record.instance?.entityId;
+          const entityType = record.instance?.entityType;
+          if (!entityId || !entityType) return "-";
+          const href =
+            entityType === "Quote"
+              ? `/crm/quotes/${entityId}`
+              : entityType === "Order"
+                ? `/crm/orders/${entityId}`
+                : undefined;
+          return href ? <Link href={href}>{entityId.slice(0, 8)}...</Link> : entityId;
+        },
       },
       {
         title: "角色",

@@ -120,7 +120,7 @@ const approvalMenuItems = (t: (key: string) => string): MenuItem[] => [
     key: '/approvals',
     label: t('menu.approvals'),
     icon: <FileProtectOutlined />,
-    permission: 'APPROVAL_READ',
+    permission: 'approval:read',
   },
 ];
 
@@ -153,7 +153,7 @@ const settingsMenuItems = (t: (key: string) => string): MenuItem[] => [
     key: '/settings/approval-rules',
     label: t('menu.approval_rules'),
     icon: <SettingOutlined />,
-    permission: 'APPROVAL_RULE_READ',
+    permission: 'config:approval:read',
   },
 ];
 

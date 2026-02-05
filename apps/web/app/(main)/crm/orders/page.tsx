@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Table, Button, Space, Tag, Input, Select, Card } from "antd";
 import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useOrders } from "@/hooks/useOrders";
+import { useApprovalInstances } from "@/hooks/useApprovals";
 import Link from "next/link";
 import type { ColumnsType } from "antd/es/table";
 import type { Order } from "@/services/orders";
@@ -41,6 +42,15 @@ export default function OrdersPage() {
     q: q || undefined,
     status: status || undefined,
   });
+  const { data: approvalInstances } = useApprovalInstances({
+    page: 1,
+    pageSize: 200,
+    status: "PENDING",
+    entityType: "Order",
+  });
+  const pendingApprovalIds = useMemo(() => {
+    return new Set(approvalInstances?.data?.map((item) => item.entityId));
+  }, [approvalInstances]);
 
   const columns: ColumnsType<Order> = [
     {
@@ -77,6 +87,22 @@ export default function OrdersPage() {
           {statusMap[status] || status}
         </Tag>
       ),
+    },
+    {
+      title: "审批状态",
+      key: "approvalStatus",
+      render: (_value, record) => {
+        if (pendingApprovalIds.has(record.id)) {
+          return <Tag color="processing">审批中</Tag>;
+        }
+        if (record.status === "DRAFT") {
+          return <Tag>未提交</Tag>;
+        }
+        if (record.status === "CANCELLED") {
+          return <Tag color="default">已取消</Tag>;
+        }
+        return <Tag color="success">已通过</Tag>;
+      },
     },
     {
       title: "订单日期",

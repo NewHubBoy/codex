@@ -86,6 +86,29 @@ export default function QuotesPage() {
       ),
     },
     {
+      title: "审批状态",
+      key: "approvalStatus",
+      render: (_value, record) => {
+        const status = record.status;
+        let label = "-";
+        let color = "default";
+        if (status === "IN_REVIEW") {
+          label = "审批中";
+          color = "processing";
+        } else if (status === "REJECTED") {
+          label = "已拒绝";
+          color = "error";
+        } else if (status === "APPROVED" || status === "SENT" || status === "ACCEPTED") {
+          label = "已通过";
+          color = "success";
+        } else if (status === "DRAFT") {
+          label = "未提交";
+          color = "default";
+        }
+        return <Tag color={color}>{label}</Tag>;
+      },
+    },
+    {
       title: "有效日期",
       dataIndex: "validTo",
       key: "validTo",
