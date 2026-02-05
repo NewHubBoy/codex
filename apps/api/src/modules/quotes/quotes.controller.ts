@@ -16,7 +16,9 @@ import {
   CreateQuoteItemInputSchema,
   BulkQuoteItemsInputSchema,
   UpdateQuoteInputSchema,
-  UpdateQuoteItemInputSchema
+  UpdateQuoteItemInputSchema,
+  SubmitApprovalInputSchema,
+  ResubmitApprovalInputSchema
 } from "@crm/shared";
 import { parseListQuery } from "../../common/list-query";
 import { getRequestContext } from "../../common/request-context";
@@ -101,6 +103,40 @@ export class QuotesController {
     const ctx = getRequestContext(req);
     const input = UpdateQuoteInputSchema.parse(body);
     return this.quotesService.update(ctx, id, input);
+  }
+
+  @Post(":id/submit-approval")
+  @RequirePermissions("quote:write")
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: {
+        payload: { type: "object" }
+      }
+    }
+  })
+  @ApiOkResponse({ type: QuoteDto })
+  async submitApproval(@Req() req: Request, @Param("id") id: string, @Body() body: unknown) {
+    const ctx = getRequestContext(req);
+    const input = SubmitApprovalInputSchema.parse(body);
+    return this.quotesService.submitForApproval(ctx, id, input.payload);
+  }
+
+  @Post(":id/resubmit")
+  @RequirePermissions("quote:write")
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: {
+        payload: { type: "object" }
+      }
+    }
+  })
+  @ApiOkResponse({ type: QuoteDto })
+  async resubmit(@Req() req: Request, @Param("id") id: string, @Body() body: unknown) {
+    const ctx = getRequestContext(req);
+    const input = ResubmitApprovalInputSchema.parse(body);
+    return this.quotesService.resubmitForApproval(ctx, id, input.payload);
   }
 
   @Delete(":id")

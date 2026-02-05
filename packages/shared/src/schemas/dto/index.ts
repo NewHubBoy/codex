@@ -13,3 +13,4 @@ export * from "./product.dto";
 export * from "./price-book.dto";
 export * from "./activity.dto";
 export * from "./attachment.dto";
+export * from "./approval.dto";

@@ -4,7 +4,8 @@ import type {
   CreateOrderItemInput,
   BulkOrderItemsInput,
   UpdateOrderInput,
-  UpdateOrderItemInput
+  UpdateOrderItemInput,
+  ApprovalPayload
 } from "@crm/shared";
 import { PrismaService } from "../../prisma/prisma.service";
 import type { RequestContext } from "../../common/request-context";
@@ -15,6 +16,7 @@ import { NumberingService } from "../../common/services/numbering.service";
 import type { ListQuery } from "../../common/list-query";
 import { parseSerialId, parseSort } from "../../common/list-query";
 import { assertTransition } from "../../common/status-transitions";
+import { ApprovalsService } from "../approvals/approvals.service";
 
 @Injectable()
 export class OrdersService {
@@ -23,7 +25,8 @@ export class OrdersService {
     private readonly dataScope: DataScopeService,
     private readonly audit: AuditLogService,
     private readonly outbox: OutboxService,
-    private readonly numbering: NumberingService
+    private readonly numbering: NumberingService,
+    private readonly approvals: ApprovalsService
   ) {}
 
   async create(ctx: RequestContext, input: CreateOrderInput) {
@@ -38,6 +41,9 @@ export class OrdersService {
         orderDate: input.orderDate ?? undefined,
         totalAmount: input.totalAmount ?? undefined,
         currency: input.currency ?? undefined,
+        discountRate: input.discountRate ?? undefined,
+        isCustom: input.isCustom ?? undefined,
+        hasSpecialTerms: input.hasSpecialTerms ?? undefined,
         accountId: input.accountId ?? undefined,
         contactId: input.contactId ?? undefined,
         opportunityId: input.opportunityId ?? undefined
@@ -364,6 +370,9 @@ export class OrdersService {
           orderDate: input.orderDate ?? undefined,
           totalAmount: total,
           currency: input.currency ?? undefined,
+          discountRate: input.discountRate ?? undefined,
+          isCustom: input.isCustom ?? undefined,
+          hasSpecialTerms: input.hasSpecialTerms ?? undefined,
           accountId: input.accountId ?? undefined,
           contactId: input.contactId ?? undefined,
           opportunityId: input.opportunityId ?? undefined
@@ -385,5 +394,62 @@ export class OrdersService {
       number: order.number
     });
     return order;
+  }
+
+  async submitForApproval(ctx: RequestContext, id: string, payload?: ApprovalPayload) {
+    const order = await this.get(ctx, id);
+    if (order.status !== "DRAFT") {
+      throw new BadRequestException("Only DRAFT orders can be submitted for approval");
+    }
+    const approvalPayload = this.buildApprovalPayload(order, payload);
+    await this.approvals.createApprovalForEntity(ctx, "Order", id, approvalPayload);
+    const updated = await this.prisma.order.update({
+      where: { id },
+      data: {
+        discountRate: payload?.discountRate ?? order.discountRate ?? undefined,
+        isCustom: payload?.isCustom ?? order.isCustom ?? undefined,
+        hasSpecialTerms: payload?.hasSpecialTerms ?? order.hasSpecialTerms ?? undefined
+      }
+    });
+    await this.audit.log(ctx, "update", "Order", updated.id, `Submitted ${updated.number} for approval`);
+    await this.outbox.enqueue(ctx, "Order", updated.id, "order.submitted", { number: updated.number });
+    return updated;
+  }
+
+  async resubmitForApproval(ctx: RequestContext, id: string, payload?: ApprovalPayload) {
+    const order = await this.get(ctx, id);
+    if (order.status !== "DRAFT") {
+      throw new BadRequestException("Only DRAFT orders can be resubmitted");
+    }
+    const lastInstance = await this.prisma.approvalInstance.findFirst({
+      where: { tenantId: ctx.tenantId, entityType: "Order", entityId: id },
+      orderBy: { createdAt: "desc" }
+    });
+    if (!lastInstance || lastInstance.status !== "REJECTED") {
+      throw new BadRequestException("Order has no rejected approval to resubmit");
+    }
+    const approvalPayload = this.buildApprovalPayload(order, payload);
+    await this.approvals.createApprovalForEntity(ctx, "Order", id, approvalPayload);
+    const updated = await this.prisma.order.update({
+      where: { id },
+      data: {
+        discountRate: payload?.discountRate ?? order.discountRate ?? undefined,
+        isCustom: payload?.isCustom ?? order.isCustom ?? undefined,
+        hasSpecialTerms: payload?.hasSpecialTerms ?? order.hasSpecialTerms ?? undefined
+      }
+    });
+    await this.audit.log(ctx, "update", "Order", updated.id, `Resubmitted ${updated.number}`);
+    await this.outbox.enqueue(ctx, "Order", updated.id, "order.resubmitted", { number: updated.number });
+    return updated;
+  }
+
+  private buildApprovalPayload(order: { totalAmount?: number | null; discountRate?: number | null; isCustom?: boolean | null; hasSpecialTerms?: boolean | null }, payload?: ApprovalPayload) {
+    return {
+      discountRate: payload?.discountRate ?? (order.discountRate ?? undefined),
+      amount: payload?.amount ?? (order.totalAmount ?? undefined),
+      isCustom: payload?.isCustom ?? (order.isCustom ?? undefined),
+      hasSpecialTerms: payload?.hasSpecialTerms ?? (order.hasSpecialTerms ?? undefined),
+      note: payload?.note
+    };
   }
 }

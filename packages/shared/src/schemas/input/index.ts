@@ -24,3 +24,5 @@ export * from "./price-book.input";
 export * from "./activity.input";
 export * from "./attachment.input";
 export * from "./alert-setting.input";
+export * from "./approval-rule.input";
+export * from "./approval.input";

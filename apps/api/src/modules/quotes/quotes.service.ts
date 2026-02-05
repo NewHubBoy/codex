@@ -4,7 +4,8 @@ import type {
   CreateQuoteItemInput,
   BulkQuoteItemsInput,
   UpdateQuoteInput,
-  UpdateQuoteItemInput
+  UpdateQuoteItemInput,
+  ApprovalPayload
 } from "@crm/shared";
 import { PrismaService } from "../../prisma/prisma.service";
 import type { RequestContext } from "../../common/request-context";
@@ -15,6 +16,7 @@ import { NumberingService } from "../../common/services/numbering.service";
 import type { ListQuery } from "../../common/list-query";
 import { parseSerialId, parseSort } from "../../common/list-query";
 import { assertTransition } from "../../common/status-transitions";
+import { ApprovalsService } from "../approvals/approvals.service";
 
 @Injectable()
 export class QuotesService {
@@ -23,7 +25,8 @@ export class QuotesService {
     private readonly dataScope: DataScopeService,
     private readonly audit: AuditLogService,
     private readonly outbox: OutboxService,
-    private readonly numbering: NumberingService
+    private readonly numbering: NumberingService,
+    private readonly approvals: ApprovalsService
   ) {}
 
   async create(ctx: RequestContext, input: CreateQuoteInput) {
@@ -40,6 +43,9 @@ export class QuotesService {
         validTo: input.validTo ?? undefined,
         totalAmount: input.totalAmount ?? undefined,
         currency: input.currency ?? undefined,
+        discountRate: input.discountRate ?? undefined,
+        isCustom: input.isCustom ?? undefined,
+        hasSpecialTerms: input.hasSpecialTerms ?? undefined,
         opportunityId: input.opportunityId ?? undefined,
         accountId: input.accountId ?? undefined,
         contactId: input.contactId ?? undefined
@@ -362,6 +368,9 @@ export class QuotesService {
           validTo: input.validTo ?? undefined,
           totalAmount: total,
           currency: input.currency ?? undefined,
+          discountRate: input.discountRate ?? undefined,
+          isCustom: input.isCustom ?? undefined,
+          hasSpecialTerms: input.hasSpecialTerms ?? undefined,
           opportunityId: input.opportunityId ?? undefined,
           accountId: input.accountId ?? undefined,
           contactId: input.contactId ?? undefined
@@ -383,5 +392,71 @@ export class QuotesService {
       number: quote.number
     });
     return quote;
+  }
+
+  async submitForApproval(ctx: RequestContext, id: string, payload?: ApprovalPayload) {
+    const quote = await this.get(ctx, id);
+    if (quote.status !== "DRAFT") {
+      throw new BadRequestException("Only DRAFT quotes can be submitted for approval");
+    }
+    assertTransition("Quote", quote.status, "IN_REVIEW");
+    const approvalPayload = this.buildApprovalPayload(quote, payload);
+    await this.approvals.createApprovalForEntity(ctx, "Quote", id, approvalPayload);
+    const updated = await this.prisma.quote.update({
+      where: { id },
+      data: {
+        status: "IN_REVIEW",
+        discountRate: payload?.discountRate ?? quote.discountRate ?? undefined,
+        isCustom: payload?.isCustom ?? quote.isCustom ?? undefined,
+        hasSpecialTerms: payload?.hasSpecialTerms ?? quote.hasSpecialTerms ?? undefined
+      }
+    });
+    await this.audit.log(ctx, "update", "Quote", updated.id, `Submitted ${updated.number} for approval`);
+    await this.outbox.enqueue(ctx, "Quote", updated.id, "quote.submitted", { number: updated.number });
+    return updated;
+  }
+
+  async resubmitForApproval(ctx: RequestContext, id: string, payload?: ApprovalPayload) {
+    const quote = await this.get(ctx, id);
+    if (quote.status !== "REJECTED") {
+      throw new BadRequestException("Only REJECTED quotes can be resubmitted");
+    }
+    assertTransition("Quote", quote.status, "IN_REVIEW");
+    const items = await this.prisma.quoteItem.findMany({ where: { quoteId: id } });
+    await this.prisma.quoteVersion.create({
+      data: {
+        quoteId: id,
+        version: quote.version ?? 1,
+        status: quote.status,
+        snapshot: { quote, items },
+        createdBy: ctx.userId ?? undefined
+      }
+    });
+    const nextVersion = (quote.version ?? 1) + 1;
+    const approvalPayload = this.buildApprovalPayload(quote, payload);
+    await this.approvals.createApprovalForEntity(ctx, "Quote", id, approvalPayload);
+    const updated = await this.prisma.quote.update({
+      where: { id },
+      data: {
+        status: "IN_REVIEW",
+        version: nextVersion,
+        discountRate: payload?.discountRate ?? quote.discountRate ?? undefined,
+        isCustom: payload?.isCustom ?? quote.isCustom ?? undefined,
+        hasSpecialTerms: payload?.hasSpecialTerms ?? quote.hasSpecialTerms ?? undefined
+      }
+    });
+    await this.audit.log(ctx, "update", "Quote", updated.id, `Resubmitted ${updated.number}`);
+    await this.outbox.enqueue(ctx, "Quote", updated.id, "quote.resubmitted", { number: updated.number });
+    return updated;
+  }
+
+  private buildApprovalPayload(quote: { totalAmount?: number | null; discountRate?: number | null; isCustom?: boolean | null; hasSpecialTerms?: boolean | null }, payload?: ApprovalPayload) {
+    return {
+      discountRate: payload?.discountRate ?? (quote.discountRate ?? undefined),
+      amount: payload?.amount ?? (quote.totalAmount ?? undefined),
+      isCustom: payload?.isCustom ?? (quote.isCustom ?? undefined),
+      hasSpecialTerms: payload?.hasSpecialTerms ?? (quote.hasSpecialTerms ?? undefined),
+      note: payload?.note
+    };
   }
 }

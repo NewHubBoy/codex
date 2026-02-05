@@ -16,7 +16,9 @@ import {
   CreateOrderItemInputSchema,
   BulkOrderItemsInputSchema,
   UpdateOrderInputSchema,
-  UpdateOrderItemInputSchema
+  UpdateOrderItemInputSchema,
+  SubmitApprovalInputSchema,
+  ResubmitApprovalInputSchema
 } from "@crm/shared";
 import { parseListQuery } from "../../common/list-query";
 import { getRequestContext } from "../../common/request-context";
@@ -101,6 +103,40 @@ export class OrdersController {
     const ctx = getRequestContext(req);
     const input = UpdateOrderInputSchema.parse(body);
     return this.ordersService.update(ctx, id, input);
+  }
+
+  @Post(":id/submit-approval")
+  @RequirePermissions("order:write")
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: {
+        payload: { type: "object" }
+      }
+    }
+  })
+  @ApiOkResponse({ type: OrderDto })
+  async submitApproval(@Req() req: Request, @Param("id") id: string, @Body() body: unknown) {
+    const ctx = getRequestContext(req);
+    const input = SubmitApprovalInputSchema.parse(body);
+    return this.ordersService.submitForApproval(ctx, id, input.payload);
+  }
+
+  @Post(":id/resubmit")
+  @RequirePermissions("order:write")
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: {
+        payload: { type: "object" }
+      }
+    }
+  })
+  @ApiOkResponse({ type: OrderDto })
+  async resubmit(@Req() req: Request, @Param("id") id: string, @Body() body: unknown) {
+    const ctx = getRequestContext(req);
+    const input = ResubmitApprovalInputSchema.parse(body);
+    return this.ordersService.resubmitForApproval(ctx, id, input.payload);
   }
 
   @Delete(":id")

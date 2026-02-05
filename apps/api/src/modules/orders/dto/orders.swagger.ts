@@ -36,6 +36,15 @@ export class OrderDto {
   currency?: string | null;
 
   @ApiProperty({ required: false })
+  discountRate?: number | null;
+
+  @ApiProperty({ required: false })
+  isCustom?: boolean | null;
+
+  @ApiProperty({ required: false })
+  hasSpecialTerms?: boolean | null;
+
+  @ApiProperty({ required: false })
   accountId?: string | null;
 
   @ApiProperty({ required: false })
@@ -72,6 +81,15 @@ export class CreateOrderDto {
     description: "Required for CONFIRMED/IN_FULFILLMENT/PARTIALLY_DELIVERED/DELIVERED/CLOSED."
   })
   currency?: string;
+
+  @ApiProperty({ required: false })
+  discountRate?: number;
+
+  @ApiProperty({ required: false })
+  isCustom?: boolean;
+
+  @ApiProperty({ required: false })
+  hasSpecialTerms?: boolean;
 
   @ApiProperty({
     required: false,
@@ -113,6 +131,15 @@ export class UpdateOrderDto {
     description: "Required for CONFIRMED/IN_FULFILLMENT/PARTIALLY_DELIVERED/DELIVERED/CLOSED."
   })
   currency?: string;
+
+  @ApiProperty({ required: false })
+  discountRate?: number;
+
+  @ApiProperty({ required: false })
+  isCustom?: boolean;
+
+  @ApiProperty({ required: false })
+  hasSpecialTerms?: boolean;
 
   @ApiProperty({
     required: false,

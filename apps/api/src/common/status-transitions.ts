@@ -24,7 +24,7 @@ const quoteTransitions: Record<string, string[]> = {
   APPROVED: ["SENT"],
   SENT: ["ACCEPTED", "REJECTED", "EXPIRED"],
   ACCEPTED: [],
-  REJECTED: [],
+  REJECTED: ["IN_REVIEW"],
   EXPIRED: []
 };
 

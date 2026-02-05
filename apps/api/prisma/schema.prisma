@@ -36,6 +36,8 @@ model Tenant {
   deliveries   Delivery[]
   tickets      Ticket[]
   alertSettings AlertSetting[]
+  approvalRules ApprovalRule[]
+  approvalInstances ApprovalInstance[]
 }
 
 model OrgUnit {
@@ -76,6 +78,8 @@ model User {
   tenant         Tenant             @relation(fields: [tenantId], references: [id])
   roles          UserRole[]
   orgMemberships UserOrgMembership[]
+  approvalTasks  ApprovalTask[] @relation("ApprovalTaskAssignee")
+  approvalLogs   ApprovalLog[]  @relation("ApprovalLogActor")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -412,6 +416,9 @@ model Quote {
   validTo       DateTime?
   totalAmount   Float?
   currency      String?
+  discountRate  Float?
+  isCustom      Boolean  @default(false)
+  hasSpecialTerms Boolean @default(false)
   opportunityId String?
   accountId     String?
   contactId     String?
@@ -423,6 +430,7 @@ model Quote {
   account     Account?     @relation(fields: [accountId], references: [id])
   contact     Contact?     @relation(fields: [contactId], references: [id])
   items       QuoteItem[]
+  versions    QuoteVersion[]
 
   @@index([tenantId])
   @@index([ownerId])
@@ -430,6 +438,21 @@ model Quote {
   @@index([contactId])
   @@index([opportunityId])
   @@unique([tenantId, number])
+}
+
+model QuoteVersion {
+  id        String   @id @default(uuid())
+  quoteId   String
+  version   Int
+  status    String
+  snapshot  Json
+  createdAt DateTime @default(now())
+  createdBy String?
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([quoteId])
+  @@unique([quoteId, version])
 }
 
 model QuoteItem {
@@ -462,6 +485,9 @@ model Order {
   orderDate     DateTime?
   totalAmount   Float?
   currency      String?
+  discountRate  Float?
+  isCustom      Boolean  @default(false)
+  hasSpecialTerms Boolean @default(false)
   accountId     String?
   contactId     String?
   opportunityId String?
@@ -482,6 +508,129 @@ model Order {
   @@index([contactId])
   @@index([opportunityId])
   @@unique([tenantId, number])
+}
+
+model ApprovalRule {
+  id           String   @id @default(uuid())
+  tenantId     String
+  entityType   String
+  name         String
+  priority     Int      @default(0)
+  isActive     Boolean  @default(true)
+  effectiveFrom DateTime?
+  effectiveTo  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant     Tenant                @relation(fields: [tenantId], references: [id])
+  conditions ApprovalRuleCondition[]
+  steps      ApprovalRuleStep[]
+  instances  ApprovalInstance[]
+
+  @@index([tenantId])
+  @@index([entityType])
+}
+
+model ApprovalRuleCondition {
+  id        String   @id @default(uuid())
+  ruleId    String
+  field     String
+  operator  String
+  value     Json
+  createdAt DateTime @default(now())
+
+  rule ApprovalRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+
+  @@index([ruleId])
+}
+
+model ApprovalRuleStep {
+  id        String   @id @default(uuid())
+  ruleId    String
+  roleCode  String
+  groupIndex Int     @default(0)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  rule ApprovalRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+
+  @@index([ruleId])
+  @@index([ruleId, groupIndex, sortOrder])
+}
+
+model ApprovalInstance {
+  id          String   @id @default(uuid())
+  tenantId    String
+  entityType  String
+  entityId    String
+  ruleId      String?
+  status      String   @default("PENDING")
+  currentGroup Int     @default(0)
+  payload     Json?
+  createdBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant   Tenant         @relation(fields: [tenantId], references: [id])
+  rule     ApprovalRule?  @relation(fields: [ruleId], references: [id])
+  nodes    ApprovalNode[]
+  tasks    ApprovalTask[]
+  logs     ApprovalLog[]
+
+  @@index([tenantId])
+  @@index([entityType, entityId])
+  @@index([status])
+}
+
+model ApprovalNode {
+  id         String   @id @default(uuid())
+  instanceId String
+  groupIndex Int
+  status     String   @default("PENDING")
+  startedAt  DateTime?
+  decidedAt  DateTime?
+  createdAt  DateTime @default(now())
+
+  instance ApprovalInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  tasks    ApprovalTask[]
+
+  @@index([instanceId])
+  @@index([instanceId, groupIndex])
+}
+
+model ApprovalTask {
+  id         String   @id @default(uuid())
+  instanceId String
+  nodeId     String
+  roleCode   String
+  status     String   @default("WAITING")
+  assigneeId String?
+  decidedAt  DateTime?
+  note       String?
+  createdAt  DateTime @default(now())
+
+  instance ApprovalInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  node     ApprovalNode     @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  assignee User?            @relation("ApprovalTaskAssignee", fields: [assigneeId], references: [id])
+
+  @@index([instanceId])
+  @@index([nodeId])
+  @@index([roleCode])
+  @@index([assigneeId])
+}
+
+model ApprovalLog {
+  id         String   @id @default(uuid())
+  instanceId String
+  actorId    String?
+  action     String
+  note       String?
+  createdAt  DateTime @default(now())
+
+  instance ApprovalInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  actor    User?            @relation("ApprovalLogActor", fields: [actorId], references: [id])
+
+  @@index([instanceId])
 }
 
 model OrderItem {

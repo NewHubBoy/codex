@@ -7,8 +7,10 @@ import { OutboxService } from "../../common/services/outbox.service";
 import { NumberingService } from "../../common/services/numbering.service";
 import { AuthGuard } from "../../common/guards/auth.guard";
 import { PermissionsGuard } from "../../common/guards/permissions.guard";
+import { ApprovalsModule } from "../approvals/approvals.module";
 
 @Module({
+  imports: [ApprovalsModule],
   controllers: [QuotesController],
   providers: [
     QuotesService,

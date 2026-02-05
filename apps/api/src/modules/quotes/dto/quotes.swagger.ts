@@ -42,6 +42,15 @@ export class QuoteDto {
   currency?: string | null;
 
   @ApiProperty({ required: false })
+  discountRate?: number | null;
+
+  @ApiProperty({ required: false })
+  isCustom?: boolean | null;
+
+  @ApiProperty({ required: false })
+  hasSpecialTerms?: boolean | null;
+
+  @ApiProperty({ required: false })
   opportunityId?: string | null;
 
   @ApiProperty({ required: false })
@@ -80,6 +89,15 @@ export class CreateQuoteDto {
   currency?: string;
 
   @ApiProperty({ required: false })
+  discountRate?: number;
+
+  @ApiProperty({ required: false })
+  isCustom?: boolean;
+
+  @ApiProperty({ required: false })
+  hasSpecialTerms?: boolean;
+
+  @ApiProperty({ required: false })
   opportunityId?: string | null;
 
   @ApiProperty({ required: false, description: "Required when status=ACCEPTED." })
@@ -116,6 +134,15 @@ export class UpdateQuoteDto {
 
   @ApiProperty({ required: false, description: "Required for APPROVED/SENT/ACCEPTED." })
   currency?: string;
+
+  @ApiProperty({ required: false })
+  discountRate?: number;
+
+  @ApiProperty({ required: false })
+  isCustom?: boolean;
+
+  @ApiProperty({ required: false })
+  hasSpecialTerms?: boolean;
 
   @ApiProperty({ required: false })
   opportunityId?: string | null;

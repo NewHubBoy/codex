@@ -20,6 +20,7 @@ import { UsersModule } from "./modules/users/users.module";
 import { NumberRangesModule } from "./modules/number-ranges/number-ranges.module";
 import { WorkflowsModule } from "./modules/workflows/workflows.module";
 import { FieldsModule } from "./modules/fields/fields.module";
+import { ApprovalsModule } from "./modules/approvals/approvals.module";
 import { TenantMiddleware } from "./common/middleware/tenant.middleware";
 import { I18nModule } from "./common/i18n/i18n.module";
 import { AppController } from "./app.controller";
@@ -48,7 +49,8 @@ import { AppService } from "./app.service";
     TicketsModule,
     NumberRangesModule,
     WorkflowsModule,
-    FieldsModule
+    FieldsModule,
+    ApprovalsModule
   ],
   controllers: [AppController],
   providers: [AppService]
