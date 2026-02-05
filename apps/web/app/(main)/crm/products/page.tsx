@@ -6,6 +6,8 @@ import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useProducts } from "@/hooks/useProducts";
 import Link from "next/link";
+import type { ColumnsType } from "antd/es/table";
+import type { Product } from "@/services/products";
 
 const { Search } = Input;
 
@@ -28,7 +30,7 @@ export default function ProductsPage() {
     category: category || undefined,
   });
 
-  const columns = [
+  const columns: ColumnsType<Product> = [
     {
       title: "编号",
       dataIndex: "serialId",
@@ -39,7 +41,7 @@ export default function ProductsPage() {
       title: "产品编码",
       dataIndex: "sku",
       key: "sku",
-      render: (text: string, record: any) => (
+      render: (text: string, record) => (
         <Link href={`/crm/products/${record.id}`}>{text}</Link>
       ),
     },

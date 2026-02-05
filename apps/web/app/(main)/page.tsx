@@ -1,13 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, Row, Col, Statistic, List, Tag, Typography, Space } from 'antd';
 import { RocketOutlined, ShoppingCartOutlined, FileTextOutlined, AlertOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
 import { useAuth } from '@/hooks/useAuth';
 import { PageHeader } from '@/components/common/PageHeader';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 // 模拟数据 - 后续替换为真实 API
 const mockStats = {

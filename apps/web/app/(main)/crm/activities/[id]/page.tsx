@@ -1,15 +1,22 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { Card, Typography, Button, Space, Tag, Descriptions, Spin, Tabs } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { PageHeader } from '@/components/common/PageHeader';
 import { useActivity } from '@/hooks/useActivities';
-import { AttachmentTable } from '@/components/business/AttachmentTable';
 import { useI18n } from '@/i18n/provider';
 
 const { Text } = Typography;
+
+const AttachmentTable = dynamic(
+  () => import('@/components/business/AttachmentTable').then((mod) => mod.AttachmentTable),
+  {
+    loading: () => <Spin size="small" />,
+  }
+);
 
 const statusColors: Record<string, string> = {
   OPEN: 'blue',

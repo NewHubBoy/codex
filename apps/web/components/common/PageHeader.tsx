@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, Typography, Space } from 'antd';
+import { Typography, Space } from 'antd';
 import { ReactNode } from 'react';
 
 const { Title, Text } = Typography;

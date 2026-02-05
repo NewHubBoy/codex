@@ -6,6 +6,8 @@ import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useAccounts } from "@/hooks/useAccounts";
 import Link from "next/link";
+import type { ColumnsType } from "antd/es/table";
+import type { Account } from "@/services/accounts";
 
 const { Search } = Input;
 
@@ -29,7 +31,7 @@ export default function AccountsPage() {
     status: status || undefined,
   });
 
-  const columns = [
+  const columns: ColumnsType<Account> = [
     {
       title: "编号",
       dataIndex: "serialId",
@@ -40,7 +42,7 @@ export default function AccountsPage() {
       title: "客户名称",
       dataIndex: "name",
       key: "name",
-      render: (text: string, record: any) => (
+      render: (text: string, record) => (
         <Link href={`/crm/accounts/${record.id}`}>{text}</Link>
       ),
     },

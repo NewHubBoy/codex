@@ -4,13 +4,15 @@ import { Table, Button, Space, Tag, Card, Modal, App } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useRoles, useDeleteRole } from "@/hooks/useSystem";
+import type { ColumnsType } from "antd/es/table";
+import type { Role } from "@/services/system";
 
 export default function RolesPage() {
   const { data, isLoading } = useRoles();
   const deleteRole = useDeleteRole();
   const { message } = App.useApp();
 
-  const columns = [
+  const columns: ColumnsType<Role> = [
     {
       title: "编号",
       dataIndex: "serialId",
@@ -21,7 +23,7 @@ export default function RolesPage() {
       title: "角色名称",
       dataIndex: "name",
       key: "name",
-      render: (text: string, record: any) => (
+      render: (text: string, record) => (
         <a href={`/settings/roles/${record.id}`}>{text}</a>
       ),
     },
@@ -54,7 +56,7 @@ export default function RolesPage() {
     {
       title: "操作",
       key: "action",
-      render: (_: any, record: any) => (
+      render: (_value, record) => (
         <Space>
           <Button
             type="text"

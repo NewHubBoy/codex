@@ -65,7 +65,6 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
       const fallback = MESSAGES[DEFAULT_LOCALE];
       const template = messages[key] ?? fallback[key] ?? key;
       if (process.env.NODE_ENV !== "production" && template === key) {
-        // eslint-disable-next-line no-console
         console.warn(`Missing i18n key: ${key}`);
       }
       return applyParams(template, params);

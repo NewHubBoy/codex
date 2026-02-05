@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { CreateUserInput, UpdateUserInput } from "@crm/shared";
+import type { CreateOrgUnitInput, CreateUserInput, UpdateOrgUnitInput, UpdateUserInput } from "@crm/shared";
 import { users, roles, orgUnits } from "@/services/system";
 import type { Role } from "@/services/system";
 
@@ -157,7 +157,7 @@ export function useCreateOrgUnit() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (body: any) => orgUnits.create(body),
+    mutationFn: (body: CreateOrgUnitInput) => orgUnits.create(body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["orgUnits"] });
     },
@@ -168,7 +168,7 @@ export function useUpdateOrgUnit() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: any }) =>
+    mutationFn: ({ id, body }: { id: string; body: UpdateOrgUnitInput }) =>
       orgUnits.update(id, body),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["orgUnits"] });

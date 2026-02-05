@@ -1,4 +1,4 @@
-import type { CreateUserInput, UpdateUserInput } from "@crm/shared";
+import type { CreateOrgUnitInput, CreateUserInput, UpdateOrgUnitInput, UpdateUserInput } from "@crm/shared";
 import { api } from "./api";
 import type { PaginatedResponse } from "./types";
 
@@ -29,7 +29,7 @@ export interface Role {
   code: string;
   description?: string;
   status: string;
-  permissions: any[];
+  permissions: Permission[];
   user_count?: number;
   created_at: string;
   updated_at: string;
@@ -42,6 +42,23 @@ export interface Permission {
   module: string;
   description?: string;
 }
+
+export interface OrgUnit {
+  id: string;
+  serialId?: number;
+  name: string;
+  code?: string;
+  type?: string;
+  parentId?: string | null;
+  parent_id?: string | null;
+  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export type OrgUnitListResponse = {
+  data: OrgUnit[];
+};
 
 export const users = {
   list: async (params?: {
@@ -117,19 +134,19 @@ export const roles = {
 };
 
 export const orgUnits = {
-  list: async (): Promise<any[]> => {
+  list: async (): Promise<OrgUnitListResponse> => {
     return api.get("/org-units");
   },
 
-  get: async (id: string): Promise<any> => {
+  get: async (id: string): Promise<OrgUnit> => {
     return api.get(`/org-units/${id}`);
   },
 
-  create: async (body: Partial<any>): Promise<any> => {
+  create: async (body: CreateOrgUnitInput): Promise<OrgUnit> => {
     return api.post("/org-units", body);
   },
 
-  update: async (id: string, body: Partial<any>): Promise<any> => {
+  update: async (id: string, body: UpdateOrgUnitInput): Promise<OrgUnit> => {
     return api.patch(`/org-units/${id}`, body);
   },
 

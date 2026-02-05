@@ -6,6 +6,8 @@ import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useContacts } from "@/hooks/useContacts";
 import Link from "next/link";
+import type { ColumnsType } from "antd/es/table";
+import type { Contact } from "@/services/contacts";
 
 const { Search } = Input;
 
@@ -27,7 +29,7 @@ export default function ContactsPage() {
     accountId: accountId || undefined,
   });
 
-  const columns = [
+  const columns: ColumnsType<Contact> = [
     {
       title: "编号",
       dataIndex: "serialId",
@@ -38,7 +40,7 @@ export default function ContactsPage() {
       title: "姓名",
       dataIndex: "name",
       key: "name",
-      render: (text: string, record: any) => (
+      render: (text: string, record) => (
         <Link href={`/crm/contacts/${record.id}`}>{text}</Link>
       ),
     },

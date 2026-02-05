@@ -6,6 +6,8 @@ import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useTickets } from "@/hooks/useTickets";
 import Link from "next/link";
+import type { ColumnsType } from "antd/es/table";
+import type { Ticket } from "@/services/tickets";
 
 const { Search } = Input;
 
@@ -54,7 +56,7 @@ export default function TicketsPage() {
     priority: priority || undefined,
   });
 
-  const columns = [
+  const columns: ColumnsType<Ticket> = [
     {
       title: "编号",
       dataIndex: "serialId",
@@ -65,7 +67,7 @@ export default function TicketsPage() {
       title: "工单号",
       dataIndex: "number",
       key: "number",
-      render: (text: string, record: any) => (
+      render: (text: string, record) => (
         <Link href={`/crm/tickets/${record.id}`}>{text}</Link>
       ),
     },

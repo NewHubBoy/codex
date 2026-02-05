@@ -6,6 +6,8 @@ import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useDeliveries } from "@/hooks/useDeliveries";
 import Link from "next/link";
+import type { ColumnsType } from "antd/es/table";
+import type { Delivery } from "@/services/deliveries";
 
 const { Search } = Input;
 
@@ -36,7 +38,7 @@ export default function DeliveriesPage() {
     status: status || undefined,
   });
 
-  const columns = [
+  const columns: ColumnsType<Delivery> = [
     {
       title: "编号",
       dataIndex: "serialId",
@@ -47,7 +49,7 @@ export default function DeliveriesPage() {
       title: "交付单号",
       dataIndex: "number",
       key: "number",
-      render: (text: string, record: any) => (
+      render: (text: string, record) => (
         <Link href={`/crm/deliveries/${record.id}`}>{text}</Link>
       ),
     },

@@ -6,6 +6,8 @@ import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useQuotes } from "@/hooks/useQuotes";
 import Link from "next/link";
+import type { ColumnsType } from "antd/es/table";
+import type { Quote } from "@/services/quotes";
 
 const { Search } = Input;
 
@@ -42,7 +44,7 @@ export default function QuotesPage() {
     EXPIRED: "已过期",
   };
 
-  const columns = [
+  const columns: ColumnsType<Quote> = [
     {
       title: "编号",
       dataIndex: "serialId",
@@ -53,7 +55,7 @@ export default function QuotesPage() {
       title: "报价单号",
       dataIndex: "number",
       key: "number",
-      render: (text: string, record: any) => (
+      render: (text: string, record) => (
         <Link href={`/crm/quotes/${record.id}`}>{text}</Link>
       ),
     },

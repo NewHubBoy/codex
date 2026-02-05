@@ -6,29 +6,33 @@ import { PlusOutlined, EditOutlined, DeleteOutlined, TeamOutlined } from '@ant-d
 import { Tag } from 'antd';
 import { PageHeader } from '@/components/common/PageHeader';
 import { useOrgUnits } from '@/hooks/useSystem';
+import type { DataNode } from 'antd/es/tree';
+import type { OrgUnit, OrgUnitListResponse } from '@/services/system';
+
+type OrgUnitTreeNode = DataNode & OrgUnit & { children: OrgUnitTreeNode[] };
 
 export default function OrgUnitsPage() {
-  const { data: orgUnits, isLoading } = useOrgUnits();
+  const { data: orgUnits } = useOrgUnits();
   const [form] = Form.useForm();
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingNode, setEditingNode] = useState<any>(null);
+  const [editingNode, setEditingNode] = useState<OrgUnitTreeNode | null>(null);
   const { message } = App.useApp();
 
   // 构建树形数据
-  const buildTreeData = (items: any[]): any[] => {
-    const map = new Map();
-    const roots: any[] = [];
-    console.log(items);
+  const buildTreeData = (items: OrgUnitListResponse): OrgUnitTreeNode[] => {
+    const map = new Map<string, OrgUnitTreeNode>();
+    const roots: OrgUnitTreeNode[] = [];
+    const source = items.data ?? [];
 
-    items?.data.forEach((item) => {
+    source.forEach((item) => {
       map.set(item.id, { ...item, key: item.id, title: item.name, children: [] });
     });
 
-    items?.data.forEach((item) => {
+    source.forEach((item) => {
       if (item.parentId && map.has(item.parentId)) {
-        map.get(item.parentId).children.push(map.get(item.id));
+        map.get(item.parentId)?.children.push(map.get(item.id) as OrgUnitTreeNode);
       } else {
-        roots.push(map.get(item.id));
+        roots.push(map.get(item.id) as OrgUnitTreeNode);
       }
     });
 
@@ -37,15 +41,13 @@ export default function OrgUnitsPage() {
 
   const treeData = orgUnits ? buildTreeData(orgUnits) : [];
 
-  console.log(treeData, orgUnits);
-
   const handleAdd = () => {
     setEditingNode(null);
     form.resetFields();
     setModalOpen(true);
   };
 
-  const handleEdit = (node: any) => {
+  const handleEdit = (node: OrgUnitTreeNode) => {
     setEditingNode(node);
     form.setFieldsValue({
       name: node.name,
@@ -56,7 +58,7 @@ export default function OrgUnitsPage() {
     setModalOpen(true);
   };
 
-  const handleDelete = (node: any) => {
+  const handleDelete = (node: OrgUnitTreeNode) => {
     Modal.confirm({
       title: '确认删除',
       content: `确定要删除部门 ${node.name} 吗？子部门也将被删除。`,
@@ -87,7 +89,7 @@ export default function OrgUnitsPage() {
           treeData={treeData}
           showIcon
           defaultExpandAll
-          titleRender={(nodeData: any) => (
+          titleRender={(nodeData: OrgUnitTreeNode) => (
             <Space>
               <span>{nodeData.title}</span>
               {nodeData.serialId ? <Tag color="blue">ID {nodeData.serialId}</Tag> : null}
@@ -108,7 +110,7 @@ export default function OrgUnitsPage() {
               </Space>
             </Space>
           )}
-          icon={(nodeData: any) => <TeamOutlined />}
+          icon={() => <TeamOutlined />}
         />
       </Card>
 
@@ -134,7 +136,7 @@ export default function OrgUnitsPage() {
             <Select
               placeholder="选择上级部门（留空为顶级）"
               allowClear
-              options={orgUnits?.data?.map((item: any) => ({
+              options={orgUnits?.data?.map((item: OrgUnit) => ({
                 label: item.name,
                 value: item.id,
               }))}

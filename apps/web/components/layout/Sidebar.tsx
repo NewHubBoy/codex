@@ -1,6 +1,7 @@
 'use client';
 
 import { Layout, Menu, Typography } from 'antd';
+import type { MenuProps } from 'antd';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   DashboardOutlined,
@@ -18,7 +19,7 @@ import {
   ExperimentOutlined,
   ClockCircleOutlined,
 } from '@ant-design/icons';
-import { useEffect } from 'react';
+import type { ReactNode } from 'react';
 import { useI18n } from '@/i18n/provider';
 
 const { Sider: AntSider } = Layout;
@@ -28,7 +29,7 @@ const { Title } = Typography;
 interface MenuItem {
   key: string;
   label: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   children?: MenuItem[];
   permission?: string;
 }
@@ -154,6 +155,14 @@ export function Sidebar() {
     ...settingsMenuItems(t),
   ];
 
+  const toMenuItems = (items: MenuItem[]): MenuProps["items"] =>
+    items.map((item) => ({
+      key: item.key,
+      label: item.label,
+      icon: item.icon,
+      children: item.children ? toMenuItems(item.children) : undefined,
+    }));
+
   // 查找父菜单以确定展开项
   const findOpenKeys = (path: string): string[] => {
     const crmPaths = ['/crm/leads', '/crm/activities', '/crm/opportunities', '/crm/accounts'];
@@ -218,7 +227,7 @@ export function Sidebar() {
         mode="inline"
         selectedKeys={[findSelectedKey(pathname)]}
         defaultOpenKeys={findOpenKeys(pathname)}
-        items={allMenuItems as any}
+        items={toMenuItems(allMenuItems)}
         onClick={handleMenuClick}
         style={{ background: '#001529', borderRight: 0 }}
       />

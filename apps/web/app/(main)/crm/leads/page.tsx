@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Table,
@@ -68,16 +68,15 @@ export default function LeadsPage() {
     const inactive = searchParams.get("inactiveDays");
     const inactiveParsed = inactive ? Number.parseInt(inactive, 10) : undefined;
     if (alert) {
-      setAlertFilter(alert);
       if (alert === "inactive" && inactiveParsed && inactiveParsed > 0) {
         setInactiveDays(inactiveParsed);
       }
-      handleAlertFilterChange(alert);
+      handleAlertFilterChange(alert, inactiveParsed);
     }
     if (inactiveParsed && inactiveParsed > 0) {
       setInactiveDays(inactiveParsed);
     }
-  }, [searchParams]);
+  }, [handleAlertFilterChange, searchParams]);
 
   // 查询线索列表
   const { data, isLoading, refetch } = useLeads({
@@ -135,7 +134,7 @@ export default function LeadsPage() {
     setPagination({ ...pagination, current: 1 });
   };
 
-  const handleAlertFilterChange = (value?: string) => {
+  const handleAlertFilterChange = useCallback((value?: string, inactiveOverride?: number) => {
     setAlertFilter(value);
     setFilters((prev) => {
       const next = {
@@ -149,12 +148,13 @@ export default function LeadsPage() {
       } else if (value === "next") {
         (next.overdueNextFollowUp as unknown) = true;
       } else if (value === "inactive") {
-        (next.inactiveDays as unknown) = inactiveDays;
+        const nextInactiveDays = inactiveOverride && inactiveOverride > 0 ? inactiveOverride : inactiveDays;
+        (next.inactiveDays as unknown) = nextInactiveDays;
       }
       return next;
     });
     setPagination((prev) => ({ ...prev, current: 1 }));
-  };
+  }, [inactiveDays]);
 
   const handleInactiveDaysChange = (value: number | null) => {
     const days = value && value > 0 ? value : 7;

@@ -1,6 +1,7 @@
 'use client';
 
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import {
   Card,
   Typography,
@@ -23,13 +24,25 @@ import { useLead, useDeleteLead, useUpdateLead, useSubmitLead } from '@/hooks/us
 import { PageHeader } from '@/components/common/PageHeader';
 import { useEffect, useState } from 'react';
 import { LeadSource, LeadRating, LeadStatus } from '@/services/leads';
-import { AttachmentTable } from '@/components/business/AttachmentTable';
-import { ActivityTable } from '@/components/business/ActivityTable';
 import { useI18n } from '@/i18n/provider';
 import { getErrorMessage } from '@/utils/error';
 import dayjs from 'dayjs';
 
 const { Text } = Typography;
+
+const ActivityTable = dynamic(
+  () => import('@/components/business/ActivityTable').then((mod) => mod.ActivityTable),
+  {
+    loading: () => <Spin size="small" />,
+  }
+);
+
+const AttachmentTable = dynamic(
+  () => import('@/components/business/AttachmentTable').then((mod) => mod.AttachmentTable),
+  {
+    loading: () => <Spin size="small" />,
+  }
+);
 
 const statusColors: Record<string, string> = {
   NEW: 'blue',

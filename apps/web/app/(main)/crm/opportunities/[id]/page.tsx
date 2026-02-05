@@ -1,16 +1,29 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { Card, Typography, Button, Space, Tag, Tabs, Descriptions, Spin } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useOpportunity } from "@/hooks/useOpportunities";
-import { AttachmentTable } from "@/components/business/AttachmentTable";
-import { ActivityTable } from "@/components/business/ActivityTable";
 import Link from "next/link";
 import { useI18n } from "@/i18n/provider";
 
 const { Text } = Typography;
+
+const ActivityTable = dynamic(
+  () => import("@/components/business/ActivityTable").then((mod) => mod.ActivityTable),
+  {
+    loading: () => <Spin size="small" />,
+  }
+);
+
+const AttachmentTable = dynamic(
+  () => import("@/components/business/AttachmentTable").then((mod) => mod.AttachmentTable),
+  {
+    loading: () => <Spin size="small" />,
+  }
+);
 
 const statusColors: Record<string, string> = {
   QUALIFICATION: "blue",

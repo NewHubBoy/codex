@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import { Card, Row, Col, Statistic, Table, DatePicker, Select, Space, Typography } from "antd";
 import { ArrowUpOutlined, ArrowDownOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
+import type { ColumnsType } from "antd/es/table";
 
 const { RangePicker } = DatePicker;
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 // 模拟数据
 const mockSalesData = [
@@ -34,10 +34,26 @@ const mockTopProducts = [
   { name: "定制开发", amount: 28000, count: 4 },
 ];
 
-export default function ReportsPage() {
-  const [dateRange, setDateRange] = useState<any>(null);
+type SalesRow = {
+  month: string;
+  amount: number;
+  count: number;
+};
 
-  const columns = [
+type PipelineRow = {
+  stage: string;
+  amount: number;
+  count: number;
+};
+
+type TopProductRow = {
+  name: string;
+  amount: number;
+  count: number;
+};
+
+export default function ReportsPage() {
+  const columns: ColumnsType<SalesRow> = [
     {
       title: "月份",
       dataIndex: "month",
@@ -57,7 +73,7 @@ export default function ReportsPage() {
     {
       title: "环比",
       key: "growth",
-      render: (_: any, record: any, index: number) => {
+      render: (_value, record, index) => {
         if (index === 0) return "-";
         const prev = mockSalesData[index - 1].amount;
         const growth = ((record.amount - prev) / prev) * 100;
@@ -71,7 +87,7 @@ export default function ReportsPage() {
     },
   ];
 
-  const pipelineColumns = [
+  const pipelineColumns: ColumnsType<PipelineRow> = [
     {
       title: "阶段",
       dataIndex: "stage",
@@ -91,7 +107,7 @@ export default function ReportsPage() {
     {
       title: "占比",
       key: "percentage",
-      render: (_: any, record: any) => {
+      render: (_value, record) => {
         const total = mockPipelineData.reduce((sum, item) => sum + item.amount, 0);
         const pct = ((record.amount / total) * 100).toFixed(1);
         return `${pct}%`;
@@ -211,12 +227,14 @@ export default function ReportsPage() {
       {/* 产品排行 */}
       <Card title="热销产品 TOP5">
         <Table
-          columns={[
-            { title: "排名", key: "rank", render: (_: any, __: any, index: number) => index + 1 },
-            { title: "产品名称", dataIndex: "name", key: "name" },
-            { title: "销售额", dataIndex: "amount", key: "amount", render: (val: number) => `¥${val.toLocaleString()}` },
-            { title: "销售数量", dataIndex: "count", key: "count" },
-          ]}
+          columns={
+            [
+              { title: "排名", key: "rank", render: (_value, _record, index) => index + 1 },
+              { title: "产品名称", dataIndex: "name", key: "name" },
+              { title: "销售额", dataIndex: "amount", key: "amount", render: (val: number) => `¥${val.toLocaleString()}` },
+              { title: "销售数量", dataIndex: "count", key: "count" }
+            ] satisfies ColumnsType<TopProductRow>
+          }
           dataSource={mockTopProducts}
           rowKey="name"
           pagination={false}

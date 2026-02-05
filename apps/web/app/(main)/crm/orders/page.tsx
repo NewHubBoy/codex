@@ -6,6 +6,8 @@ import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useOrders } from "@/hooks/useOrders";
 import Link from "next/link";
+import type { ColumnsType } from "antd/es/table";
+import type { Order } from "@/services/orders";
 
 const { Search } = Input;
 
@@ -40,7 +42,7 @@ export default function OrdersPage() {
     status: status || undefined,
   });
 
-  const columns = [
+  const columns: ColumnsType<Order> = [
     {
       title: "编号",
       dataIndex: "serialId",
@@ -51,7 +53,7 @@ export default function OrdersPage() {
       title: "订单号",
       dataIndex: "number",
       key: "number",
-      render: (text: string, record: any) => (
+      render: (text: string, record) => (
         <Link href={`/crm/orders/${record.id}`}>{text}</Link>
       ),
     },
