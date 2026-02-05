@@ -73,6 +73,44 @@ export function useShipOrder() {
   });
 }
 
+export function useSubmitOrderApproval() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload?: { discountRate?: number; amount?: number; isCustom?: boolean; hasSpecialTerms?: boolean; note?: string };
+    }) => orders.submitApproval(id, payload),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["order", id] });
+      queryClient.invalidateQueries({ queryKey: ["approvals"] });
+    },
+  });
+}
+
+export function useResubmitOrderApproval() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload?: { discountRate?: number; amount?: number; isCustom?: boolean; hasSpecialTerms?: boolean; note?: string };
+    }) => orders.resubmitApproval(id, payload),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["order", id] });
+      queryClient.invalidateQueries({ queryKey: ["approvals"] });
+    },
+  });
+}
+
 export function useCancelOrder() {
   const queryClient = useQueryClient();
 

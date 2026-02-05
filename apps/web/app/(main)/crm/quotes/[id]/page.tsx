@@ -10,11 +10,14 @@ import {
   Tabs,
   Descriptions,
   Spin,
+  App,
 } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import Link from "next/link";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useQuote } from "@/hooks/useQuotes";
+import { useResubmitQuoteApproval, useSubmitQuoteApproval } from "@/hooks/useQuotes";
+import { ApprovalHistory } from "@/components/approvals/ApprovalHistory";
 
 const { Text } = Typography;
 
@@ -41,8 +44,11 @@ export default function QuoteDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
+  const { message } = App.useApp();
 
   const { data: quote, isLoading } = useQuote(id);
+  const submitApproval = useSubmitQuoteApproval();
+  const resubmitApproval = useResubmitQuoteApproval();
 
   if (isLoading) {
     return (
@@ -86,6 +92,11 @@ export default function QuoteDetailPage() {
         </Descriptions>
       ),
     },
+    {
+      key: "approvals",
+      label: "审批记录",
+      children: <ApprovalHistory entityType="Quote" entityId={id} />,
+    },
   ];
 
   return (
@@ -96,6 +107,44 @@ export default function QuoteDetailPage() {
           <Button key="back" icon={<ArrowLeftOutlined />} onClick={() => router.back()}>
             返回
           </Button>,
+          quote.status === "DRAFT" ? (
+            <Button
+              key="submit"
+              type="primary"
+              loading={submitApproval.isPending}
+              onClick={async () => {
+                try {
+                  await submitApproval.mutateAsync({ id });
+                  message.success("已提交审批");
+                } catch (error) {
+                  if (error instanceof Error) {
+                    message.error(error.message);
+                  }
+                }
+              }}
+            >
+              提交审批
+            </Button>
+          ) : null,
+          quote.status === "REJECTED" ? (
+            <Button
+              key="resubmit"
+              type="primary"
+              loading={resubmitApproval.isPending}
+              onClick={async () => {
+                try {
+                  await resubmitApproval.mutateAsync({ id });
+                  message.success("已重新提交");
+                } catch (error) {
+                  if (error instanceof Error) {
+                    message.error(error.message);
+                  }
+                }
+              }}
+            >
+              重新提交
+            </Button>
+          ) : null,
         ]}
       />
 

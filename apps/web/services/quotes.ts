@@ -45,6 +45,22 @@ export const quotes = {
     return api.post(`/quotes/${id}/send`);
   },
 
+  // 提交审批
+  submitApproval: async (
+    id: string,
+    payload?: { discountRate?: number; amount?: number; isCustom?: boolean; hasSpecialTerms?: boolean; note?: string }
+  ): Promise<Quote> => {
+    return api.post(`/quotes/${id}/submit-approval`, { payload });
+  },
+
+  // 重新提交审批
+  resubmitApproval: async (
+    id: string,
+    payload?: { discountRate?: number; amount?: number; isCustom?: boolean; hasSpecialTerms?: boolean; note?: string }
+  ): Promise<Quote> => {
+    return api.post(`/quotes/${id}/resubmit`, { payload });
+  },
+
   // 审批
   approve: async (id: string): Promise<Quote> => {
     return api.post(`/quotes/${id}/approve`);

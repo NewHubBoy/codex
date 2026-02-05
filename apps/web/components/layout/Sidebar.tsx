@@ -115,6 +115,15 @@ const reportMenuItems = (t: (key: string) => string): MenuItem[] => [
   },
 ];
 
+const approvalMenuItems = (t: (key: string) => string): MenuItem[] => [
+  {
+    key: '/approvals',
+    label: t('menu.approvals'),
+    icon: <FileProtectOutlined />,
+    permission: 'APPROVAL_READ',
+  },
+];
+
 const settingsMenuItems = (t: (key: string) => string): MenuItem[] => [
   {
     key: '/settings/users',
@@ -140,6 +149,12 @@ const settingsMenuItems = (t: (key: string) => string): MenuItem[] => [
     icon: <AlertOutlined />,
     permission: 'ALERT_READ',
   },
+  {
+    key: '/settings/approval-rules',
+    label: t('menu.approval_rules'),
+    icon: <SettingOutlined />,
+    permission: 'APPROVAL_RULE_READ',
+  },
 ];
 
 export function Sidebar() {
@@ -152,6 +167,7 @@ export function Sidebar() {
     ...crmMenuItems(t),
     ...productMenuItems(t),
     ...reportMenuItems(t),
+    ...approvalMenuItems(t),
     ...settingsMenuItems(t),
   ];
 

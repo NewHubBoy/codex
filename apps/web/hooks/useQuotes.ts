@@ -73,6 +73,34 @@ export function useSendQuote() {
   });
 }
 
+export function useSubmitQuoteApproval() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload?: { discountRate?: number; amount?: number; isCustom?: boolean; hasSpecialTerms?: boolean; note?: string } }) =>
+      quotes.submitApproval(id, payload),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ["quotes"] });
+      queryClient.invalidateQueries({ queryKey: ["quote", id] });
+      queryClient.invalidateQueries({ queryKey: ["approvals"] });
+    },
+  });
+}
+
+export function useResubmitQuoteApproval() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload?: { discountRate?: number; amount?: number; isCustom?: boolean; hasSpecialTerms?: boolean; note?: string } }) =>
+      quotes.resubmitApproval(id, payload),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ["quotes"] });
+      queryClient.invalidateQueries({ queryKey: ["quote", id] });
+      queryClient.invalidateQueries({ queryKey: ["approvals"] });
+    },
+  });
+}
+
 export function useApproveQuote() {
   const queryClient = useQueryClient();
 

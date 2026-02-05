@@ -44,6 +44,22 @@ export const orders = {
     return api.post(`/orders/${id}/ship`);
   },
 
+  // 提交审批
+  submitApproval: async (
+    id: string,
+    payload?: { discountRate?: number; amount?: number; isCustom?: boolean; hasSpecialTerms?: boolean; note?: string }
+  ): Promise<Order> => {
+    return api.post(`/orders/${id}/submit-approval`, { payload });
+  },
+
+  // 重新提交审批
+  resubmitApproval: async (
+    id: string,
+    payload?: { discountRate?: number; amount?: number; isCustom?: boolean; hasSpecialTerms?: boolean; note?: string }
+  ): Promise<Order> => {
+    return api.post(`/orders/${id}/resubmit`, { payload });
+  },
+
   // 取消
   cancel: async (id: string, reason?: string): Promise<Order> => {
     return api.post(`/orders/${id}/cancel`, { reason });
