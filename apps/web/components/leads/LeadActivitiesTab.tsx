@@ -96,7 +96,9 @@ export function LeadActivitiesTab({ leadId }: LeadActivitiesTabProps) {
 
       const files = fileList
         .map((item) => item.originFileObj)
-        .filter((file): file is File => Boolean(file));
+        .filter(
+          (file): file is NonNullable<UploadFile["originFileObj"]> => Boolean(file)
+        );
 
       if (!files.length) {
         message.success(t('activities.messages.create_success'));

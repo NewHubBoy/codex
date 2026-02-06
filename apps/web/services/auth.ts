@@ -28,12 +28,12 @@ export interface RefreshTokenResponse {
 
 // 登录
 export async function login(data: LoginParams): Promise<LoginResponse> {
-  return api.post("/auth/login", data);
+  return api.post<LoginResponse, LoginResponse>("/auth/login", data);
 }
 
 // 刷新 Token
 export async function refreshToken(refreshToken: string): Promise<RefreshTokenResponse> {
-  return api.post("/auth/refresh", { refreshToken });
+  return api.post<RefreshTokenResponse, RefreshTokenResponse>("/auth/refresh", { refreshToken });
 }
 
 // 登出
@@ -42,8 +42,8 @@ export async function logout(): Promise<void> {
 }
 
 // 获取当前用户信息
-export async function getCurrentUser() {
-  return api.get("/auth/me");
+export async function getCurrentUser(): Promise<LoginResponse["user"]> {
+  return api.get<LoginResponse["user"], LoginResponse["user"]>("/auth/me");
 }
 
 // 设置 Token

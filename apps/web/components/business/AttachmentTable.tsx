@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { App, Button, Popconfirm, Space, Table, Upload } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import type { UploadRequestOption } from "rc-upload/lib/interface";
+import type { UploadProps } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import {
   useAttachmentConfig,
@@ -16,6 +16,9 @@ import {
   DEFAULT_ALLOWED_MIME_TYPES,
   DEFAULT_MAX_ATTACHMENT_SIZE_BYTES,
 } from "@/config/attachments";
+
+type CustomRequestOptions = Parameters<NonNullable<UploadProps["customRequest"]>>[0];
+type CustomRequestError = Parameters<NonNullable<CustomRequestOptions["onError"]>>[0];
 
 interface AttachmentTableProps {
   relatedType: string;
@@ -87,7 +90,7 @@ export function AttachmentTable({
       }
       return true;
     },
-    customRequest: async (options: UploadRequestOption) => {
+    customRequest: async (options: CustomRequestOptions) => {
       try {
         const file = options.file as File;
         await uploadAttachment.mutateAsync({
@@ -100,7 +103,8 @@ export function AttachmentTable({
       } catch (error) {
         console.error("上传失败:", error);
         message.error("上传失败");
-        options.onError?.(error);
+        const uploadError = (error instanceof Error ? error : new Error("Upload failed")) as CustomRequestError;
+        options.onError?.(uploadError);
       }
     },
   };

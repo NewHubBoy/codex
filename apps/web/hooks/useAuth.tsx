@@ -10,7 +10,6 @@ import {
   clearToken,
   getAccessToken,
   type LoginParams,
-  type LoginResponse,
 } from "@/services/auth";
 
 interface User {
@@ -53,7 +52,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (token) {
         try {
           const user = await getCurrentUser();
-          setState({ user: user as User, isAuthenticated: true, isLoading: false });
+          setState({ user, isAuthenticated: true, isLoading: false });
         } catch {
           clearToken();
           setState({ user: null, isAuthenticated: false, isLoading: false });
@@ -66,10 +65,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const loginFn = useCallback(async (params: LoginParams) => {
-    const response = await loginApi(params) as LoginResponse;
+    const response = await loginApi(params);
     setToken(response.accessToken, response.refreshToken);
-    setState({ user: response.user as User, isAuthenticated: true, isLoading: false });
-    return response.user as User;
+    setState({ user: response.user, isAuthenticated: true, isLoading: false });
+    return response.user;
   }, []);
 
   const logoutFn = useCallback(async () => {
@@ -85,7 +84,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const refreshUserFn = useCallback(async () => {
     try {
       const user = await getCurrentUser();
-      setState((prev) => ({ ...prev, user: user as User }));
+      setState((prev) => ({ ...prev, user }));
     } catch (error) {
       console.error("刷新用户信息失败:", error);
     }
