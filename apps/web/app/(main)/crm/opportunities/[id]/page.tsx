@@ -231,7 +231,7 @@ export default function OpportunityDetailPage() {
           items={tabItems}
           activeKey={activeTab}
           onChange={setActiveTab}
-          destroyInactiveTabPane
+          destroyOnHidden
         />
       </Space>
     </div>

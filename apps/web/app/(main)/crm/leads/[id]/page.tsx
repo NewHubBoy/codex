@@ -462,7 +462,7 @@ export default function LeadDetailPage() {
                     />
                   </Form.Item>
                 </Descriptions.Item>
-                <Descriptions.Item label={t('lead.fields.next_follow_up_at')}>
+                <Descriptions.Item label={t('lead.fields.next_follow_up_at')} span={2}>
                   <Form.Item name="nextFollowUpAt" noStyle>
                     <DatePicker
                       style={{ width: '100%' }}
@@ -509,7 +509,7 @@ export default function LeadDetailPage() {
               <Descriptions.Item label={t('lead.fields.source')}>
                 {lead.source ? sourceLabels[lead.source] || lead.source : '-'}
               </Descriptions.Item>
-              <Descriptions.Item label={t('lead.fields.expected_value')}>
+              <Descriptions.Item label={t('lead.fields.expected_value')} span={2}>
                 {lead.expectedValue ? `¥${lead.expectedValue.toLocaleString(locale)}` : '-'}
               </Descriptions.Item>
               <Descriptions.Item label={t('lead.fields.initial_need')} span={2}>
@@ -523,7 +523,7 @@ export default function LeadDetailPage() {
               <Descriptions.Item label={t('lead.fields.last_activity_at')}>
                 {lead.lastActivityAt ? new Date(lead.lastActivityAt).toLocaleString(locale) : '-'}
               </Descriptions.Item>
-              <Descriptions.Item label={t('lead.fields.next_follow_up_at')}>
+              <Descriptions.Item label={t('lead.fields.next_follow_up_at')} span={2}>
                 {lead.nextFollowUpAt
                   ? new Date(lead.nextFollowUpAt).toLocaleString(locale)
                   : '-'}
@@ -540,7 +540,7 @@ export default function LeadDetailPage() {
             items={tabItems}
             activeKey={activeTab}
             onChange={setActiveTab}
-            destroyInactiveTabPane
+            destroyOnHidden
           />
         </Card>
       </Space>

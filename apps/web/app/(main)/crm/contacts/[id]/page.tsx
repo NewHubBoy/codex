@@ -177,7 +177,7 @@ export default function ContactDetailPage() {
           items={tabItems}
           activeKey={activeTab}
           onChange={setActiveTab}
-          destroyInactiveTabPane
+          destroyOnHidden
         />
       </Space>
     </div>

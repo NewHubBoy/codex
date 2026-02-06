@@ -172,7 +172,7 @@ export default function AccountDetailPage() {
           items={tabItems}
           activeKey={activeTab}
           onChange={setActiveTab}
-          destroyInactiveTabPane
+          destroyOnHidden
         />
       </Space>
     </div>
