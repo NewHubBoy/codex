@@ -15,8 +15,8 @@ export interface User {
   role_id?: string;
   avatar?: string;
   last_login?: string;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
   org_unit?: { id: string; name: string };
   role?: { id: string; name: string; code: string };
 }
@@ -25,12 +25,18 @@ export type UserListResponse = PaginatedResponse<User>;
 
 export interface Role {
   id: string;
+  serialId?: number;
+  tenantId?: string;
   name: string;
   code: string;
   description?: string;
+  dataScope?: "SELF" | "TEAM" | "SUBTREE" | "ALL";
   status: string;
   permissions: Permission[];
   user_count?: number;
+  userCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
   created_at: string;
   updated_at: string;
 }
@@ -39,8 +45,16 @@ export interface Permission {
   id: string;
   code: string;
   name: string;
-  module: string;
+  type?: string;
+  module?: string;
   description?: string;
+}
+
+export interface RolePermission {
+  roleId: string;
+  permissionId: string;
+  createdAt?: string;
+  permission: Permission;
 }
 
 export interface OrgUnit {
@@ -130,6 +144,18 @@ export const roles = {
   // 获取所有权限
   getPermissions: async (params?: { page?: number; pageSize?: number; q?: string }): Promise<PaginatedResponse<Permission>> => {
     return api.get("/rbac/permissions", { params });
+  },
+
+  listRolePermissions: async (id: string): Promise<RolePermission[]> => {
+    return api.get(`/rbac/roles/${id}/permissions`);
+  },
+
+  addRolePermission: async (id: string, permissionId: string): Promise<RolePermission> => {
+    return api.post(`/rbac/roles/${id}/permissions`, { permissionId });
+  },
+
+  removeRolePermission: async (id: string, permissionId: string): Promise<void> => {
+    return api.delete(`/rbac/roles/${id}/permissions/${permissionId}`);
   },
 };
 

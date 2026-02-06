@@ -130,10 +130,50 @@ export function useDeleteRole() {
   });
 }
 
-export function usePermissions(params?: { page?: number; pageSize?: number; q?: string }) {
+export function usePermissions(
+  params?: { page?: number; pageSize?: number; q?: string },
+  options?: { enabled?: boolean }
+) {
   return useQuery({
     queryKey: ["permissions", params],
     queryFn: () => roles.getPermissions(params),
+    enabled: options?.enabled ?? true,
+  });
+}
+
+export function useRolePermissions(roleId?: string) {
+  return useQuery({
+    queryKey: ["role-permissions", roleId],
+    queryFn: () => roles.listRolePermissions(roleId as string),
+    enabled: !!roleId,
+  });
+}
+
+export function useAddRolePermission() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ roleId, permissionId }: { roleId: string; permissionId: string }) =>
+      roles.addRolePermission(roleId, permissionId),
+    onSuccess: (_data, { roleId }) => {
+      queryClient.invalidateQueries({ queryKey: ["role-permissions", roleId] });
+      queryClient.invalidateQueries({ queryKey: ["roles"] });
+      queryClient.invalidateQueries({ queryKey: ["role", roleId] });
+    },
+  });
+}
+
+export function useRemoveRolePermission() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ roleId, permissionId }: { roleId: string; permissionId: string }) =>
+      roles.removeRolePermission(roleId, permissionId),
+    onSuccess: (_data, { roleId }) => {
+      queryClient.invalidateQueries({ queryKey: ["role-permissions", roleId] });
+      queryClient.invalidateQueries({ queryKey: ["roles"] });
+      queryClient.invalidateQueries({ queryKey: ["role", roleId] });
+    },
   });
 }
 
