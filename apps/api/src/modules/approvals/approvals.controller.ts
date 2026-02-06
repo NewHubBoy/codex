@@ -95,7 +95,8 @@ export class ApprovalsController {
     const listQuery = parseListQuery(query);
     const entityType = typeof query.entityType === "string" ? query.entityType : undefined;
     const entityId = typeof query.entityId === "string" ? query.entityId : undefined;
-    return this.approvalsService.listTasks(ctx, listQuery, { entityType, entityId });
+    const roleCode = typeof query.roleCode === "string" ? query.roleCode : undefined;
+    return this.approvalsService.listTasks(ctx, listQuery, { entityType, entityId, roleCode });
   }
 
   @Post("approval-tasks/:id/approve")

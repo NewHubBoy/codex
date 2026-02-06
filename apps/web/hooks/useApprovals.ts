@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { approvals } from "@/services/approvals";
-import type { ApprovalStatus } from "@/services/approvals";
+import type { ApprovalStatus, ApprovalTaskStatus } from "@/services/approvals";
 
 export function useApprovalInstances(params?: {
   page?: number;
@@ -26,9 +26,10 @@ export function useApprovalInstance(id: string) {
 export function useApprovalTasks(params?: {
   page?: number;
   pageSize?: number;
-  status?: ApprovalStatus;
+  status?: ApprovalTaskStatus;
   entityType?: string;
   entityId?: string;
+  roleCode?: string;
 }) {
   return useQuery({
     queryKey: ["approval-tasks", params],

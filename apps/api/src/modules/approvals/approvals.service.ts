@@ -83,19 +83,22 @@ export class ApprovalsService {
   async listTasks(
     ctx: RequestContext,
     query: ListQuery,
-    filters?: { entityType?: string; entityId?: string }
+    filters?: { entityType?: string; entityId?: string; roleCode?: string }
   ) {
     if (!ctx.userId) {
       throw new BadRequestException("Missing user context");
     }
     const roleCodes = await this.getUserRoleCodes(ctx.userId);
-    if (!roleCodes.length) {
+    const filteredRoleCodes = filters?.roleCode
+      ? roleCodes.filter((code) => code === filters.roleCode)
+      : roleCodes;
+    if (!filteredRoleCodes.length) {
       return { data: [], page: query.page, pageSize: query.pageSize, total: 0 };
     }
     const orderBy = parseSort(query.sort, ["createdAt", "status"], "createdAt");
     const where = {
-      status: query.status ?? TASK_STATUS_PENDING,
-      roleCode: { in: roleCodes },
+      status: query.status,
+      roleCode: { in: filteredRoleCodes },
       instance: {
         tenantId: ctx.tenantId,
         entityType: filters?.entityType,
