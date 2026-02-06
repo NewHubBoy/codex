@@ -79,6 +79,14 @@ export function useResetUserPassword() {
   });
 }
 
+export function useUserRoles(userId?: string, options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: ["user-roles", userId],
+    queryFn: () => users.listRoles(userId as string),
+    enabled: !!userId && (options?.enabled ?? true),
+  });
+}
+
 // Roles
 export function useRoles(params?: { page?: number; pageSize?: number; q?: string }) {
   return useQuery({

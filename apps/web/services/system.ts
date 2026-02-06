@@ -5,16 +5,24 @@ import type { PaginatedResponse } from "./types";
 // 类型定义
 export interface User {
   id: string;
-  tenant_id: string;
-  username: string;
+  serialId?: number;
+  tenantId?: string;
+  tenant_id?: string;
+  username?: string;
   name: string;
   email: string;
   phone?: string;
+  locale?: string;
   status: string;
+  orgUnitId?: string;
   org_unit_id?: string;
+  roleId?: string;
   role_id?: string;
   avatar?: string;
+  lastLogin?: string;
   last_login?: string;
+  createdAt?: string;
+  updatedAt?: string;
   created_at?: string;
   updated_at?: string;
   org_unit?: { id: string; name: string };
@@ -22,6 +30,13 @@ export interface User {
 }
 
 export type UserListResponse = PaginatedResponse<User>;
+
+export interface UserRoleAssignment {
+  userId: string;
+  roleId: string;
+  assignedAt?: string;
+  role?: { id: string; name: string; code: string };
+}
 
 export interface Role {
   id: string;
@@ -115,6 +130,18 @@ export const users = {
   // 重置密码
   resetPassword: async (id: string): Promise<{ tempPassword: string }> => {
     return api.post(`/users/${id}/reset-password`);
+  },
+
+  listRoles: async (id: string): Promise<UserRoleAssignment[]> => {
+    return api.get(`/users/${id}/roles`);
+  },
+
+  assignRole: async (id: string, roleId: string): Promise<UserRoleAssignment> => {
+    return api.post(`/users/${id}/roles`, { roleId });
+  },
+
+  removeRole: async (id: string, roleId: string): Promise<void> => {
+    return api.delete(`/users/${id}/roles/${roleId}`);
   },
 };
 
