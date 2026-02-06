@@ -3,6 +3,7 @@
 import { Card, Table, Tag } from "antd";
 import { useApprovalInstances } from "@/hooks/useApprovals";
 import type { ColumnsType } from "antd/es/table";
+import type { ApprovalInstance } from "@/services/approvals";
 
 const statusColors: Record<string, string> = {
   PENDING: "processing",
@@ -25,7 +26,7 @@ export function ApprovalHistory({ entityType, entityId, title = "审批记录" }
     entityId,
   });
 
-  const columns: ColumnsType<{ id: string; status: string; currentGroup?: number; createdAt: string }> = [
+  const columns: ColumnsType<ApprovalInstance> = [
     {
       title: "状态",
       dataIndex: "status",

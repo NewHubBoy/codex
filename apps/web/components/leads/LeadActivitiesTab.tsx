@@ -1,10 +1,17 @@
 'use client';
 
-import { useState } from 'react';
-import { App, Button, Card, DatePicker, Form, Input, Select, Space } from 'antd';
+import { useMemo, useState } from 'react';
+import { App, Button, DatePicker, Form, Input, Modal, Select, Space, Upload } from 'antd';
+import type { UploadFile, UploadProps } from 'antd';
+import { UploadOutlined } from '@ant-design/icons';
 import { ActivityTable } from '@/components/business/ActivityTable';
 import { useCreateActivity } from '@/hooks/useActivities';
 import { ActivityStatus } from '@/services/activities';
+import { useAttachmentConfig, useUploadAttachment } from '@/hooks/useAttachments';
+import {
+  DEFAULT_ALLOWED_MIME_TYPES,
+  DEFAULT_MAX_ATTACHMENT_SIZE_BYTES,
+} from '@/config/attachments';
 import { useI18n } from '@/i18n/provider';
 import { getErrorMessage } from '@/utils/error';
 
@@ -17,18 +24,67 @@ export function LeadActivitiesTab({ leadId }: LeadActivitiesTabProps) {
   const { message } = App.useApp();
   const [form] = Form.useForm();
   const createActivity = useCreateActivity();
+  const uploadAttachment = useUploadAttachment();
+  const { data: attachmentConfig } = useAttachmentConfig();
   const [submitting, setSubmitting] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [fileList, setFileList] = useState<UploadFile[]>([]);
 
-  const statusOptions = Object.entries(ActivityStatus).map(([key, value]) => ({
-    label: t(`activity.status.${key.toLowerCase()}`) || value,
-    value,
-  }));
+  const statusOptions = useMemo(
+    () =>
+      Object.entries(ActivityStatus).map(([key, value]) => ({
+        label: t(`activity.status.${key.toLowerCase()}`) || value,
+        value,
+      })),
+    [t]
+  );
+
+  const allowedMimeTypes = useMemo(() => {
+    if (attachmentConfig?.allowedMimeTypes?.length) {
+      return attachmentConfig.allowedMimeTypes;
+    }
+    return DEFAULT_ALLOWED_MIME_TYPES;
+  }, [attachmentConfig?.allowedMimeTypes]);
+
+  const maxAttachmentSizeBytes =
+    attachmentConfig?.maxSizeBytes ?? DEFAULT_MAX_ATTACHMENT_SIZE_BYTES;
+
+  const resetDialog = () => {
+    form.resetFields();
+    form.setFieldsValue({ status: 'OPEN' });
+    setFileList([]);
+    setCreateOpen(false);
+  };
+
+  const uploadProps: UploadProps = {
+    multiple: true,
+    accept: allowedMimeTypes.join(','),
+    fileList,
+    beforeUpload: (file) => {
+      if (file.size > maxAttachmentSizeBytes) {
+        message.error(t('attachments.messages.max_size_exceeded'));
+        return Upload.LIST_IGNORE;
+      }
+      if (allowedMimeTypes.length > 0 && file.type && !allowedMimeTypes.includes(file.type)) {
+        message.error(t('attachments.messages.invalid_type'));
+        return Upload.LIST_IGNORE;
+      }
+      return false;
+    },
+    onChange: ({ fileList: nextFileList }) => {
+      setFileList(nextFileList);
+    },
+    onRemove: (file) => {
+      setFileList((prev) => prev.filter((item) => item.uid !== file.uid));
+      return true;
+    },
+  };
 
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
       setSubmitting(true);
-      await createActivity.mutateAsync({
+      const activity = await createActivity.mutateAsync({
         relatedType: 'Lead',
         relatedId: leadId,
         subject: values.subject?.trim() || undefined,
@@ -37,9 +93,39 @@ export function LeadActivitiesTab({ leadId }: LeadActivitiesTabProps) {
         dueAt: values.dueAt ? values.dueAt.toISOString() : undefined,
         outcome: values.outcome?.trim() || undefined,
       });
-      message.success(t('activities.messages.create_success'));
-      form.resetFields();
-      form.setFieldsValue({ status: 'OPEN' });
+
+      const files = fileList
+        .map((item) => item.originFileObj)
+        .filter((file): file is File => Boolean(file));
+
+      if (!files.length) {
+        message.success(t('activities.messages.create_success'));
+        resetDialog();
+        return;
+      }
+
+      const uploadResults = await Promise.allSettled(
+        files.map((file) =>
+          uploadAttachment.mutateAsync({
+            file,
+            relatedType: 'Activity',
+            relatedId: activity.id,
+          })
+        )
+      );
+      const failedCount = uploadResults.filter((result) => result.status === 'rejected').length;
+
+      if (failedCount === 0) {
+        message.success(t('activities.messages.create_with_attachments_success'));
+      } else {
+        message.warning(
+          t('activities.messages.create_with_attachments_partial_failed', {
+            failed: failedCount,
+          })
+        );
+      }
+
+      resetDialog();
     } catch (error) {
       if (error && typeof error === 'object' && 'errorFields' in error) {
         return;
@@ -52,14 +138,30 @@ export function LeadActivitiesTab({ leadId }: LeadActivitiesTabProps) {
 
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      <Card title={t('activities.actions.create')}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <Button type="primary" onClick={() => setCreateOpen(true)}>
+          {t('activities.actions.create')}
+        </Button>
+      </div>
+
+      <Modal
+        title={t('activities.dialog.create_title')}
+        open={createOpen}
+        onCancel={resetDialog}
+        onOk={handleSubmit}
+        destroyOnHidden
+        confirmLoading={submitting || createActivity.isPending || uploadAttachment.isPending}
+        okText={t('common.save')}
+        cancelText={t('common.cancel')}
+        width={720}
+      >
         <Form form={form} layout="vertical" initialValues={{ status: 'OPEN' }}>
-          <Space wrap style={{ width: '100%' }} size={16}>
+          <Space wrap style={{ width: '100%' }} size={12}>
             <Form.Item
               label={t('activity.fields.subject')}
               name="subject"
               rules={[{ required: true, message: t('common.required') }]}
-              style={{ minWidth: 240, flex: 1 }}
+              style={{ minWidth: 260, flex: 1 }}
             >
               <Input placeholder={t('activity.fields.subject')} />
             </Form.Item>
@@ -73,14 +175,14 @@ export function LeadActivitiesTab({ leadId }: LeadActivitiesTabProps) {
             <Form.Item
               label={t('common.status')}
               name="status"
-              style={{ minWidth: 200, flex: 1 }}
+              style={{ minWidth: 160, flex: 1 }}
             >
               <Select options={statusOptions} />
             </Form.Item>
             <Form.Item
               label={t('common.due_at')}
               name="dueAt"
-              style={{ minWidth: 240, flex: 1 }}
+              style={{ minWidth: 220, flex: 1 }}
             >
               <DatePicker showTime style={{ width: '100%' }} />
             </Form.Item>
@@ -88,15 +190,14 @@ export function LeadActivitiesTab({ leadId }: LeadActivitiesTabProps) {
           <Form.Item label={t('activity.fields.outcome')} name="outcome">
             <Input.TextArea rows={3} placeholder={t('activity.fields.outcome')} />
           </Form.Item>
-          <Button
-            type="primary"
-            loading={submitting || createActivity.isPending}
-            onClick={handleSubmit}
-          >
-            {t('common.save')}
-          </Button>
+
+          <Form.Item label={t('common.attachments')}>
+            <Upload {...uploadProps} listType="text">
+              <Button icon={<UploadOutlined />}>{t('attachments.actions.select_files')}</Button>
+            </Upload>
+          </Form.Item>
         </Form>
-      </Card>
+      </Modal>
 
       <ActivityTable relatedType="Lead" relatedId={leadId} />
     </Space>

@@ -89,27 +89,33 @@ export default function OrgUnitsPage() {
           treeData={treeData}
           showIcon
           defaultExpandAll
-          titleRender={(nodeData: OrgUnitTreeNode) => (
-            <Space>
-              <span>{nodeData.title}</span>
-              {nodeData.serialId ? <Tag color="blue">ID {nodeData.serialId}</Tag> : null}
-              <Tag>{nodeData.type}</Tag>
-              <Space size="small">
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<PlusOutlined />}
-                  onClick={() => {
-                    setEditingNode(nodeData);
-                    form.setFieldsValue({ parent_id: nodeData.id });
-                    setModalOpen(true);
-                  }}
-                />
-                <Button type="text" size="small" icon={<EditOutlined />} onClick={() => handleEdit(nodeData)} />
-                <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(nodeData)} />
+          titleRender={(nodeData: OrgUnitTreeNode) => {
+            const displayTitle =
+              typeof nodeData.title === 'function'
+                ? nodeData.name || '-'
+                : nodeData.title ?? nodeData.name ?? '-';
+            return (
+              <Space>
+                <span>{displayTitle}</span>
+                {nodeData.serialId ? <Tag color="blue">ID {nodeData.serialId}</Tag> : null}
+                <Tag>{nodeData.type}</Tag>
+                <Space size="small">
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<PlusOutlined />}
+                    onClick={() => {
+                      setEditingNode(nodeData);
+                      form.setFieldsValue({ parent_id: nodeData.id });
+                      setModalOpen(true);
+                    }}
+                  />
+                  <Button type="text" size="small" icon={<EditOutlined />} onClick={() => handleEdit(nodeData)} />
+                  <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(nodeData)} />
+                </Space>
               </Space>
-            </Space>
-          )}
+            );
+          }}
           icon={() => <TeamOutlined />}
         />
       </Card>

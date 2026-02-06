@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import { useMemo, useState } from "react";
 import { Card, Typography, Button, Space, Tag, Tabs, Descriptions, Spin } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
@@ -11,15 +12,33 @@ import { useI18n } from "@/i18n/provider";
 
 const { Text } = Typography;
 
-const ActivityTable = dynamic(
-  () => import("@/components/business/ActivityTable").then((mod) => mod.ActivityTable),
+const EntityOwnerTab = dynamic(
+  () => import("@/components/entity-tabs/EntityOwnerTab").then((mod) => mod.EntityOwnerTab),
   {
     loading: () => <Spin size="small" />,
   }
 );
 
-const AttachmentTable = dynamic(
-  () => import("@/components/business/AttachmentTable").then((mod) => mod.AttachmentTable),
+const EntityActivitiesTab = dynamic(
+  () =>
+    import("@/components/entity-tabs/EntityActivitiesTab").then((mod) => mod.EntityActivitiesTab),
+  {
+    loading: () => <Spin size="small" />,
+  }
+);
+
+const EntityAttachmentsTab = dynamic(
+  () =>
+    import("@/components/entity-tabs/EntityAttachmentsTab").then(
+      (mod) => mod.EntityAttachmentsTab
+    ),
+  {
+    loading: () => <Spin size="small" />,
+  }
+);
+
+const EntitySystemTab = dynamic(
+  () => import("@/components/entity-tabs/EntitySystemTab").then((mod) => mod.EntitySystemTab),
   {
     loading: () => <Spin size="small" />,
   }
@@ -39,6 +58,7 @@ export default function OpportunityDetailPage() {
   const router = useRouter();
   const { t, locale } = useI18n();
   const id = params.id as string;
+  const [activeTab, setActiveTab] = useState("activity");
 
   const { data: opportunity, isLoading } = useOpportunity(id);
 
@@ -60,6 +80,66 @@ export default function OpportunityDetailPage() {
     return currency ? `${formatted} ${currency}` : formatted;
   };
 
+  const tabItems = useMemo(() => {
+    if (!opportunity) {
+      return [];
+    }
+    return [
+      {
+        key: "owner",
+        label: t("common.owner_info"),
+        children:
+          activeTab === "owner" ? (
+            <EntityOwnerTab
+              owner={opportunity.owner}
+              labels={{
+                name: t("common.owner_name"),
+                email: t("common.owner_email"),
+              }}
+            />
+          ) : null,
+      },
+      {
+        key: "activity",
+        label: t("common.activities"),
+        children:
+          activeTab === "activity" ? (
+            <EntityActivitiesTab relatedType="Opportunity" relatedId={id} />
+          ) : null,
+      },
+      {
+        key: "attachments",
+        label: t("common.attachments"),
+        children:
+          activeTab === "attachments" ? (
+            <EntityAttachmentsTab relatedType="Opportunity" relatedId={id} />
+          ) : null,
+      },
+      {
+        key: "system",
+        label: t("common.system_info"),
+        children:
+          activeTab === "system" ? (
+            <EntitySystemTab
+              entity={{
+                id: opportunity.id,
+                serialId: opportunity.serialId,
+                createdAt: opportunity.createdAt,
+                updatedAt: opportunity.updatedAt,
+              }}
+              locale={locale}
+              labels={{
+                createdAt: t("common.created_at"),
+                updatedAt: t("common.updated_at"),
+                serialId: t("common.serial_id"),
+                id: t("common.id"),
+              }}
+            />
+          ) : null,
+      },
+    ];
+  }, [activeTab, id, locale, opportunity, t]);
+
   if (isLoading) {
     return (
       <div style={{ display: "flex", justifyContent: "center", padding: 100 }}>
@@ -75,55 +155,6 @@ export default function OpportunityDetailPage() {
       </Card>
     );
   }
-
-  const tabItems = [
-    {
-      key: "owner",
-      label: t("common.owner_info"),
-      children: (
-        <Descriptions column={2} bordered>
-          <Descriptions.Item label={t("common.owner_name")}>
-            {opportunity.owner?.name || "-"}
-          </Descriptions.Item>
-          <Descriptions.Item label={t("common.owner_email")}>
-            {opportunity.owner?.email || "-"}
-          </Descriptions.Item>
-        </Descriptions>
-      )
-    },
-    {
-      key: "activity",
-      label: t("common.activities"),
-      children: <ActivityTable relatedType="Opportunity" relatedId={id} />
-    },
-    {
-      key: "attachments",
-      label: t("common.attachments"),
-      children: <AttachmentTable relatedType="Opportunity" relatedId={id} />
-    },
-    {
-      key: "system",
-      label: t("common.system_info"),
-      children: (
-        <Descriptions column={2} bordered>
-          <Descriptions.Item label={t("common.created_at")}>
-            {new Date(opportunity.createdAt).toLocaleString(locale)}
-          </Descriptions.Item>
-          <Descriptions.Item label={t("common.updated_at")}>
-            {new Date(opportunity.updatedAt).toLocaleString(locale)}
-          </Descriptions.Item>
-          <Descriptions.Item label={t("common.serial_id")} span={2}>
-            {opportunity.serialId}
-          </Descriptions.Item>
-          <Descriptions.Item label={t("common.id")} span={2}>
-            <Text copyable style={{ fontFamily: "monospace" }}>
-              {opportunity.id}
-            </Text>
-          </Descriptions.Item>
-        </Descriptions>
-      )
-    }
-  ];
 
   return (
     <div>
@@ -196,7 +227,12 @@ export default function OpportunityDetailPage() {
           </Descriptions>
         </Card>
 
-        <Tabs items={tabItems} />
+        <Tabs
+          items={tabItems}
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          destroyInactiveTabPane
+        />
       </Space>
     </div>
   );

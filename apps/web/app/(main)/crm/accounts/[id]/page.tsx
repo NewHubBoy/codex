@@ -1,6 +1,8 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
+import { useMemo, useState } from "react";
 import {
   Card,
   Typography,
@@ -17,6 +19,38 @@ import { useAccount } from "@/hooks/useAccounts";
 
 const { Text } = Typography;
 
+const EntityOwnerTab = dynamic(
+  () => import("@/components/entity-tabs/EntityOwnerTab").then((mod) => mod.EntityOwnerTab),
+  {
+    loading: () => <Spin size="small" />,
+  }
+);
+
+const EntityActivitiesTab = dynamic(
+  () =>
+    import("@/components/entity-tabs/EntityActivitiesTab").then((mod) => mod.EntityActivitiesTab),
+  {
+    loading: () => <Spin size="small" />,
+  }
+);
+
+const EntityAttachmentsTab = dynamic(
+  () =>
+    import("@/components/entity-tabs/EntityAttachmentsTab").then(
+      (mod) => mod.EntityAttachmentsTab
+    ),
+  {
+    loading: () => <Spin size="small" />,
+  }
+);
+
+const EntitySystemTab = dynamic(
+  () => import("@/components/entity-tabs/EntitySystemTab").then((mod) => mod.EntitySystemTab),
+  {
+    loading: () => <Spin size="small" />,
+  }
+);
+
 const statusColors: Record<string, string> = {
   ACTIVE: "green",
   INACTIVE: "red",
@@ -28,8 +62,66 @@ export default function AccountDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
+  const [activeTab, setActiveTab] = useState("activity");
 
   const { data: account, isLoading } = useAccount(id);
+
+  const tabItems = useMemo(() => {
+    if (!account) {
+      return [];
+    }
+    return [
+      {
+        key: "owner",
+        label: "负责人信息",
+        children:
+          activeTab === "owner" ? (
+            <EntityOwnerTab
+              owner={account.owner}
+              labels={{ name: "负责人", email: "负责人邮箱" }}
+            />
+          ) : null,
+      },
+      {
+        key: "activity",
+        label: "活动记录",
+        children:
+          activeTab === "activity" ? (
+            <EntityActivitiesTab relatedType="Account" relatedId={id} />
+          ) : null,
+      },
+      {
+        key: "attachments",
+        label: "附件",
+        children:
+          activeTab === "attachments" ? (
+            <EntityAttachmentsTab relatedType="Account" relatedId={id} />
+          ) : null,
+      },
+      {
+        key: "system",
+        label: "系统信息",
+        children:
+          activeTab === "system" ? (
+            <EntitySystemTab
+              entity={{
+                id: account.id,
+                serialId: account.serialId,
+                createdAt: account.createdAt,
+                updatedAt: account.updatedAt,
+              }}
+              locale="zh-CN"
+              labels={{
+                createdAt: "创建时间",
+                updatedAt: "最后更新时间",
+                serialId: "编号",
+                id: "ID",
+              }}
+            />
+          ) : null,
+      },
+    ];
+  }, [account, activeTab, id]);
 
   if (isLoading) {
     return (
@@ -46,31 +138,6 @@ export default function AccountDetailPage() {
       </Card>
     );
   }
-
-  const tabItems = [
-    {
-      key: "system",
-      label: "系统信息",
-      children: (
-        <Descriptions column={2} bordered>
-          <Descriptions.Item label="创建时间">
-            {new Date(account.createdAt).toLocaleString("zh-CN")}
-          </Descriptions.Item>
-          <Descriptions.Item label="最后更新时间">
-            {new Date(account.updatedAt).toLocaleString("zh-CN")}
-          </Descriptions.Item>
-          <Descriptions.Item label="编号" span={2}>
-            {account.serialId}
-          </Descriptions.Item>
-          <Descriptions.Item label="ID" span={2}>
-            <Text copyable style={{ fontFamily: "monospace" }}>
-              {account.id}
-            </Text>
-          </Descriptions.Item>
-        </Descriptions>
-      ),
-    },
-  ];
 
   return (
     <div>
@@ -101,7 +168,12 @@ export default function AccountDetailPage() {
           </Descriptions>
         </Card>
 
-        <Tabs items={tabItems} />
+        <Tabs
+          items={tabItems}
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          destroyInactiveTabPane
+        />
       </Space>
     </div>
   );
