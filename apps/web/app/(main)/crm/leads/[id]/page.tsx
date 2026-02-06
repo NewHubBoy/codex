@@ -22,7 +22,7 @@ import {
 import { ArrowLeftOutlined, EditOutlined, DeleteOutlined, SwapOutlined } from '@ant-design/icons';
 import { useLead, useDeleteLead, useUpdateLead, useSubmitLead } from '@/hooks/useLeads';
 import { PageHeader } from '@/components/common/PageHeader';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { LeadSource, LeadRating, LeadStatus } from '@/services/leads';
 import { useI18n } from '@/i18n/provider';
 import { getErrorMessage } from '@/utils/error';
@@ -30,18 +30,24 @@ import dayjs from 'dayjs';
 
 const { Text } = Typography;
 
-const ActivityTable = dynamic(
-  () => import('@/components/business/ActivityTable').then((mod) => mod.ActivityTable),
-  {
-    loading: () => <Spin size="small" />,
-  }
+const LeadOwnerTab = dynamic(
+  () => import('@/components/leads/LeadOwnerTab').then((mod) => mod.LeadOwnerTab),
+  { loading: () => <Spin size="small" /> }
 );
 
-const AttachmentTable = dynamic(
-  () => import('@/components/business/AttachmentTable').then((mod) => mod.AttachmentTable),
-  {
-    loading: () => <Spin size="small" />,
-  }
+const LeadActivitiesTab = dynamic(
+  () => import('@/components/leads/LeadActivitiesTab').then((mod) => mod.LeadActivitiesTab),
+  { loading: () => <Spin size="small" /> }
+);
+
+const LeadAttachmentsTab = dynamic(
+  () => import('@/components/leads/LeadAttachmentsTab').then((mod) => mod.LeadAttachmentsTab),
+  { loading: () => <Spin size="small" /> }
+);
+
+const LeadSystemTab = dynamic(
+  () => import('@/components/leads/LeadSystemTab').then((mod) => mod.LeadSystemTab),
+  { loading: () => <Spin size="small" /> }
 );
 
 const statusColors: Record<string, string> = {
@@ -71,6 +77,7 @@ export default function LeadDetailPage() {
 
   const [form] = Form.useForm();
   const [isEditing, setIsEditing] = useState(false);
+  const [activeTab, setActiveTab] = useState('activity');
 
   const { data: lead, isLoading, refetch } = useLead(id);
   const deleteLead = useDeleteLead();
@@ -215,6 +222,41 @@ export default function LeadDetailPage() {
     }
   };
 
+  const tabItems = useMemo(
+    () => {
+      if (!lead) {
+        return [];
+      }
+      return [
+      {
+        key: 'owner',
+        label: t('common.owner_info'),
+        children: activeTab === 'owner' ? <LeadOwnerTab owner={lead.owner} /> : null,
+      },
+      {
+        key: 'activity',
+        label: t('common.activities'),
+        children: activeTab === 'activity' ? <LeadActivitiesTab leadId={id} /> : null,
+      },
+      {
+        key: 'attachments',
+        label: t('common.attachments'),
+        children: activeTab === 'attachments' ? <LeadAttachmentsTab leadId={id} /> : null,
+      },
+      {
+        key: 'system',
+        label: t('common.system_info'),
+        children: activeTab === 'system' ? (
+          <LeadSystemTab
+            lead={{ id: lead.id, serialId: lead.serialId, createdAt: lead.createdAt, updatedAt: lead.updatedAt }}
+          />
+        ) : null,
+      },
+      ];
+    },
+    [activeTab, id, lead, t]
+  );
+
   if (isLoading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', padding: 100 }}>
@@ -230,55 +272,6 @@ export default function LeadDetailPage() {
       </Card>
     );
   }
-
-  const tabItems = [
-    {
-      key: 'owner',
-      label: t('common.owner_info'),
-      children: (
-        <Descriptions column={2} bordered>
-          <Descriptions.Item label={t('common.owner_name')}>
-            {lead.owner?.name || '-'}
-          </Descriptions.Item>
-          <Descriptions.Item label={t('common.owner_email')}>
-            {lead.owner?.email || '-'}
-          </Descriptions.Item>
-        </Descriptions>
-      ),
-    },
-    {
-      key: 'activity',
-      label: t('common.activities'),
-      children: <ActivityTable relatedType="Lead" relatedId={id} />,
-    },
-    {
-      key: 'attachments',
-      label: t('common.attachments'),
-      children: <AttachmentTable relatedType="Lead" relatedId={id} />,
-    },
-    {
-      key: 'system',
-      label: t('common.system_info'),
-      children: (
-        <Descriptions column={2} bordered>
-          <Descriptions.Item label={t('common.created_at')}>
-            {new Date(lead.createdAt).toLocaleString(locale)}
-          </Descriptions.Item>
-          <Descriptions.Item label={t('common.updated_at')}>
-            {new Date(lead.updatedAt).toLocaleString(locale)}
-          </Descriptions.Item>
-          <Descriptions.Item label={t('common.serial_id')} span={2}>
-            {lead.serialId}
-          </Descriptions.Item>
-          <Descriptions.Item label={t('common.id')} span={2}>
-            <Text copyable style={{ fontFamily: 'monospace' }}>
-              {lead.id}
-            </Text>
-          </Descriptions.Item>
-        </Descriptions>
-      ),
-    },
-  ];
 
   return (
     <div>
@@ -543,7 +536,12 @@ export default function LeadDetailPage() {
         </Card>
 
         <Card>
-          <Tabs items={tabItems} defaultActiveKey="activity" />
+          <Tabs
+            items={tabItems}
+            activeKey={activeTab}
+            onChange={setActiveTab}
+            destroyInactiveTabPane
+          />
         </Card>
       </Space>
     </div>
