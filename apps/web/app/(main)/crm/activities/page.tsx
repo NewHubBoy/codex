@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Table, Button, Space, Tag, Input, Select, Card } from "antd";
+import { Table, Space, Tag, Input, Select, Card } from "antd";
 import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import Link from "next/link";
 import { PageHeader } from "@/components/common/PageHeader";
@@ -9,6 +9,7 @@ import { useActivities } from "@/hooks/useActivities";
 import type { Activity, ActivityStatusType } from "@/services/activities";
 import { ActivityStatus } from "@/services/activities";
 import { useI18n } from "@/i18n/provider";
+import { PermissionButton } from "@/components/auth/PermissionButton";
 
 const { Search } = Input;
 
@@ -130,9 +131,9 @@ export default function ActivitiesPage() {
         title={t("activities.page.title")}
         description={t("activities.page.description")}
         action={
-          <Button type="primary" icon={<PlusOutlined />}>
+          <PermissionButton permission="activity:write" type="primary" icon={<PlusOutlined />}>
             {t("activities.actions.create")}
-          </Button>
+          </PermissionButton>
         }
       />
 

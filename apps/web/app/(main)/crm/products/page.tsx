@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Table, Button, Space, Tag, Input, Select, Card } from "antd";
+import { Table, Space, Tag, Input, Select, Card } from "antd";
 import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useProducts } from "@/hooks/useProducts";
 import Link from "next/link";
 import type { ColumnsType } from "antd/es/table";
 import type { Product } from "@/services/products";
+import { PermissionButton } from "@/components/auth/PermissionButton";
 
 const { Search } = Input;
 
@@ -84,9 +85,9 @@ export default function ProductsPage() {
         title="产品管理"
         description="管理产品目录和价格"
         action={
-          <Button type="primary" icon={<PlusOutlined />}>
+          <PermissionButton permission="product:write" type="primary" icon={<PlusOutlined />}>
             新建产品
-          </Button>
+          </PermissionButton>
         }
       />
 

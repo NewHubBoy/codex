@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Table, Button, Space, Tag, Input, Select, Card, type TablePaginationConfig } from "antd";
+import { Table, Space, Tag, Input, Select, Card, type TablePaginationConfig } from "antd";
 import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useOpportunities } from "@/hooks/useOpportunities";
@@ -10,6 +10,7 @@ import { useI18n } from "@/i18n/provider";
 import type { Opportunity } from "@/services/opportunities";
 import { useAlertSettings } from "@/hooks/useAlerts";
 import { useSearchParams } from "next/navigation";
+import { PermissionButton } from "@/components/auth/PermissionButton";
 
 const { Search } = Input;
 
@@ -142,9 +143,9 @@ export default function OpportunitiesPage() {
         title={t("opportunities.page.title")}
         description={t("opportunities.page.description")}
         action={
-          <Button type="primary" icon={<PlusOutlined />}>
+          <PermissionButton permission="opportunity:write" type="primary" icon={<PlusOutlined />}>
             {t("opportunities.actions.create")}
-          </Button>
+          </PermissionButton>
         }
       />
 

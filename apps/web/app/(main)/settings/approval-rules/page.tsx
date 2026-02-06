@@ -25,6 +25,9 @@ import { useApprovalRules, useCreateApprovalRule, useTestApprovalRule, useUpdate
 import { useRoles } from "@/hooks/useSystem";
 import type { ApprovalRule } from "@/services/approval-rules";
 import { useI18n } from "@/i18n/provider";
+import { PermissionButton } from "@/components/auth/PermissionButton";
+import { PermissionGuard } from "@/components/auth/PermissionGuard";
+import { useAuth } from "@/hooks/useAuth";
 
 const { Text } = Typography;
 
@@ -82,6 +85,8 @@ function serializeConditionValue(value: unknown) {
 export default function ApprovalRulesPage() {
   const { t } = useI18n();
   const { message } = App.useApp();
+  const { hasPermission } = useAuth();
+  const canWriteRules = hasPermission("config:approval:write");
   const [form] = Form.useForm();
   const [testForm] = Form.useForm();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -140,34 +145,36 @@ export default function ApprovalRulesPage() {
         title: "操作",
         key: "actions",
         render: (_value, record) => (
-          <Space>
-            <Button
-              size="small"
-              onClick={() => {
-                setEditingRule(record);
-                form.setFieldsValue({
-                  name: record.name,
-                  entityType: record.entityType,
-                  priority: record.priority,
-                  isActive: record.isActive,
-                  effectiveFrom: record.effectiveFrom ? dayjs(record.effectiveFrom) : undefined,
-                  effectiveTo: record.effectiveTo ? dayjs(record.effectiveTo) : undefined,
-                  conditions: (record.conditions || []).map((item) => ({
-                    ...item,
-                    value: serializeConditionValue(item.value),
-                  })),
-                  steps: (record.steps || []).map((step) => ({
-                    roleCode: step.roleCode,
-                    groupIndex: step.groupIndex ?? 0,
-                    sortOrder: step.sortOrder ?? 0,
-                  })),
-                });
-                setDrawerOpen(true);
-              }}
-            >
-              编辑
-            </Button>
-          </Space>
+          <PermissionGuard permission="config:approval:write">
+            <Space>
+              <Button
+                size="small"
+                onClick={() => {
+                  setEditingRule(record);
+                  form.setFieldsValue({
+                    name: record.name,
+                    entityType: record.entityType,
+                    priority: record.priority,
+                    isActive: record.isActive,
+                    effectiveFrom: record.effectiveFrom ? dayjs(record.effectiveFrom) : undefined,
+                    effectiveTo: record.effectiveTo ? dayjs(record.effectiveTo) : undefined,
+                    conditions: (record.conditions || []).map((item) => ({
+                      ...item,
+                      value: serializeConditionValue(item.value),
+                    })),
+                    steps: (record.steps || []).map((step) => ({
+                      roleCode: step.roleCode,
+                      groupIndex: step.groupIndex ?? 0,
+                      sortOrder: step.sortOrder ?? 0,
+                    })),
+                  });
+                  setDrawerOpen(true);
+                }}
+              >
+                编辑
+              </Button>
+            </Space>
+          </PermissionGuard>
         ),
       },
     ],
@@ -175,6 +182,9 @@ export default function ApprovalRulesPage() {
   );
 
   const handleCreate = () => {
+    if (!canWriteRules) {
+      return;
+    }
     setEditingRule(null);
     form.resetFields();
     form.setFieldsValue({ isActive: true, priority: 0, conditions: [], steps: [] });
@@ -182,6 +192,9 @@ export default function ApprovalRulesPage() {
   };
 
   const handleSubmit = async () => {
+    if (!canWriteRules) {
+      return;
+    }
     try {
       const values = await form.validateFields();
       const payload = {
@@ -246,9 +259,9 @@ export default function ApprovalRulesPage() {
         action={
           <Space>
             <Button onClick={() => setTestOpen(true)}>规则测试</Button>
-            <Button type="primary" onClick={handleCreate}>
+            <PermissionButton permission="config:approval:write" type="primary" onClick={handleCreate}>
               新建规则
-            </Button>
+            </PermissionButton>
           </Space>
         }
       />
@@ -265,9 +278,14 @@ export default function ApprovalRulesPage() {
         extra={
           <Space>
             <Button onClick={() => setDrawerOpen(false)}>取消</Button>
-            <Button type="primary" onClick={handleSubmit} loading={createRule.isPending || updateRule.isPending}>
+            <PermissionButton
+              permission="config:approval:write"
+              type="primary"
+              onClick={handleSubmit}
+              loading={createRule.isPending || updateRule.isPending}
+            >
               保存
-            </Button>
+            </PermissionButton>
           </Space>
         }
       >
@@ -298,7 +316,14 @@ export default function ApprovalRulesPage() {
 
           <Form.List name="conditions">
             {(fields, { add, remove }) => (
-              <Card title="条件" extra={<Button onClick={() => add()}>新增条件</Button>}>
+              <Card
+                title="条件"
+                extra={
+                  <PermissionGuard permission="config:approval:write">
+                    <Button onClick={() => add()}>新增条件</Button>
+                  </PermissionGuard>
+                }
+              >
                 {fields.length === 0 && <Text type="secondary">未设置条件时表示全部命中。</Text>}
                 {fields.map((field) => {
                   const { key, ...restField } = field;
@@ -323,9 +348,11 @@ export default function ApprovalRulesPage() {
                       <Form.Item key={`${key}-value`} {...restField} name={[field.name, "value"]}>
                         <Input placeholder="值 (数字/布尔/JSON)" style={{ width: 220 }} />
                       </Form.Item>
-                      <Button danger onClick={() => remove(field.name)}>
-                        删除
-                      </Button>
+                      <PermissionGuard permission="config:approval:write">
+                        <Button danger onClick={() => remove(field.name)}>
+                          删除
+                        </Button>
+                      </PermissionGuard>
                     </Space>
                   );
                 })}
@@ -337,7 +364,11 @@ export default function ApprovalRulesPage() {
             {(fields, { add, remove }) => (
               <Card
                 title="审批节点"
-                extra={<Button onClick={() => add()}>新增审批节点</Button>}
+                extra={
+                  <PermissionGuard permission="config:approval:write">
+                    <Button onClick={() => add()}>新增审批节点</Button>
+                  </PermissionGuard>
+                }
                 style={{ marginTop: 16 }}
               >
                 {fields.length === 0 && (
@@ -361,9 +392,11 @@ export default function ApprovalRulesPage() {
                       <Form.Item key={`${key}-order`} {...restField} name={[field.name, "sortOrder"]}>
                         <InputNumber min={0} placeholder="顺序" />
                       </Form.Item>
-                      <Button danger onClick={() => remove(field.name)}>
-                        删除
-                      </Button>
+                      <PermissionGuard permission="config:approval:write">
+                        <Button danger onClick={() => remove(field.name)}>
+                          删除
+                        </Button>
+                      </PermissionGuard>
                     </Space>
                   );
                 })}

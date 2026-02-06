@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, Form, InputNumber, Select, Button, Space, App, Typography } from "antd";
+import { Card, Form, InputNumber, Select, Space, App, Typography } from "antd";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useAlertSettings, useUpdateAlertSettings } from "@/hooks/useAlerts";
 import { useI18n } from "@/i18n/provider";
+import { PermissionButton } from "@/components/auth/PermissionButton";
 
 const { Text } = Typography;
 
@@ -84,9 +85,9 @@ export default function AlertSettingsPage() {
         </Form>
 
         <Space>
-          <Button type="primary" onClick={handleSave} loading={updateSettings.isPending}>
+          <PermissionButton permission="alert:write" type="primary" onClick={handleSave} loading={updateSettings.isPending}>
             {t("common.save")}
-          </Button>
+          </PermissionButton>
           <Text type="secondary">
             {t("alerts.settings.priority_hint")}
           </Text>

@@ -5,6 +5,7 @@ import { Card, Row, Col, Statistic, List, Tag, Typography, Space } from 'antd';
 import { RocketOutlined, ShoppingCartOutlined, FileTextOutlined, AlertOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
 import { useAuth } from '@/hooks/useAuth';
 import { PageHeader } from '@/components/common/PageHeader';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 
 const { Text } = Typography;
 
@@ -107,7 +108,14 @@ export default function DashboardPage() {
       {/* 最近线索 */}
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={12}>
-          <Card title="最近线索" extra={<a onClick={() => router.push('/crm/leads')}>查看全部</a>}>
+          <Card
+            title="最近线索"
+            extra={
+              <PermissionGuard permission="lead:read">
+                <a onClick={() => router.push('/crm/leads')}>查看全部</a>
+              </PermissionGuard>
+            }
+          >
             <List
               itemLayout="horizontal"
               dataSource={mockRecentLeads}
@@ -131,30 +139,38 @@ export default function DashboardPage() {
         <Col xs={24} lg={12}>
           <Card title="快捷操作">
             <Space direction="vertical" style={{ width: '100%' }}>
-              <Card size="small" hoverable onClick={() => router.push('/crm/leads/create')}>
-                <Space>
-                  <RocketOutlined style={{ fontSize: 20, color: '#1677ff' }} />
-                  <Text strong>新建线索</Text>
-                </Space>
-              </Card>
-              <Card size="small" hoverable onClick={() => router.push('/crm/opportunities')}>
-                <Space>
-                  <ShoppingCartOutlined style={{ fontSize: 20, color: '#52c41a' }} />
-                  <Text strong>查看商机</Text>
-                </Space>
-              </Card>
-              <Card size="small" hoverable onClick={() => router.push('/crm/quotes')}>
-                <Space>
-                  <FileTextOutlined style={{ fontSize: 20, color: '#faad14' }} />
-                  <Text strong>创建报价</Text>
-                </Space>
-              </Card>
-              <Card size="small" hoverable onClick={() => router.push('/crm/tickets')}>
-                <Space>
-                  <AlertOutlined style={{ fontSize: 20, color: '#ff4d4f' }} />
-                  <Text strong>处理工单</Text>
-                </Space>
-              </Card>
+              <PermissionGuard permission="lead:write">
+                <Card size="small" hoverable onClick={() => router.push('/crm/leads/create')}>
+                  <Space>
+                    <RocketOutlined style={{ fontSize: 20, color: '#1677ff' }} />
+                    <Text strong>新建线索</Text>
+                  </Space>
+                </Card>
+              </PermissionGuard>
+              <PermissionGuard permission="opportunity:read">
+                <Card size="small" hoverable onClick={() => router.push('/crm/opportunities')}>
+                  <Space>
+                    <ShoppingCartOutlined style={{ fontSize: 20, color: '#52c41a' }} />
+                    <Text strong>查看商机</Text>
+                  </Space>
+                </Card>
+              </PermissionGuard>
+              <PermissionGuard permission="quote:read">
+                <Card size="small" hoverable onClick={() => router.push('/crm/quotes')}>
+                  <Space>
+                    <FileTextOutlined style={{ fontSize: 20, color: '#faad14' }} />
+                    <Text strong>创建报价</Text>
+                  </Space>
+                </Card>
+              </PermissionGuard>
+              <PermissionGuard permission="ticket:read">
+                <Card size="small" hoverable onClick={() => router.push('/crm/tickets')}>
+                  <Space>
+                    <AlertOutlined style={{ fontSize: 20, color: '#ff4d4f' }} />
+                    <Text strong>处理工单</Text>
+                  </Space>
+                </Card>
+              </PermissionGuard>
             </Space>
           </Card>
         </Col>

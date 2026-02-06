@@ -18,6 +18,7 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { useQuote } from "@/hooks/useQuotes";
 import { useResubmitQuoteApproval, useSubmitQuoteApproval } from "@/hooks/useQuotes";
 import { ApprovalHistory } from "@/components/approvals/ApprovalHistory";
+import { PermissionButton } from "@/components/auth/PermissionButton";
 
 const { Text } = Typography;
 
@@ -108,8 +109,9 @@ export default function QuoteDetailPage() {
             返回
           </Button>,
           quote.status === "DRAFT" ? (
-            <Button
+            <PermissionButton
               key="submit"
+              permission="quote:write"
               type="primary"
               loading={submitApproval.isPending}
               onClick={async () => {
@@ -124,11 +126,12 @@ export default function QuoteDetailPage() {
               }}
             >
               提交审批
-            </Button>
+            </PermissionButton>
           ) : null,
           quote.status === "REJECTED" ? (
-            <Button
+            <PermissionButton
               key="resubmit"
+              permission="quote:write"
               type="primary"
               loading={resubmitApproval.isPending}
               onClick={async () => {
@@ -143,7 +146,7 @@ export default function QuoteDetailPage() {
               }}
             >
               重新提交
-            </Button>
+            </PermissionButton>
           ) : null,
         ]}
       />

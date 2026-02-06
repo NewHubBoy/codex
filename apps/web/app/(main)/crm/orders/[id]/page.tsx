@@ -19,6 +19,7 @@ import { useOrder } from "@/hooks/useOrders";
 import { useResubmitOrderApproval, useSubmitOrderApproval } from "@/hooks/useOrders";
 import { ApprovalHistory } from "@/components/approvals/ApprovalHistory";
 import { useApprovalInstances } from "@/hooks/useApprovals";
+import { PermissionButton } from "@/components/auth/PermissionButton";
 
 const { Text } = Typography;
 
@@ -114,8 +115,9 @@ export default function OrderDetailPage() {
             返回
           </Button>,
           order.status === "DRAFT" ? (
-            <Button
+            <PermissionButton
               key="submit"
+              permission="order:write"
               type="primary"
               loading={submitApproval.isPending}
               onClick={async () => {
@@ -130,11 +132,12 @@ export default function OrderDetailPage() {
               }}
             >
               提交审批
-            </Button>
+            </PermissionButton>
           ) : null,
           latestApproval?.status === "REJECTED" ? (
-            <Button
+            <PermissionButton
               key="resubmit"
+              permission="order:write"
               type="primary"
               loading={resubmitApproval.isPending}
               onClick={async () => {
@@ -149,7 +152,7 @@ export default function OrderDetailPage() {
               }}
             >
               重新提交
-            </Button>
+            </PermissionButton>
           ) : null,
         ]}
       />

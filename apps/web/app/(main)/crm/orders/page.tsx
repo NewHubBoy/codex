@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Table, Button, Space, Tag, Input, Select, Card } from "antd";
+import { Table, Space, Tag, Input, Select, Card } from "antd";
 import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useOrders } from "@/hooks/useOrders";
@@ -9,6 +9,7 @@ import { useApprovalInstances } from "@/hooks/useApprovals";
 import Link from "next/link";
 import type { ColumnsType } from "antd/es/table";
 import type { Order } from "@/services/orders";
+import { PermissionButton } from "@/components/auth/PermissionButton";
 
 const { Search } = Input;
 
@@ -127,9 +128,9 @@ export default function OrdersPage() {
         title="订单管理"
         description="管理销售订单"
         action={
-          <Button type="primary" icon={<PlusOutlined />}>
+          <PermissionButton permission="order:write" type="primary" icon={<PlusOutlined />}>
             新建订单
-          </Button>
+          </PermissionButton>
         }
       />
 

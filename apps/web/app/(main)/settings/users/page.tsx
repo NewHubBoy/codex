@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Table, Button, Space, Tag, Input, Select, Card, Modal, App } from "antd";
+import { Table, Space, Tag, Input, Select, Card, Modal, App } from "antd";
 import { PlusOutlined, SearchOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useUsers, useDeleteUser } from "@/hooks/useSystem";
 import type { ColumnsType } from "antd/es/table";
 import type { User } from "@/services/system";
+import { PermissionButton } from "@/components/auth/PermissionButton";
 
 const { Search } = Input;
 
@@ -90,12 +91,14 @@ export default function UsersPage() {
       key: "action",
       render: (_value, record) => (
         <Space>
-          <Button
+          <PermissionButton
+            permission="user:write"
             type="text"
             icon={<EditOutlined />}
             onClick={() => message.info("编辑功能开发中")}
           />
-          <Button
+          <PermissionButton
+            permission="user:write"
             type="text"
             danger
             icon={<DeleteOutlined />}
@@ -118,9 +121,9 @@ export default function UsersPage() {
         title="用户管理"
         description="管理系统用户账号"
         action={
-          <Button type="primary" icon={<PlusOutlined />}>
+          <PermissionButton permission="user:write" type="primary" icon={<PlusOutlined />}>
             新建用户
-          </Button>
+          </PermissionButton>
         }
       />
 

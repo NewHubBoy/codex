@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Table, Button, Space, Tag, Input, Select, Card } from "antd";
+import { Table, Space, Tag, Input, Select, Card } from "antd";
 import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useQuotes } from "@/hooks/useQuotes";
 import Link from "next/link";
 import type { ColumnsType } from "antd/es/table";
 import type { Quote } from "@/services/quotes";
+import { PermissionButton } from "@/components/auth/PermissionButton";
 
 const { Search } = Input;
 
@@ -131,9 +132,9 @@ export default function QuotesPage() {
         title="报价单管理"
         description="管理销售报价单"
         action={
-          <Button type="primary" icon={<PlusOutlined />}>
+          <PermissionButton permission="quote:write" type="primary" icon={<PlusOutlined />}>
             新建报价
-          </Button>
+          </PermissionButton>
         }
       />
 

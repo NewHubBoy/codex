@@ -5,7 +5,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { LoadingScene } from "@/components/common/LoadingScene";
 import { useAuth } from "@/hooks/useAuth";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 const { Content } = Layout;
@@ -15,8 +15,10 @@ export default function MainLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, canAccessRoute, defaultRoute } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  const hasRouteAccess = canAccessRoute(pathname);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -24,9 +26,27 @@ export default function MainLayout({
     }
   }, [isAuthenticated, isLoading, router]);
 
-  const showGate = isLoading || !isAuthenticated;
-  const gateMessage = isLoading ? "验证登录中" : "正在跳转登录";
-  const gateDetail = isLoading ? "正在加载你的工作台" : "请稍候";
+  useEffect(() => {
+    if (isLoading || !isAuthenticated || hasRouteAccess) {
+      return;
+    }
+    if (pathname !== defaultRoute) {
+      router.replace(defaultRoute);
+    }
+  }, [defaultRoute, hasRouteAccess, isAuthenticated, isLoading, pathname, router]);
+
+  const unauthorizedRedirecting = !isLoading && isAuthenticated && !hasRouteAccess;
+  const showGate = isLoading || !isAuthenticated || unauthorizedRedirecting;
+  const gateMessage = isLoading
+    ? "验证登录中"
+    : !isAuthenticated
+      ? "正在跳转登录"
+      : "当前角色无该页面访问权限";
+  const gateDetail = isLoading
+    ? "正在加载你的工作台"
+    : !isAuthenticated
+      ? "请稍候"
+      : "正在跳转到可访问页面";
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
@@ -54,7 +74,7 @@ export default function MainLayout({
             minHeight: 280,
           }}
         >
-          {isAuthenticated ? children : null}
+          {isAuthenticated && hasRouteAccess ? children : null}
         </Content>
       </Layout>
     </Layout>

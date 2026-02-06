@@ -20,7 +20,7 @@
     "antd": "^5.29.3",
     "axios": "^1.13.4",
     "dayjs": "^1.11.19",
-    "next": "^15.1.0",
+    "next": "15.5.7",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.71.1",
@@ -30,7 +30,7 @@
     "@eslint/eslintrc": "^3.3.3",
     "@types/node": "^20.19.30",
     "eslint": "^9",
-    "eslint-config-next": "^15.1.0",
+    "eslint-config-next": "15.5.7",
     "typescript": "^5"
   }
 }

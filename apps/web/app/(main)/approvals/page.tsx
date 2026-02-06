@@ -36,6 +36,8 @@ import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { approvals } from "@/services/approvals";
 import dayjs from "dayjs";
+import { PermissionButton } from "@/components/auth/PermissionButton";
+import { useAuth } from "@/hooks/useAuth";
 
 const { Text } = Typography;
 
@@ -55,6 +57,8 @@ const entityLabels: Record<string, string> = {
 export default function ApprovalsPage() {
   const { t } = useI18n();
   const { message } = App.useApp();
+  const { hasPermission } = useAuth();
+  const canWriteApproval = hasPermission("approval:write");
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -128,16 +132,23 @@ export default function ApprovalsPage() {
   }, [usersData]);
 
   const handleAction = useCallback((task: ApprovalTask, type: "approve" | "reject") => {
+    if (!canWriteApproval) {
+      message.warning("当前账号无审批处理权限");
+      return;
+    }
     setActionTask(task);
     setActionType(type);
     setNote("");
-  }, []);
+  }, [canWriteApproval, message]);
 
   const handleOpenDetail = useCallback((instanceId: string) => {
     setDetailInstanceId(instanceId);
   }, []);
 
   const handleConfirm = async () => {
+    if (!canWriteApproval) {
+      return;
+    }
     if (!actionTask || !actionType) return;
     try {
       if (actionType === "approve") {
@@ -181,14 +192,18 @@ export default function ApprovalsPage() {
       selectedRowKeys,
       onChange: (keys) => setSelectedRowKeys(keys as string[]),
       getCheckboxProps: (record) => ({
-        disabled: !["PENDING", "WAITING"].includes(record.status),
+        disabled: !canWriteApproval || !["PENDING", "WAITING"].includes(record.status),
       }),
     }),
-    [selectedRowKeys]
+    [canWriteApproval, selectedRowKeys]
   );
 
   const handleBatchAction = useCallback(
     (type: "approve" | "reject") => {
+      if (!canWriteApproval) {
+        message.warning("当前账号无审批处理权限");
+        return;
+      }
       if (!selectedTasks.length) {
         message.warning("请先选择待审批任务");
         return;
@@ -196,10 +211,13 @@ export default function ApprovalsPage() {
       setBatchAction(type);
       setBatchNote("");
     },
-    [message, selectedTasks.length]
+    [canWriteApproval, message, selectedTasks.length]
   );
 
   const handleBatchConfirm = async () => {
+    if (!canWriteApproval) {
+      return;
+    }
     if (!batchAction || selectedTasks.length === 0) {
       setBatchAction(null);
       return;
@@ -231,15 +249,22 @@ export default function ApprovalsPage() {
   };
 
   const handleAssignOpen = useCallback(() => {
+    if (!canWriteApproval) {
+      message.warning("当前账号无审批处理权限");
+      return;
+    }
     if (!assignableTasks.length) {
       message.warning("请先选择待审批任务");
       return;
     }
     setAssignAssigneeId(undefined);
     setAssignOpen(true);
-  }, [assignableTasks.length, message]);
+  }, [assignableTasks.length, canWriteApproval, message]);
 
   const handleAssignConfirm = async () => {
+    if (!canWriteApproval) {
+      return;
+    }
     if (!assignAssigneeId) {
       message.warning("请选择审批人");
       return;
@@ -503,22 +528,24 @@ export default function ApprovalsPage() {
             >
               详情
             </Button>
-            <Button
+            <PermissionButton
+              permission="approval:write"
               size="small"
               type="primary"
               disabled={record.status !== "PENDING"}
               onClick={() => handleAction(record, "approve")}
             >
               通过
-            </Button>
-            <Button
+            </PermissionButton>
+            <PermissionButton
+              permission="approval:write"
               size="small"
               danger
               disabled={record.status !== "PENDING"}
               onClick={() => handleAction(record, "reject")}
             >
               拒绝
-            </Button>
+            </PermissionButton>
           </Space>
         ),
       },
@@ -575,26 +602,29 @@ export default function ApprovalsPage() {
           {hasAdvancedFilters && <Tag color="blue">已启用高级筛选</Tag>}
         </Space>
         <Space wrap style={{ marginBottom: 16 }}>
-          <Button
+          <PermissionButton
+            permission="approval:write"
             type="primary"
             disabled={selectedTasks.length === 0}
             onClick={() => handleBatchAction("approve")}
           >
             批量通过
-          </Button>
-          <Button
+          </PermissionButton>
+          <PermissionButton
+            permission="approval:write"
             danger
             disabled={selectedTasks.length === 0}
             onClick={() => handleBatchAction("reject")}
           >
             批量拒绝
-          </Button>
-          <Button
+          </PermissionButton>
+          <PermissionButton
+            permission="approval:write"
             disabled={assignableTasks.length === 0}
             onClick={handleAssignOpen}
           >
             批量指派
-          </Button>
+          </PermissionButton>
           <Button
             disabled={selectedRowKeys.length === 0}
             onClick={() => setSelectedRowKeys([])}

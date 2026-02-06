@@ -14,6 +14,8 @@ import Link from 'next/link';
 import { useI18n } from '@/i18n/provider';
 import { getErrorMessage } from '@/utils/error';
 import { useSearchParams } from 'next/navigation';
+import { PermissionButton } from '@/components/auth/PermissionButton';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 
 const { Text } = Typography;
 
@@ -313,16 +315,20 @@ export default function LeadsPage() {
       render: (_: unknown, record: Lead) => (
         <Space size="small">
           <Button type="text" icon={<EyeOutlined />} onClick={() => handleView(record.id)} aria-label={t('common.view')} />
-          <Button type="text" icon={<EditOutlined />} onClick={() => handleEdit(record)} aria-label={t('common.edit')} />
-          <Popconfirm
-            title={t('common.delete_confirm_title')}
-            description={t('lead.messages.delete_confirm')}
-            onConfirm={() => handleDelete(record.id)}
-            okText={t('common.confirm')}
-            cancelText={t('common.cancel')}
-          >
-            <Button type="text" danger icon={<DeleteOutlined />} aria-label={t('common.delete')} />
-          </Popconfirm>
+          <PermissionGuard permission="lead:write">
+            <Button type="text" icon={<EditOutlined />} onClick={() => handleEdit(record)} aria-label={t('common.edit')} />
+          </PermissionGuard>
+          <PermissionGuard permission="lead:write">
+            <Popconfirm
+              title={t('common.delete_confirm_title')}
+              description={t('lead.messages.delete_confirm')}
+              onConfirm={() => handleDelete(record.id)}
+              okText={t('common.confirm')}
+              cancelText={t('common.cancel')}
+            >
+              <Button type="text" danger icon={<DeleteOutlined />} aria-label={t('common.delete')} />
+            </Popconfirm>
+          </PermissionGuard>
         </Space>
       ),
     },
@@ -334,9 +340,16 @@ export default function LeadsPage() {
         title={t('leads.page.title')}
         description={t('leads.page.description')}
         extra={[
-          <Button key="create" type="primary" icon={<PlusOutlined />} onClick={handleCreate} loading={creating}>
+          <PermissionButton
+            key="create"
+            permission="lead:write"
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleCreate}
+            loading={creating}
+          >
             {t('leads.actions.create')}
-          </Button>,
+          </PermissionButton>,
         ]}
       />
 

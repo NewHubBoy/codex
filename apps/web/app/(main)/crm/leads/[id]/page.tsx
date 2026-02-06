@@ -27,6 +27,9 @@ import { LeadSource, LeadRating, LeadStatus } from '@/services/leads';
 import { useI18n } from '@/i18n/provider';
 import { getErrorMessage } from '@/utils/error';
 import dayjs from 'dayjs';
+import { useAuth } from '@/hooks/useAuth';
+import { PermissionButton } from '@/components/auth/PermissionButton';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 
 const { Text } = Typography;
 
@@ -72,8 +75,10 @@ export default function LeadDetailPage() {
   const searchParams = useSearchParams();
   const { message } = App.useApp();
   const { t, locale } = useI18n();
+  const { hasPermission } = useAuth();
   const id = params.id as string;
   const operationType = searchParams.get('operationType');
+  const canWriteLead = hasPermission('lead:write');
 
   const [form] = Form.useForm();
   const [isEditing, setIsEditing] = useState(false);
@@ -113,12 +118,12 @@ export default function LeadDetailPage() {
 
   // 根据 operationType 自动进入编辑模式
   useEffect(() => {
-    if (operationType === 'edit' && lead) {
+    if (operationType === 'edit' && lead && canWriteLead) {
       setIsEditing(true);
       // 清除 URL 参数，避免刷新时重复打开
       router.replace(`/crm/leads/${id}`, { scroll: false });
     }
-  }, [operationType, lead, router, id]);
+  }, [operationType, lead, router, id, canWriteLead]);
 
   useEffect(() => {
     if (lead) {
@@ -140,11 +145,11 @@ export default function LeadDetailPage() {
         ownerId: lead.ownerId,
         status: lead.status === 'DRAFT' ? undefined : lead.status,
       });
-      if (lead.status === 'DRAFT') {
+      if (lead.status === 'DRAFT' && canWriteLead) {
         setIsEditing(true);
       }
     }
-  }, [lead, form]);
+  }, [lead, form, canWriteLead]);
 
   const handleDelete = async () => {
     try {
@@ -283,50 +288,54 @@ export default function LeadDetailPage() {
           </Button>,
           ...(isEditing
             ? [
-                <Button key="cancel" onClick={handleCancelEdit}>
+                <PermissionButton key="cancel" permission="lead:write" onClick={handleCancelEdit}>
                   {t('common.cancel')}
-                </Button>,
-                <Button
+                </PermissionButton>,
+                <PermissionButton
                   key="save"
+                  permission="lead:write"
                   type="primary"
                   loading={submitLead.isPending || updateLead.isPending}
                   onClick={handleSave}
                 >
                   {t('common.save')}
-                </Button>,
+                </PermissionButton>,
               ]
             : [
-                <Button key="edit" icon={<EditOutlined />} onClick={() => setIsEditing(true)}>
+                <PermissionButton key="edit" permission="lead:write" icon={<EditOutlined />} onClick={() => setIsEditing(true)}>
                   {t('common.edit')}
-                </Button>,
-                <Button
+                </PermissionButton>,
+                <PermissionButton
                   key="convert"
+                  permission="lead:write"
                   icon={<SwapOutlined />}
                   type="primary"
                   disabled={lead.status === 'CONVERTED'}
                 >
                   {t('lead.actions.convert')}
-                </Button>,
+                </PermissionButton>,
               ]),
-          <Popconfirm
-            key="delete"
-            title={t('common.delete_confirm_title')}
-            description={t('lead.messages.delete_confirm')}
-            onConfirm={handleDelete}
-            okText={t('common.confirm')}
-            cancelText={t('common.cancel')}
-          >
-            <Button danger icon={<DeleteOutlined />}>
-              {t('common.delete')}
-            </Button>
-          </Popconfirm>,
+          <PermissionGuard key="delete-guard" permission="lead:write">
+            <Popconfirm
+              key="delete"
+              title={t('common.delete_confirm_title')}
+              description={t('lead.messages.delete_confirm')}
+              onConfirm={handleDelete}
+              okText={t('common.confirm')}
+              cancelText={t('common.cancel')}
+            >
+              <Button danger icon={<DeleteOutlined />}>
+                {t('common.delete')}
+              </Button>
+            </Popconfirm>
+          </PermissionGuard>,
         ]}
       />
 
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
         {/* 基本信息 */}
         <Card title={t('common.basic_info')}>
-          {isEditing ? (
+          {isEditing && canWriteLead ? (
             <Form form={form} requiredMark="optional">
               <Descriptions column={2} bordered>
                 <Descriptions.Item label={t('lead.fields.name')}>

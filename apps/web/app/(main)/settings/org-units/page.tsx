@@ -1,13 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { Tree, Button, Space, Card, Modal, Form, Input, App, Select } from 'antd';
+import { Tree, Space, Card, Modal, Form, Input, App, Select } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, TeamOutlined } from '@ant-design/icons';
 import { Tag } from 'antd';
 import { PageHeader } from '@/components/common/PageHeader';
 import { useOrgUnits } from '@/hooks/useSystem';
 import type { DataNode } from 'antd/es/tree';
 import type { OrgUnit, OrgUnitListResponse } from '@/services/system';
+import { PermissionButton } from '@/components/auth/PermissionButton';
 
 type OrgUnitTreeNode = DataNode & OrgUnit & { children: OrgUnitTreeNode[] };
 
@@ -78,9 +79,9 @@ export default function OrgUnitsPage() {
         title="组织架构"
         description="管理公司组织结构和部门"
         action={
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+          <PermissionButton permission="orgunit:write" type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
             新建部门
-          </Button>
+          </PermissionButton>
         }
       />
 
@@ -100,7 +101,8 @@ export default function OrgUnitsPage() {
                 {nodeData.serialId ? <Tag color="blue">ID {nodeData.serialId}</Tag> : null}
                 <Tag>{nodeData.type}</Tag>
                 <Space size="small">
-                  <Button
+                  <PermissionButton
+                    permission="orgunit:write"
                     type="text"
                     size="small"
                     icon={<PlusOutlined />}
@@ -110,8 +112,8 @@ export default function OrgUnitsPage() {
                       setModalOpen(true);
                     }}
                   />
-                  <Button type="text" size="small" icon={<EditOutlined />} onClick={() => handleEdit(nodeData)} />
-                  <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(nodeData)} />
+                  <PermissionButton permission="orgunit:write" type="text" size="small" icon={<EditOutlined />} onClick={() => handleEdit(nodeData)} />
+                  <PermissionButton permission="orgunit:write" type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(nodeData)} />
                 </Space>
               </Space>
             );

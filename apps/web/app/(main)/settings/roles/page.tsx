@@ -1,11 +1,12 @@
 "use client";
 
-import { Table, Button, Space, Tag, Card, Modal, App } from "antd";
+import { Table, Space, Tag, Card, Modal, App } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useRoles, useDeleteRole } from "@/hooks/useSystem";
 import type { ColumnsType } from "antd/es/table";
 import type { Role } from "@/services/system";
+import { PermissionButton } from "@/components/auth/PermissionButton";
 
 export default function RolesPage() {
   const { data, isLoading } = useRoles();
@@ -58,12 +59,14 @@ export default function RolesPage() {
       key: "action",
       render: (_value, record) => (
         <Space>
-          <Button
+          <PermissionButton
+            permission="rbac:role:write"
             type="text"
             icon={<EditOutlined />}
             onClick={() => message.info("编辑功能开发中")}
           />
-          <Button
+          <PermissionButton
+            permission="rbac:role:write"
             type="text"
             danger
             icon={<DeleteOutlined />}
@@ -86,9 +89,9 @@ export default function RolesPage() {
         title="角色权限"
         description="管理角色和权限配置"
         action={
-          <Button type="primary" icon={<PlusOutlined />}>
+          <PermissionButton permission="rbac:role:write" type="primary" icon={<PlusOutlined />}>
             新建角色
-          </Button>
+          </PermissionButton>
         }
       />
 

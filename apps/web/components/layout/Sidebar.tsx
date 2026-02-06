@@ -19,8 +19,10 @@ import {
   ExperimentOutlined,
   ClockCircleOutlined,
 } from '@ant-design/icons';
-import type { ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { useI18n } from '@/i18n/provider';
+import { useAuth } from '@/hooks/useAuth';
+import type { PermissionMode, PermissionRequirement } from '@/utils/permissions';
 
 const { Sider: AntSider } = Layout;
 const { Title } = Typography;
@@ -31,7 +33,8 @@ interface MenuItem {
   label: string;
   icon: ReactNode;
   children?: MenuItem[];
-  permission?: string;
+  permission?: PermissionRequirement;
+  permissionMode?: PermissionMode;
 }
 
 // CRM 菜单配置
@@ -45,55 +48,55 @@ const crmMenuItems = (t: (key: string) => string): MenuItem[] => [
     key: '/crm/leads',
     label: t('menu.leads'),
     icon: <RocketOutlined />,
-    permission: 'LEAD_READ',
+    permission: 'lead:read',
   },
   {
     key: '/crm/activities',
     label: t('menu.activities'),
     icon: <ClockCircleOutlined />,
-    permission: 'ACTIVITY_READ',
+    permission: 'activity:read',
   },
   {
     key: '/crm/opportunities',
     label: t('menu.opportunities'),
     icon: <ShoppingCartOutlined />,
-    permission: 'OPPORTUNITY_READ',
+    permission: 'opportunity:read',
   },
   {
     key: '/crm/accounts',
     label: t('menu.accounts'),
     icon: <ShopOutlined />,
-    permission: 'ACCOUNT_READ',
+    permission: 'account:read',
   },
   {
     key: '/crm/contacts',
     label: t('menu.contacts'),
     icon: <ContactsOutlined />,
-    permission: 'CONTACT_READ',
+    permission: 'contact:read',
   },
   {
     key: '/crm/quotes',
     label: t('menu.quotes'),
     icon: <FileTextOutlined />,
-    permission: 'QUOTE_READ',
+    permission: 'quote:read',
   },
   {
     key: '/crm/orders',
     label: t('menu.orders'),
     icon: <FileProtectOutlined />,
-    permission: 'ORDER_READ',
+    permission: 'order:read',
   },
   {
     key: '/crm/deliveries',
     label: t('menu.deliveries'),
     icon: <CalendarOutlined />,
-    permission: 'DELIVERY_READ',
+    permission: 'delivery:read',
   },
   {
     key: '/crm/tickets',
     label: t('menu.tickets'),
     icon: <AlertOutlined />,
-    permission: 'TICKET_READ',
+    permission: 'ticket:read',
   },
 ];
 
@@ -102,7 +105,7 @@ const productMenuItems = (t: (key: string) => string): MenuItem[] => [
     key: '/crm/products',
     label: t('menu.products'),
     icon: <ExperimentOutlined />,
-    permission: 'PRODUCT_READ',
+    permission: 'product:read',
   },
 ];
 
@@ -111,7 +114,6 @@ const reportMenuItems = (t: (key: string) => string): MenuItem[] => [
     key: '/reports',
     label: t('menu.reports'),
     icon: <BarChartOutlined />,
-    permission: 'REPORT_READ',
   },
 ];
 
@@ -129,25 +131,26 @@ const settingsMenuItems = (t: (key: string) => string): MenuItem[] => [
     key: '/settings/users',
     label: t('menu.users'),
     icon: <TeamOutlined />,
-    permission: 'USER_READ',
+    permission: 'user:read',
   },
   {
     key: '/settings/roles',
     label: t('menu.roles'),
     icon: <SettingOutlined />,
-    permission: 'RBAC_READ',
+    permission: 'rbac:role:read',
   },
   {
     key: '/settings/org-units',
     label: t('menu.org_units'),
     icon: <TeamOutlined />,
-    permission: 'ORG_UNIT_READ',
+    permission: 'orgunit:read',
   },
   {
     key: '/settings/alerts',
     label: t('menu.alerts'),
     icon: <AlertOutlined />,
-    permission: 'ALERT_READ',
+    permission: ['lead:read', 'opportunity:read'],
+    permissionMode: 'all',
   },
   {
     key: '/settings/approval-rules',
@@ -157,19 +160,44 @@ const settingsMenuItems = (t: (key: string) => string): MenuItem[] => [
   },
 ];
 
+const filterMenuItems = (
+  items: MenuItem[],
+  canAccess: (required: PermissionRequirement, mode?: PermissionMode) => boolean
+): MenuItem[] =>
+  items.reduce<MenuItem[]>((result, item) => {
+    if (item.permission && !canAccess(item.permission, item.permissionMode ?? 'all')) {
+      return result;
+    }
+
+    const children = item.children ? filterMenuItems(item.children, canAccess) : undefined;
+    if (item.children && (!children || children.length === 0)) {
+      return result;
+    }
+
+    result.push({ ...item, children });
+    return result;
+  }, []);
+
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { t } = useI18n();
+  const { hasPermission } = useAuth();
 
-  // 收集所有菜单项
-  const allMenuItems: MenuItem[] = [
-    ...crmMenuItems(t),
-    ...productMenuItems(t),
-    ...reportMenuItems(t),
-    ...approvalMenuItems(t),
-    ...settingsMenuItems(t),
-  ];
+  const allMenuItems = useMemo(
+    () => [
+      ...crmMenuItems(t),
+      ...productMenuItems(t),
+      ...reportMenuItems(t),
+      ...approvalMenuItems(t),
+      ...settingsMenuItems(t),
+    ],
+    [t]
+  );
+  const visibleMenuItems = useMemo(
+    () => filterMenuItems(allMenuItems, hasPermission),
+    [allMenuItems, hasPermission]
+  );
 
   const toMenuItems = (items: MenuItem[]): MenuProps["items"] =>
     items.map((item) => ({
@@ -179,22 +207,10 @@ export function Sidebar() {
       children: item.children ? toMenuItems(item.children) : undefined,
     }));
 
-  // 查找父菜单以确定展开项
-  const findOpenKeys = (path: string): string[] => {
-    const crmPaths = ['/crm/leads', '/crm/activities', '/crm/opportunities', '/crm/accounts'];
-    const productPaths = ['/crm/products'];
-    const reportPaths = ['/reports'];
-    const settingsPaths = ['/settings'];
-
-    if (crmPaths.some((p) => path.startsWith(p))) return ['/crm'];
-    if (productPaths.some((p) => path.startsWith(p))) return ['/crm'];
-    if (reportPaths.some((p) => path.startsWith(p))) return ['/reports'];
-    if (settingsPaths.some((p) => path.startsWith(p))) return ['/settings'];
-    return [];
-  };
-
   const findSelectedKey = (path: string): string => {
-    const match = allMenuItems.find((item) => path === item.key || path.startsWith(`${item.key}/`));
+    const match = visibleMenuItems.find(
+      (item) => path === item.key || path.startsWith(`${item.key}/`)
+    );
     return match?.key ?? path;
   };
 
@@ -242,8 +258,7 @@ export function Sidebar() {
         theme="dark"
         mode="inline"
         selectedKeys={[findSelectedKey(pathname)]}
-        defaultOpenKeys={findOpenKeys(pathname)}
-        items={toMenuItems(allMenuItems)}
+        items={toMenuItems(visibleMenuItems)}
         onClick={handleMenuClick}
         style={{ background: '#001529', borderRight: 0 }}
       />

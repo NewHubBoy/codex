@@ -1,5 +1,21 @@
 import { api } from "./api";
 
+export interface AuthRole {
+  id: string;
+  name: string;
+  code: string;
+}
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+  tenantId: string;
+  locale?: string;
+  roles?: AuthRole[];
+  permissions?: string[];
+}
+
 // 登录参数
 export interface LoginParams {
   email: string;
@@ -11,13 +27,7 @@ export interface LoginParams {
 export interface LoginResponse {
   accessToken: string;
   refreshToken: string;
-  user: {
-    id: string;
-    email: string;
-    name: string;
-    tenantId: string;
-    locale?: string;
-  };
+  user: AuthUser;
 }
 
 // 刷新 Token 响应

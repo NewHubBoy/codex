@@ -123,11 +123,56 @@ export class AuthService {
         status: true,
         createdAt: true,
         updatedAt: true,
+        roles: {
+          select: {
+            role: {
+              select: {
+                id: true,
+                name: true,
+                code: true,
+                permissions: {
+                  select: {
+                    permission: {
+                      select: {
+                        code: true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     });
     if (!user) {
       throw new NotFoundException("User not found");
     }
-    return user;
+
+    const roles = user.roles.map((item) => ({
+      id: item.role.id,
+      name: item.role.name,
+      code: item.role.code
+    }));
+    const permissions = Array.from(
+      new Set(
+        user.roles.flatMap((item) =>
+          item.role.permissions.map((assignment) => assignment.permission.code)
+        )
+      )
+    );
+
+    return {
+      id: user.id,
+      tenantId: user.tenantId,
+      email: user.email,
+      name: user.name,
+      locale: user.locale,
+      status: user.status,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      roles,
+      permissions
+    };
   }
 }
