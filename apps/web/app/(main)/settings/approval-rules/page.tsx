@@ -300,30 +300,35 @@ export default function ApprovalRulesPage() {
             {(fields, { add, remove }) => (
               <Card title="条件" extra={<Button onClick={() => add()}>新增条件</Button>}>
                 {fields.length === 0 && <Text type="secondary">未设置条件时表示全部命中。</Text>}
-                {fields.map((field) => (
-                  <Space key={field.key} align="baseline" style={{ display: "flex", marginBottom: 12 }}>
-                    <Form.Item
-                      {...field}
+                {fields.map((field) => {
+                  const { key, ...restField } = field;
+                  return (
+                    <Space key={key} align="baseline" style={{ display: "flex", marginBottom: 12 }}>
+                      <Form.Item
+                        key={`${key}-field`}
+                        {...restField}
                       name={[field.name, "field"]}
                       rules={[{ required: true, message: "请选择字段" }]}
-                    >
-                      <Select options={fieldOptions} style={{ width: 140 }} placeholder="字段" />
-                    </Form.Item>
-                    <Form.Item
-                      {...field}
-                      name={[field.name, "operator"]}
-                      rules={[{ required: true, message: "请选择运算符" }]}
-                    >
-                      <Select options={operatorOptions} style={{ width: 120 }} placeholder="运算符" />
-                    </Form.Item>
-                    <Form.Item {...field} name={[field.name, "value"]}>
-                      <Input placeholder="值 (数字/布尔/JSON)" style={{ width: 220 }} />
-                    </Form.Item>
-                    <Button danger onClick={() => remove(field.name)}>
-                      删除
-                    </Button>
-                  </Space>
-                ))}
+                      >
+                        <Select options={fieldOptions} style={{ width: 140 }} placeholder="字段" />
+                      </Form.Item>
+                      <Form.Item
+                        key={`${key}-operator`}
+                        {...restField}
+                        name={[field.name, "operator"]}
+                        rules={[{ required: true, message: "请选择运算符" }]}
+                      >
+                        <Select options={operatorOptions} style={{ width: 120 }} placeholder="运算符" />
+                      </Form.Item>
+                      <Form.Item key={`${key}-value`} {...restField} name={[field.name, "value"]}>
+                        <Input placeholder="值 (数字/布尔/JSON)" style={{ width: 220 }} />
+                      </Form.Item>
+                      <Button danger onClick={() => remove(field.name)}>
+                        删除
+                      </Button>
+                    </Space>
+                  );
+                })}
               </Card>
             )}
           </Form.List>
@@ -338,26 +343,30 @@ export default function ApprovalRulesPage() {
                 {fields.length === 0 && (
                   <Text type="secondary">至少配置一个审批节点，支持并行组。</Text>
                 )}
-                {fields.map((field) => (
-                  <Space key={field.key} align="baseline" style={{ display: "flex", marginBottom: 12 }}>
-                    <Form.Item
-                      {...field}
-                      name={[field.name, "roleCode"]}
-                      rules={[{ required: true, message: "请选择审批角色" }]}
-                    >
-                      <Select options={roleOptions} style={{ width: 200 }} placeholder="审批角色" />
-                    </Form.Item>
-                    <Form.Item {...field} name={[field.name, "groupIndex"]}>
-                      <InputNumber min={0} placeholder="并行组" />
-                    </Form.Item>
-                    <Form.Item {...field} name={[field.name, "sortOrder"]}>
-                      <InputNumber min={0} placeholder="顺序" />
-                    </Form.Item>
-                    <Button danger onClick={() => remove(field.name)}>
-                      删除
-                    </Button>
-                  </Space>
-                ))}
+                {fields.map((field) => {
+                  const { key, ...restField } = field;
+                  return (
+                    <Space key={key} align="baseline" style={{ display: "flex", marginBottom: 12 }}>
+                      <Form.Item
+                        key={`${key}-role`}
+                        {...restField}
+                        name={[field.name, "roleCode"]}
+                        rules={[{ required: true, message: "请选择审批角色" }]}
+                      >
+                        <Select options={roleOptions} style={{ width: 200 }} placeholder="审批角色" />
+                      </Form.Item>
+                      <Form.Item key={`${key}-group`} {...restField} name={[field.name, "groupIndex"]}>
+                        <InputNumber min={0} placeholder="并行组" />
+                      </Form.Item>
+                      <Form.Item key={`${key}-order`} {...restField} name={[field.name, "sortOrder"]}>
+                        <InputNumber min={0} placeholder="顺序" />
+                      </Form.Item>
+                      <Button danger onClick={() => remove(field.name)}>
+                        删除
+                      </Button>
+                    </Space>
+                  );
+                })}
               </Card>
             )}
           </Form.List>

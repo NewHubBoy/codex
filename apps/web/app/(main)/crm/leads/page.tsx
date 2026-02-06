@@ -60,23 +60,6 @@ export default function LeadsPage() {
     }
   }, [alertSettings]);
 
-  useEffect(() => {
-    if (!searchParams) {
-      return;
-    }
-    const alert = searchParams.get("alert") || undefined;
-    const inactive = searchParams.get("inactiveDays");
-    const inactiveParsed = inactive ? Number.parseInt(inactive, 10) : undefined;
-    if (alert) {
-      if (alert === "inactive" && inactiveParsed && inactiveParsed > 0) {
-        setInactiveDays(inactiveParsed);
-      }
-      handleAlertFilterChange(alert, inactiveParsed);
-    }
-    if (inactiveParsed && inactiveParsed > 0) {
-      setInactiveDays(inactiveParsed);
-    }
-  }, [handleAlertFilterChange, searchParams]);
 
   // 查询线索列表
   const { data, isLoading, refetch } = useLeads({
@@ -155,6 +138,25 @@ export default function LeadsPage() {
     });
     setPagination((prev) => ({ ...prev, current: 1 }));
   }, [inactiveDays]);
+
+
+  useEffect(() => {
+    if (!searchParams) {
+      return;
+    }
+    const alert = searchParams.get("alert") || undefined;
+    const inactive = searchParams.get("inactiveDays");
+    const inactiveParsed = inactive ? Number.parseInt(inactive, 10) : undefined;
+    if (alert) {
+      if (alert === "inactive" && inactiveParsed && inactiveParsed > 0) {
+        setInactiveDays(inactiveParsed);
+      }
+      handleAlertFilterChange(alert, inactiveParsed);
+    }
+    if (inactiveParsed && inactiveParsed > 0) {
+      setInactiveDays(inactiveParsed);
+    }
+  }, [handleAlertFilterChange, searchParams]);
 
   const handleInactiveDaysChange = (value: number | null) => {
     const days = value && value > 0 ? value : 7;
