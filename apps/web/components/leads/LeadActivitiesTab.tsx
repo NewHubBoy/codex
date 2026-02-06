@@ -151,7 +151,7 @@ export function LeadActivitiesTab({ leadId }: LeadActivitiesTabProps) {
         open={createOpen}
         onCancel={resetDialog}
         onOk={handleSubmit}
-        destroyOnHidden
+        forceRender
         confirmLoading={submitting || createActivity.isPending || uploadAttachment.isPending}
         okText={t('common.save')}
         cancelText={t('common.cancel')}

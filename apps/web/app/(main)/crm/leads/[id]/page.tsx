@@ -488,50 +488,53 @@ export default function LeadDetailPage() {
               </Descriptions>
             </Form>
           ) : (
-            <Descriptions column={2} bordered>
-              <Descriptions.Item label={t('lead.fields.name')}>{lead.name}</Descriptions.Item>
-              <Descriptions.Item label={t('lead.fields.contact_name')}>
-                {lead.contactName || '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label={t('lead.fields.company')}>
-                {lead.companyName || '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label={t('lead.fields.email')}>{lead.email || '-'}</Descriptions.Item>
-              <Descriptions.Item label={t('lead.fields.phone')}>{lead.phone || '-'}</Descriptions.Item>
-              <Descriptions.Item label={t('lead.fields.status')}>
-                <Tag color={statusColors[lead.status]}>{statusLabels[lead.status] || lead.status}</Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label={t('lead.fields.rating')}>
-                <Tag color={ratingColors[lead.rating || ''] || 'default'}>
-                  {lead.rating ? ratingLabels[lead.rating] || lead.rating : '-'}
-                </Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label={t('lead.fields.source')}>
-                {lead.source ? sourceLabels[lead.source] || lead.source : '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label={t('lead.fields.expected_value')} span={2}>
-                {lead.expectedValue ? `¥${lead.expectedValue.toLocaleString(locale)}` : '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label={t('lead.fields.initial_need')} span={2}>
-                {lead.initialNeed || '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label={t('lead.fields.first_follow_up_due_at')}>
-                {lead.firstFollowUpDueAt
-                  ? new Date(lead.firstFollowUpDueAt).toLocaleString(locale)
-                  : '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label={t('lead.fields.last_activity_at')}>
-                {lead.lastActivityAt ? new Date(lead.lastActivityAt).toLocaleString(locale) : '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label={t('lead.fields.next_follow_up_at')} span={2}>
-                {lead.nextFollowUpAt
-                  ? new Date(lead.nextFollowUpAt).toLocaleString(locale)
-                  : '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label={t('lead.fields.description')} span={2}>
-                {lead.description || '-'}
-              </Descriptions.Item>
-            </Descriptions>
+            <>
+              <Form form={form} component={false} />
+              <Descriptions column={2} bordered>
+                <Descriptions.Item label={t('lead.fields.name')}>{lead.name}</Descriptions.Item>
+                <Descriptions.Item label={t('lead.fields.contact_name')}>
+                  {lead.contactName || '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label={t('lead.fields.company')}>
+                  {lead.companyName || '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label={t('lead.fields.email')}>{lead.email || '-'}</Descriptions.Item>
+                <Descriptions.Item label={t('lead.fields.phone')}>{lead.phone || '-'}</Descriptions.Item>
+                <Descriptions.Item label={t('lead.fields.status')}>
+                  <Tag color={statusColors[lead.status]}>{statusLabels[lead.status] || lead.status}</Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label={t('lead.fields.rating')}>
+                  <Tag color={ratingColors[lead.rating || ''] || 'default'}>
+                    {lead.rating ? ratingLabels[lead.rating] || lead.rating : '-'}
+                  </Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label={t('lead.fields.source')}>
+                  {lead.source ? sourceLabels[lead.source] || lead.source : '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label={t('lead.fields.expected_value')} span={2}>
+                  {lead.expectedValue ? `¥${lead.expectedValue.toLocaleString(locale)}` : '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label={t('lead.fields.initial_need')} span={2}>
+                  {lead.initialNeed || '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label={t('lead.fields.first_follow_up_due_at')}>
+                  {lead.firstFollowUpDueAt
+                    ? new Date(lead.firstFollowUpDueAt).toLocaleString(locale)
+                    : '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label={t('lead.fields.last_activity_at')}>
+                  {lead.lastActivityAt ? new Date(lead.lastActivityAt).toLocaleString(locale) : '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label={t('lead.fields.next_follow_up_at')} span={2}>
+                  {lead.nextFollowUpAt
+                    ? new Date(lead.nextFollowUpAt).toLocaleString(locale)
+                    : '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label={t('lead.fields.description')} span={2}>
+                  {lead.description || '-'}
+                </Descriptions.Item>
+              </Descriptions>
+            </>
           )}
         </Card>
 
