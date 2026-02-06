@@ -89,6 +89,9 @@ export const approvals = {
     entityType?: string;
     entityId?: string;
     roleCode?: string;
+    assigneeId?: string;
+    createdFrom?: string;
+    createdTo?: string;
   }): Promise<ApprovalTaskList> => {
     return api.get("/approval-tasks", { params });
   },
@@ -99,5 +102,9 @@ export const approvals = {
 
   rejectTask: async (id: string, note?: string): Promise<ApprovalInstance> => {
     return api.post(`/approval-tasks/${id}/reject`, { note });
+  },
+
+  assignTasks: async (taskIds: string[], assigneeId: string): Promise<{ updated: number }> => {
+    return api.post("/approval-tasks/assign", { taskIds, assigneeId });
   }
 };

@@ -8,6 +8,7 @@ import {
   Descriptions,
   Divider,
   Drawer,
+  DatePicker,
   Form,
   Input,
   Modal,
@@ -24,14 +25,16 @@ import {
   useApproveApprovalTask,
   useApprovalInstance,
   useApprovalTasks,
+  useAssignApprovalTasks,
   useRejectApprovalTask
 } from "@/hooks/useApprovals";
 import type { ApprovalTask, ApprovalTaskStatus } from "@/services/approvals";
 import { useI18n } from "@/i18n/provider";
-import { useRoles } from "@/hooks/useSystem";
+import { useRoles, useUsers } from "@/hooks/useSystem";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { approvals } from "@/services/approvals";
+import dayjs from "dayjs";
 
 const { Text } = Typography;
 
@@ -66,6 +69,16 @@ export default function ApprovalsPage() {
   const [batchNote, setBatchNote] = useState("");
   const [batchLoading, setBatchLoading] = useState(false);
   const [detailInstanceId, setDetailInstanceId] = useState<string | null>(null);
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [assignAssigneeId, setAssignAssigneeId] = useState<string | undefined>(undefined);
+  const [exporting, setExporting] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [advancedForm] = Form.useForm();
+  const [advancedFilters, setAdvancedFilters] = useState<{
+    assigneeId?: string;
+    createdFrom?: string;
+    createdTo?: string;
+  }>({});
 
   const { data, isLoading } = useApprovalTasks({
     page,
@@ -74,13 +87,18 @@ export default function ApprovalsPage() {
     entityType,
     entityId: entityId || undefined,
     roleCode,
+    assigneeId: advancedFilters.assigneeId,
+    createdFrom: advancedFilters.createdFrom,
+    createdTo: advancedFilters.createdTo,
   });
   const { data: rolesData } = useRoles({ page: 1, pageSize: 200 });
+  const { data: usersData } = useUsers({ page: 1, pageSize: 200, status: "ACTIVE" });
   const { data: detailInstance, isLoading: detailLoading } = useApprovalInstance(
     detailInstanceId ?? ""
   );
   const approveTask = useApproveApprovalTask();
   const rejectTask = useRejectApprovalTask();
+  const assignTasks = useAssignApprovalTasks();
 
   const roleOptions = useMemo(
     () =>
@@ -90,6 +108,23 @@ export default function ApprovalsPage() {
       })) ?? [],
     [rolesData]
   );
+
+  const userOptions = useMemo(
+    () =>
+      usersData?.data?.map((user) => ({
+        label: `${user.name || user.username} (${user.email || user.id.slice(0, 6)})`,
+        value: user.id,
+      })) ?? [],
+    [usersData]
+  );
+
+  const userNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    usersData?.data?.forEach((user) => {
+      map.set(user.id, user.name || user.username || user.email || user.id);
+    });
+    return map;
+  }, [usersData]);
 
   const handleAction = useCallback((task: ApprovalTask, type: "approve" | "reject") => {
     setActionTask(task);
@@ -129,12 +164,23 @@ export default function ApprovalsPage() {
     return data.data.filter((task) => selectedSet.has(task.id) && task.status === "PENDING");
   }, [data, selectedRowKeys]);
 
+  const assignableTasks = useMemo(() => {
+    if (!data?.data?.length || selectedRowKeys.length === 0) {
+      return [];
+    }
+    const selectedSet = new Set(selectedRowKeys);
+    return data.data.filter(
+      (task) =>
+        selectedSet.has(task.id) && ["PENDING", "WAITING"].includes(task.status)
+    );
+  }, [data, selectedRowKeys]);
+
   const rowSelection = useMemo<TableRowSelection<ApprovalTask>>(
     () => ({
       selectedRowKeys,
       onChange: (keys) => setSelectedRowKeys(keys as string[]),
       getCheckboxProps: (record) => ({
-        disabled: record.status !== "PENDING",
+        disabled: !["PENDING", "WAITING"].includes(record.status),
       }),
     }),
     [selectedRowKeys]
@@ -183,14 +229,157 @@ export default function ApprovalsPage() {
     }
   };
 
+  const handleAssignOpen = useCallback(() => {
+    if (!assignableTasks.length) {
+      message.warning("请先选择待审批任务");
+      return;
+    }
+    setAssignAssigneeId(undefined);
+    setAssignOpen(true);
+  }, [assignableTasks.length, message]);
+
+  const handleAssignConfirm = async () => {
+    if (!assignAssigneeId) {
+      message.warning("请选择审批人");
+      return;
+    }
+    try {
+      await assignTasks.mutateAsync({
+        taskIds: assignableTasks.map((task) => task.id),
+        assigneeId: assignAssigneeId,
+      });
+      message.success("已完成指派");
+      setAssignOpen(false);
+      setSelectedRowKeys([]);
+      setAssignAssigneeId(undefined);
+    } catch (error) {
+      if (error instanceof Error) {
+        message.error(error.message);
+      }
+    }
+  };
+
+  const handleAdvancedApply = () => {
+    const values = advancedForm.getFieldsValue();
+    const range = values.createdRange as { startOf: (unit: string) => { toISOString: () => string }; endOf: (unit: string) => { toISOString: () => string } }[] | undefined;
+    const createdFrom = Array.isArray(range) && range[0]
+      ? range[0].startOf("day").toISOString()
+      : undefined;
+    const createdTo = Array.isArray(range) && range[1]
+      ? range[1].endOf("day").toISOString()
+      : undefined;
+    setAdvancedFilters({
+      assigneeId: values.assigneeId || undefined,
+      createdFrom,
+      createdTo,
+    });
+    setAdvancedOpen(false);
+  };
+
+  const handleAdvancedReset = () => {
+    advancedForm.resetFields();
+    setAdvancedFilters({});
+    setAdvancedOpen(false);
+  };
+
+  const handleExport = async () => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const pageSize = 100;
+      let currentPage = 1;
+      let total = 0;
+      const tasks: ApprovalTask[] = [];
+      do {
+        const response = await approvals.listTasks({
+          page: currentPage,
+          pageSize,
+          status: status as ApprovalTaskStatus | undefined,
+          entityType,
+          entityId: entityId || undefined,
+          roleCode,
+          assigneeId: advancedFilters.assigneeId,
+          createdFrom: advancedFilters.createdFrom,
+          createdTo: advancedFilters.createdTo,
+        });
+        tasks.push(...(response.data || []));
+        total = response.total || 0;
+        currentPage += 1;
+      } while (tasks.length < total);
+
+      const headers = [
+        "对象类型",
+        "对象ID",
+        "审批角色",
+        "节点",
+        "状态",
+        "审批人",
+        "创建时间",
+        "处理时间",
+      ];
+      const escapeCsv = (value: unknown) => {
+        const text = value === null || value === undefined ? "" : String(value);
+        if (/[\",\n]/.test(text)) {
+          return `"${text.replace(/\"/g, "\"\"")}"`;
+        }
+        return text;
+      };
+      const rows = tasks.map((task) => [
+        entityLabels[task.instance?.entityType || ""] || task.instance?.entityType || "-",
+        task.instance?.entityId || "-",
+        task.roleCode,
+        task.node?.groupIndex === undefined || task.node?.groupIndex === null
+          ? "-"
+          : task.node.groupIndex + 1,
+        task.status,
+        task.assigneeId ? userNameMap.get(task.assigneeId) || task.assigneeId : "-",
+        task.createdAt ? new Date(task.createdAt).toLocaleString("zh-CN") : "-",
+        task.decidedAt ? new Date(task.decidedAt).toLocaleString("zh-CN") : "-",
+      ]);
+      const csvContent = [headers, ...rows]
+        .map((row) => row.map(escapeCsv).join(","))
+        .join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `审批任务_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      message.success("导出完成");
+    } catch (error) {
+      if (error instanceof Error) {
+        message.error(error.message);
+      } else {
+        message.error("导出失败");
+      }
+    } finally {
+      setExporting(false);
+    }
+  };
+
   useEffect(() => {
     setPage(1);
     setSelectedRowKeys([]);
-  }, [status, entityType, entityId, roleCode]);
+  }, [status, entityType, entityId, roleCode, advancedFilters]);
 
   useEffect(() => {
     setSelectedRowKeys([]);
   }, [page, pageSize]);
+
+  useEffect(() => {
+    if (!advancedOpen) return;
+    const range =
+      advancedFilters.createdFrom && advancedFilters.createdTo
+        ? [dayjs(advancedFilters.createdFrom), dayjs(advancedFilters.createdTo)]
+        : undefined;
+    advancedForm.setFieldsValue({
+      assigneeId: advancedFilters.assigneeId,
+      createdRange: range,
+    });
+  }, [advancedFilters, advancedForm, advancedOpen]);
 
   const detailTaskColumns = useMemo<ColumnsType<ApprovalTask>>(
     () => [
@@ -209,7 +398,8 @@ export default function ApprovalsPage() {
         title: "审批人",
         dataIndex: "assigneeId",
         key: "assigneeId",
-        render: (value?: string | null) => (value ? `${value.slice(0, 8)}...` : "-"),
+        render: (value?: string | null) =>
+          value ? userNameMap.get(value) || `${value.slice(0, 8)}...` : "-",
       },
       {
         title: "处理时间",
@@ -225,7 +415,7 @@ export default function ApprovalsPage() {
         render: (value?: string | null) => value || "-",
       },
     ],
-    []
+    [userNameMap]
   );
 
   const sortedNodes = useMemo(() => {
@@ -237,6 +427,10 @@ export default function ApprovalsPage() {
     const logs = detailInstance?.logs ?? [];
     return [...logs].sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
   }, [detailInstance]);
+
+  const hasAdvancedFilters = Boolean(
+    advancedFilters.assigneeId || advancedFilters.createdFrom || advancedFilters.createdTo
+  );
 
   const columns = useMemo<ColumnsType<ApprovalTask>>(
     () => [
@@ -268,6 +462,15 @@ export default function ApprovalsPage() {
         title: "角色",
         dataIndex: "roleCode",
         key: "roleCode",
+      },
+      {
+        title: "审批人",
+        dataIndex: "assigneeId",
+        key: "assigneeId",
+        render: (value?: string | null) => {
+          if (!value) return "-";
+          return userNameMap.get(value) || `${value.slice(0, 8)}...`;
+        },
       },
       {
         title: "节点",
@@ -319,7 +522,7 @@ export default function ApprovalsPage() {
         ),
       },
     ],
-    [handleAction, handleOpenDetail]
+    [handleAction, handleOpenDetail, userNameMap]
   );
 
   return (
@@ -367,6 +570,8 @@ export default function ApprovalsPage() {
             value={entityId}
             onChange={(event) => setEntityId(event.target.value)}
           />
+          <Button onClick={() => setAdvancedOpen(true)}>高级筛选</Button>
+          {hasAdvancedFilters && <Tag color="blue">已启用高级筛选</Tag>}
         </Space>
         <Space wrap style={{ marginBottom: 16 }}>
           <Button
@@ -384,6 +589,12 @@ export default function ApprovalsPage() {
             批量拒绝
           </Button>
           <Button
+            disabled={assignableTasks.length === 0}
+            onClick={handleAssignOpen}
+          >
+            批量指派
+          </Button>
+          <Button
             disabled={selectedRowKeys.length === 0}
             onClick={() => setSelectedRowKeys([])}
           >
@@ -392,6 +603,9 @@ export default function ApprovalsPage() {
           <Text type="secondary">
             已选择 {selectedRowKeys.length} 条
           </Text>
+          <Button loading={exporting} onClick={handleExport}>
+            导出CSV
+          </Button>
         </Space>
 
         <Table
@@ -458,6 +672,58 @@ export default function ApprovalsPage() {
           <Text type="secondary">将处理 {selectedTasks.length} 条待审批任务。</Text>
         </Form>
       </Modal>
+
+      <Modal
+        open={assignOpen}
+        title="批量指派"
+        onCancel={() => setAssignOpen(false)}
+        onOk={handleAssignConfirm}
+        confirmLoading={assignTasks.isPending}
+      >
+        <Form layout="vertical">
+          <Form.Item label="指派给">
+            <Select
+              showSearch
+              placeholder="选择审批人"
+              optionFilterProp="label"
+              value={assignAssigneeId}
+              onChange={(value) => setAssignAssigneeId(value)}
+              options={userOptions}
+            />
+          </Form.Item>
+          <Text type="secondary">将指派 {assignableTasks.length} 条任务。</Text>
+        </Form>
+      </Modal>
+
+      <Drawer
+        open={advancedOpen}
+        title="高级筛选"
+        width={520}
+        onClose={() => setAdvancedOpen(false)}
+        footer={
+          <Space style={{ justifyContent: "flex-end", width: "100%" }}>
+            <Button onClick={handleAdvancedReset}>重置</Button>
+            <Button type="primary" onClick={handleAdvancedApply}>
+              应用
+            </Button>
+          </Space>
+        }
+      >
+        <Form layout="vertical" form={advancedForm}>
+          <Form.Item label="创建时间" name="createdRange">
+            <DatePicker.RangePicker style={{ width: "100%" }} />
+          </Form.Item>
+          <Form.Item label="审批人" name="assigneeId">
+            <Select
+              showSearch
+              allowClear
+              placeholder="选择审批人"
+              optionFilterProp="label"
+              options={userOptions}
+            />
+          </Form.Item>
+        </Form>
+      </Drawer>
 
       <Drawer
         open={!!detailInstanceId}

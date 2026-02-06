@@ -11,6 +11,7 @@ import {
 import type { Request } from "express";
 import {
   ApproveApprovalTaskInputSchema,
+  AssignApprovalTasksInputSchema,
   RejectApprovalTaskInputSchema
 } from "@crm/shared";
 import { parseListQuery } from "../../common/list-query";
@@ -28,7 +29,12 @@ import {
   getSchemaPath
 } from "@nestjs/swagger";
 import { ApprovalsService } from "./approvals.service";
-import { ApprovalActionDto, ApprovalInstanceDto, ApprovalTaskDto } from "./dto/approvals.swagger";
+import {
+  ApprovalActionDto,
+  ApprovalAssignDto,
+  ApprovalInstanceDto,
+  ApprovalTaskDto
+} from "./dto/approvals.swagger";
 import { PaginatedResponseDto } from "../../common/swagger/pagination";
 
 @ApiTags("approvals")
@@ -96,7 +102,18 @@ export class ApprovalsController {
     const entityType = typeof query.entityType === "string" ? query.entityType : undefined;
     const entityId = typeof query.entityId === "string" ? query.entityId : undefined;
     const roleCode = typeof query.roleCode === "string" ? query.roleCode : undefined;
-    return this.approvalsService.listTasks(ctx, listQuery, { entityType, entityId, roleCode });
+    const assigneeId = typeof query.assigneeId === "string" ? query.assigneeId : undefined;
+    const createdFrom =
+      typeof query.createdFrom === "string" ? new Date(query.createdFrom) : undefined;
+    const createdTo = typeof query.createdTo === "string" ? new Date(query.createdTo) : undefined;
+    return this.approvalsService.listTasks(ctx, listQuery, {
+      entityType,
+      entityId,
+      roleCode,
+      assigneeId,
+      createdFrom: createdFrom && !Number.isNaN(createdFrom.valueOf()) ? createdFrom : undefined,
+      createdTo: createdTo && !Number.isNaN(createdTo.valueOf()) ? createdTo : undefined
+    });
   }
 
   @Post("approval-tasks/:id/approve")
@@ -117,5 +134,15 @@ export class ApprovalsController {
     const ctx = getRequestContext(req);
     const input = RejectApprovalTaskInputSchema.parse(body);
     return this.approvalsService.rejectTask(ctx, id, input.note);
+  }
+
+  @Post("approval-tasks/assign")
+  @RequirePermissions("approval:write")
+  @ApiBody({ type: ApprovalAssignDto })
+  @ApiOkResponse({ schema: { properties: { updated: { type: "number" } } } })
+  async assign(@Req() req: Request, @Body() body: unknown) {
+    const ctx = getRequestContext(req);
+    const input = AssignApprovalTasksInputSchema.parse(body);
+    return this.approvalsService.assignTasks(ctx, input);
   }
 }

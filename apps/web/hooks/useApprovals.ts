@@ -30,6 +30,9 @@ export function useApprovalTasks(params?: {
   entityType?: string;
   entityId?: string;
   roleCode?: string;
+  assigneeId?: string;
+  createdFrom?: string;
+  createdTo?: string;
 }) {
   return useQuery({
     queryKey: ["approval-tasks", params],
@@ -52,6 +55,18 @@ export function useRejectApprovalTask() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, note }: { id: string; note?: string }) => approvals.rejectTask(id, note),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["approval-tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["approvals"] });
+    }
+  });
+}
+
+export function useAssignApprovalTasks() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ taskIds, assigneeId }: { taskIds: string[]; assigneeId: string }) =>
+      approvals.assignTasks(taskIds, assigneeId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["approval-tasks"] });
       queryClient.invalidateQueries({ queryKey: ["approvals"] });

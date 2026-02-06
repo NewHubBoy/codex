@@ -83,7 +83,14 @@ export class ApprovalsService {
   async listTasks(
     ctx: RequestContext,
     query: ListQuery,
-    filters?: { entityType?: string; entityId?: string; roleCode?: string }
+    filters?: {
+      entityType?: string;
+      entityId?: string;
+      roleCode?: string;
+      assigneeId?: string;
+      createdFrom?: Date;
+      createdTo?: Date;
+    }
   ) {
     if (!ctx.userId) {
       throw new BadRequestException("Missing user context");
@@ -96,9 +103,18 @@ export class ApprovalsService {
       return { data: [], page: query.page, pageSize: query.pageSize, total: 0 };
     }
     const orderBy = parseSort(query.sort, ["createdAt", "status"], "createdAt");
+    const createdAt =
+      filters?.createdFrom || filters?.createdTo
+        ? {
+            ...(filters.createdFrom ? { gte: filters.createdFrom } : {}),
+            ...(filters.createdTo ? { lte: filters.createdTo } : {})
+          }
+        : undefined;
     const where = {
       status: query.status,
       roleCode: { in: filteredRoleCodes },
+      assigneeId: filters?.assigneeId,
+      createdAt,
       instance: {
         tenantId: ctx.tenantId,
         entityType: filters?.entityType,
@@ -308,6 +324,65 @@ export class ApprovalsService {
     });
 
     return this.getInstance(ctx, task.instanceId);
+  }
+
+  async assignTasks(
+    ctx: RequestContext,
+    input: { taskIds: string[]; assigneeId: string }
+  ): Promise<{ updated: number }> {
+    if (!ctx.userId) {
+      throw new BadRequestException("Missing user context");
+    }
+    const taskIds = Array.from(new Set(input.taskIds));
+    if (!taskIds.length) {
+      throw new BadRequestException("No tasks specified");
+    }
+    const assignee = await this.prisma.user.findFirst({
+      where: { id: input.assigneeId, tenantId: ctx.tenantId }
+    });
+    if (!assignee) {
+      throw new NotFoundException("Assignee not found");
+    }
+    const assigneeRoles = await this.getUserRoleCodes(input.assigneeId);
+    const tasks = await this.prisma.approvalTask.findMany({
+      where: { id: { in: taskIds }, instance: { tenantId: ctx.tenantId } }
+    });
+    if (tasks.length !== taskIds.length) {
+      throw new NotFoundException("Some approval tasks were not found");
+    }
+    const invalidTasks = tasks.filter(
+      (task) => ![TASK_STATUS_PENDING, TASK_STATUS_WAITING].includes(task.status)
+    );
+    if (invalidTasks.length) {
+      throw new BadRequestException("Some tasks are not assignable");
+    }
+    const missingRole = tasks.find((task) => !assigneeRoles.includes(task.roleCode));
+    if (missingRole) {
+      throw new BadRequestException("Assignee lacks required role for some tasks");
+    }
+
+    const instanceIds = Array.from(new Set(tasks.map((task) => task.instanceId)));
+    await this.prisma.$transaction(async (tx) => {
+      await tx.approvalTask.updateMany({
+        where: { id: { in: taskIds } },
+        data: { assigneeId: input.assigneeId }
+      });
+      await tx.approvalLog.createMany({
+        data: instanceIds.map((instanceId) => ({
+          instanceId,
+          actorId: ctx.userId ?? undefined,
+          action: "task.assigned",
+          note: input.assigneeId
+        }))
+      });
+    });
+
+    await this.audit.log(ctx, "update", "ApprovalTask", taskIds.join(","), "Assigned tasks");
+    await this.outbox.enqueue(ctx, "ApprovalTask", taskIds.join(","), "approval.task.assigned", {
+      assigneeId: input.assigneeId
+    });
+
+    return { updated: taskIds.length };
   }
 
   async createApprovalForEntity(

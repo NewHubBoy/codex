@@ -22,8 +22,14 @@ export const RejectApprovalTaskInputSchema = z.object({
   note: z.string().optional()
 });
 
+export const AssignApprovalTasksInputSchema = z.object({
+  taskIds: z.array(z.string().min(1)).min(1),
+  assigneeId: z.string().min(1)
+});
+
 export type ApprovalPayload = z.infer<typeof ApprovalPayloadSchema>;
 export type SubmitApprovalInput = z.infer<typeof SubmitApprovalInputSchema>;
 export type ResubmitApprovalInput = z.infer<typeof ResubmitApprovalInputSchema>;
 export type ApproveApprovalTaskInput = z.infer<typeof ApproveApprovalTaskInputSchema>;
 export type RejectApprovalTaskInput = z.infer<typeof RejectApprovalTaskInputSchema>;
+export type AssignApprovalTasksInput = z.infer<typeof AssignApprovalTasksInputSchema>;

@@ -68,3 +68,11 @@ export class ApprovalActionDto {
   @ApiProperty({ required: false })
   note?: string;
 }
+
+export class ApprovalAssignDto {
+  @ApiProperty({ type: [String] })
+  taskIds!: string[];
+
+  @ApiProperty()
+  assigneeId!: string;
+}
