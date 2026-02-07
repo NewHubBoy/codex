@@ -18,9 +18,18 @@ import {
   Select,
   InputNumber,
   DatePicker,
+  Modal,
+  Table,
 } from 'antd';
-import { ArrowLeftOutlined, EditOutlined, DeleteOutlined, SwapOutlined } from '@ant-design/icons';
-import { useLead, useDeleteLead, useUpdateLead, useSubmitLead } from '@/hooks/useLeads';
+import { ArrowLeftOutlined, EditOutlined, DeleteOutlined, SwapOutlined, UserSwitchOutlined } from '@ant-design/icons';
+import {
+  useLead,
+  useDeleteLead,
+  useUpdateLead,
+  useSubmitLead,
+  useLeadAssignees,
+  useAssignLeadOwner,
+} from '@/hooks/useLeads';
 import { PageHeader } from '@/components/common/PageHeader';
 import { useEffect, useMemo, useState } from 'react';
 import { LeadSource, LeadRating, LeadStatus } from '@/services/leads';
@@ -84,11 +93,18 @@ export default function LeadDetailPage() {
   const [form] = Form.useForm();
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState('activity');
+  const [assignOwnerOpen, setAssignOwnerOpen] = useState(false);
+  const [selectedOwnerId, setSelectedOwnerId] = useState<string | undefined>(undefined);
 
   const { data: lead, isLoading, refetch } = useLead(id);
   const deleteLead = useDeleteLead();
   const updateLead = useUpdateLead();
   const submitLead = useSubmitLead();
+  const assignLeadOwner = useAssignLeadOwner();
+  const { data: assignees = [], isLoading: assigneesLoading } = useLeadAssignees(
+    undefined,
+    { enabled: assignOwnerOpen && canWriteLead }
+  );
   const isDraft = lead?.status === 'DRAFT';
 
   const statusLabels: Record<string, string> = {
@@ -228,6 +244,50 @@ export default function LeadDetailPage() {
     }
   };
 
+  const openAssignOwnerDialog = () => {
+    if (!lead) {
+      return;
+    }
+    setSelectedOwnerId(lead.ownerId ?? undefined);
+    setAssignOwnerOpen(true);
+  };
+
+  const handleAssignOwner = async () => {
+    try {
+      if (!selectedOwnerId) {
+        message.warning(t('lead.assign.validation.owner_required'));
+        return;
+      }
+      await assignLeadOwner.mutateAsync({ id, ownerId: selectedOwnerId });
+      message.success(t('lead.assign.messages.success'));
+      setAssignOwnerOpen(false);
+      refetch();
+    } catch (error) {
+      if (error && typeof error === 'object' && 'errorFields' in error) {
+        return;
+      }
+      message.error(getErrorMessage(error, t('lead.assign.messages.failed')));
+    }
+  };
+
+  const assigneeColumns = useMemo(
+    () => [
+      {
+        title: t('common.owner_name'),
+        dataIndex: 'name',
+        key: 'name',
+        render: (value: string) => value || '-',
+      },
+      {
+        title: t('common.owner_email'),
+        dataIndex: 'email',
+        key: 'email',
+        render: (value: string) => value || '-',
+      },
+    ],
+    [t]
+  );
+
   const tabItems = useMemo(
     () => {
       if (!lead) {
@@ -307,6 +367,14 @@ export default function LeadDetailPage() {
                   {t('common.edit')}
                 </PermissionButton>,
                 <PermissionButton
+                  key="assign-owner"
+                  permission="lead:write"
+                  icon={<UserSwitchOutlined />}
+                  onClick={openAssignOwnerDialog}
+                >
+                  {t('lead.actions.assign_owner')}
+                </PermissionButton>,
+                <PermissionButton
                   key="convert"
                   permission="lead:write"
                   icon={<SwapOutlined />}
@@ -332,6 +400,42 @@ export default function LeadDetailPage() {
           </PermissionGuard>,
         ]}
       />
+
+      <Modal
+        title={t('lead.assign.dialog_title')}
+        open={assignOwnerOpen}
+        onCancel={() => {
+          setAssignOwnerOpen(false);
+          setSelectedOwnerId(undefined);
+        }}
+        onOk={handleAssignOwner}
+        confirmLoading={assignLeadOwner.isPending}
+        destroyOnHidden
+        okText={t('common.confirm')}
+        cancelText={t('common.cancel')}
+      >
+        <Table
+          rowKey="id"
+          loading={assigneesLoading}
+          columns={assigneeColumns}
+          dataSource={assignees}
+          pagination={false}
+          size="small"
+          rowSelection={{
+            type: 'radio',
+            selectedRowKeys: selectedOwnerId ? [selectedOwnerId] : [],
+            onChange: (selectedRowKeys) => {
+              setSelectedOwnerId(selectedRowKeys[0] as string | undefined);
+            },
+          }}
+          onRow={(record) => ({
+            onClick: () => setSelectedOwnerId(record.id),
+          })}
+        />
+        {!assigneesLoading && assignees.length === 0 ? (
+          <Text type="secondary">{t('lead.assign.messages.no_candidates')}</Text>
+        ) : null}
+      </Modal>
 
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
         {/* 基本信息 */}

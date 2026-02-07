@@ -10,6 +10,7 @@
   "lead.convert.bant_insufficient": "BANT qualification requires at least 2 items.",
   "lead.draft.not_in_draft": "Lead is not in draft status.",
   "lead.draft.submit_invalid_status": "Draft lead must be submitted with a non-draft status.",
+  "lead.assign.invalid_owner": "Owner must be an active employee with PRE_SALES_PERSON role.",
   "lead.bulk.not_found": "Leads not found: {ids}.",
   "activity.not_found": "Activity not found.",
   "activity.status.transition_invalid": "Invalid activity status transition: {from} -> {to}.",

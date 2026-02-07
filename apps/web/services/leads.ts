@@ -59,6 +59,12 @@ export interface LeadListParams {
   inactiveDays?: number;
 }
 
+export interface LeadAssignee {
+  id: string;
+  name: string;
+  email: string;
+}
+
 // 线索列表响应
 export type LeadListResponse = PaginatedResponse<Lead>;
 
@@ -153,6 +159,14 @@ export async function createLeadDraft(data?: CreateLeadDraftParams): Promise<Lea
 // 更新线索
 export async function updateLead(id: string, data: UpdateLeadParams): Promise<Lead> {
   return api.patch(`/leads/${id}`, data);
+}
+
+export async function getLeadAssignees(params?: { q?: string }): Promise<LeadAssignee[]> {
+  return api.get("/leads/assignees", { params });
+}
+
+export async function assignLeadOwner(id: string, ownerId: string): Promise<Lead> {
+  return api.post(`/leads/${id}/assign-owner`, { ownerId });
 }
 
 // 提交线索草稿

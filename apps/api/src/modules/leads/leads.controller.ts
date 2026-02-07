@@ -14,8 +14,10 @@ import type { Request } from "express";
 import {
   BulkLeadStatusInputSchema,
   CreateLeadInputSchema,
+  IdSchema,
   UpdateLeadInputSchema
 } from "@crm/shared";
+import { z } from "zod";
 import { parseListQuery } from "../../common/list-query";
 import { getRequestContext } from "../../common/request-context";
 import { RequirePermissions } from "../../common/decorators/permissions.decorator";
@@ -32,10 +34,20 @@ import {
   getSchemaPath
 } from "@nestjs/swagger";
 import { LeadsService } from "./leads.service";
-import { CreateLeadDto, LeadDto, UpdateLeadDto } from "./dto/leads.swagger";
+import {
+  AssignLeadOwnerDto,
+  CreateLeadDto,
+  LeadAssigneeDto,
+  LeadDto,
+  UpdateLeadDto
+} from "./dto/leads.swagger";
 import { PaginatedResponseDto } from "../../common/swagger/pagination";
 import { BulkStatusResultDto } from "../../common/swagger/bulk-status.swagger";
 import { BulkLeadStatusDto } from "./dto/leads-bulk.swagger";
+
+const AssignLeadOwnerInputSchema = z.object({
+  ownerId: IdSchema
+});
 
 @ApiTags("leads")
 @ApiBearerAuth()
@@ -127,12 +139,20 @@ export class LeadsController {
     return this.leadsService.submitDraft(ctx, id, input);
   }
 
+  @Get("assignees")
+  @RequirePermissions("lead:write")
+  @ApiOkResponse({ type: LeadAssigneeDto, isArray: true })
+  async listAssignees(@Req() req: Request, @Query("q") q?: string) {
+    const ctx = getRequestContext(req);
+    return this.leadsService.listAssignableOwners(ctx, q);
+  }
+
   @Get(":id")
   @RequirePermissions("lead:read")
   @ApiOkResponse({ type: LeadDto })
   async get(@Req() req: Request, @Param("id") id: string) {
     const ctx = getRequestContext(req);
-    return this.leadsService.get(ctx, id);
+    return this.leadsService.get(ctx, id, { includeOwner: true });
   }
 
   @Patch(":id")
@@ -143,6 +163,16 @@ export class LeadsController {
     const ctx = getRequestContext(req);
     const input = UpdateLeadInputSchema.parse(body);
     return this.leadsService.update(ctx, id, input);
+  }
+
+  @Post(":id/assign-owner")
+  @RequirePermissions("lead:write")
+  @ApiBody({ type: AssignLeadOwnerDto })
+  @ApiOkResponse({ type: LeadDto })
+  async assignOwner(@Req() req: Request, @Param("id") id: string, @Body() body: unknown) {
+    const ctx = getRequestContext(req);
+    const input = AssignLeadOwnerInputSchema.parse(body);
+    return this.leadsService.assignOwner(ctx, id, input.ownerId);
   }
 
   @Delete(":id")

@@ -126,8 +126,9 @@ export default function OpportunitiesPage() {
     },
     {
       title: t("opportunities.table.owner"),
-      dataIndex: "ownerId",
-      key: "ownerId"
+      dataIndex: "owner",
+      key: "owner",
+      render: (_: unknown, record: Opportunity) => record.owner?.name || "-"
     },
     {
       title: t("common.created_at"),

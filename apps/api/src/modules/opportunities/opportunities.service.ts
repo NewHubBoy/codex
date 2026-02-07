@@ -105,8 +105,9 @@ export class OpportunitiesService {
       }),
       this.prisma.opportunity.count({ where })
     ]);
+    const enrichedData = await this.withOwners(ctx, data);
     return {
-      data,
+      data: enrichedData,
       page: query.page,
       pageSize: query.pageSize,
       total
@@ -126,7 +127,7 @@ export class OpportunitiesService {
         "opportunity.not_found"
       );
     }
-    return opportunity;
+    return this.withOwner(ctx, opportunity);
   }
 
   async update(ctx: RequestContext, id: string, input: UpdateOpportunityInput) {
@@ -224,5 +225,42 @@ export class OpportunitiesService {
       name: opportunity.name
     });
     return opportunity;
+  }
+
+  private async withOwner(ctx: RequestContext, opportunity: any) {
+    const [row] = await this.withOwners(ctx, [opportunity]);
+    return row;
+  }
+
+  private async withOwners(ctx: RequestContext, opportunities: any[]) {
+    if (!opportunities.length) {
+      return opportunities;
+    }
+    const ownerIds = Array.from(
+      new Set(
+        opportunities
+          .map((item) => item.ownerId)
+          .filter((ownerId): ownerId is string => typeof ownerId === "string" && ownerId.length > 0)
+      )
+    );
+    if (!ownerIds.length) {
+      return opportunities.map((item) => ({ ...item, owner: null }));
+    }
+    const owners = await this.prisma.user.findMany({
+      where: {
+        tenantId: ctx.tenantId,
+        id: { in: ownerIds }
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true
+      }
+    });
+    const ownerMap = new Map(owners.map((owner) => [owner.id, owner]));
+    return opportunities.map((item) => ({
+      ...item,
+      owner: item.ownerId ? ownerMap.get(item.ownerId) ?? null : null
+    }));
   }
 }

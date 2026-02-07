@@ -7,6 +7,8 @@ import {
   createLead,
   createLeadDraft,
   updateLead,
+  getLeadAssignees,
+  assignLeadOwner,
   deleteLead,
   bulkUpdateStatus,
   submitLead,
@@ -14,6 +16,7 @@ import {
   CreateLeadParams,
   CreateLeadDraftParams,
   UpdateLeadParams,
+  type LeadAssignee,
 } from "@/services/leads";
 
 // 查询键
@@ -23,6 +26,7 @@ export const leadKeys = {
   list: (params: LeadListParams) => [...leadKeys.lists(), params] as const,
   details: () => [...leadKeys.all, "detail"] as const,
   detail: (id: string) => [...leadKeys.details(), id] as const,
+  assignees: (q?: string) => [...leadKeys.all, "assignees", q ?? ""] as const,
 };
 
 // 获取线索列表
@@ -39,6 +43,17 @@ export function useLead(id: string) {
     queryKey: leadKeys.detail(id),
     queryFn: () => getLead(id),
     enabled: !!id,
+  });
+}
+
+export function useLeadAssignees(
+  params?: { q?: string },
+  options?: { enabled?: boolean }
+) {
+  return useQuery<LeadAssignee[]>({
+    queryKey: leadKeys.assignees(params?.q),
+    queryFn: () => getLeadAssignees(params),
+    enabled: options?.enabled ?? true,
   });
 }
 
@@ -68,6 +83,19 @@ export function useUpdateLead() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateLeadParams }) =>
       updateLead(id, data),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: leadKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: leadKeys.detail(id) });
+    },
+  });
+}
+
+export function useAssignLeadOwner() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, ownerId }: { id: string; ownerId: string }) =>
+      assignLeadOwner(id, ownerId),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: leadKeys.lists() });
       queryClient.invalidateQueries({ queryKey: leadKeys.detail(id) });

@@ -12,6 +12,8 @@ import { assertTransition } from "../../common/status-transitions";
 import { I18nService } from "../../common/i18n/i18n.service";
 import { badRequest, notFound } from "../../common/i18n/i18n-error";
 
+const LEAD_ASSIGNABLE_ROLE_CODE = "PRE_SALES_PERSON";
+
 @Injectable()
 export class LeadsService {
   constructor(
@@ -168,15 +170,20 @@ export class LeadsService {
       }),
       this.prisma.lead.count({ where })
     ]);
+    const enrichedData = await this.withOwners(ctx, data);
     return {
-      data,
+      data: enrichedData,
       page: query.page,
       pageSize: query.pageSize,
       total
     };
   }
 
-  async get(ctx: RequestContext, id: string) {
+  async get(
+    ctx: RequestContext,
+    id: string,
+    options?: { includeOwner?: boolean }
+  ): Promise<any> {
     const scopeFilter = await this.dataScope.buildOrgScopeFilter(ctx);
     const lead = await this.prisma.lead.findFirst({
       where: { id, tenantId: ctx.tenantId, ...scopeFilter }
@@ -184,7 +191,69 @@ export class LeadsService {
     if (!lead) {
       throw notFound(this.i18n, ctx.locale, "LEAD_NOT_FOUND", "lead.not_found");
     }
+    if (options?.includeOwner) {
+      return this.withOwner(ctx, lead);
+    }
     return lead;
+  }
+
+  async listAssignableOwners(ctx: RequestContext, q?: string) {
+    const normalizedQ = q?.trim();
+    return this.prisma.user.findMany({
+      where: {
+        tenantId: ctx.tenantId,
+        status: "ACTIVE",
+        roles: {
+          some: {
+            role: {
+              tenantId: ctx.tenantId,
+              code: LEAD_ASSIGNABLE_ROLE_CODE,
+              status: "ACTIVE"
+            }
+          }
+        },
+        ...(normalizedQ
+          ? {
+              OR: [
+                { name: { contains: normalizedQ, mode: "insensitive" } },
+                { email: { contains: normalizedQ, mode: "insensitive" } }
+              ]
+            }
+          : {})
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true
+      },
+      orderBy: [{ name: "asc" }, { email: "asc" }],
+      take: 200
+    });
+  }
+
+  async assignOwner(ctx: RequestContext, id: string, ownerId: string) {
+    const existing = await this.get(ctx, id);
+    const owner = await this.getAssignableOwner(ctx, ownerId);
+    const lead = await this.prisma.lead.update({
+      where: { id: existing.id },
+      data: {
+        ownerId: owner.id
+      }
+    });
+    await this.audit.log(
+      ctx,
+      "update",
+      "Lead",
+      lead.id,
+      `Assigned owner to ${owner.email}`
+    );
+    await this.outbox.enqueue(ctx, "Lead", lead.id, "lead.owner.assigned", {
+      ownerId: owner.id
+    });
+    return {
+      ...lead,
+      owner
+    };
   }
 
   async update(ctx: RequestContext, id: string, input: UpdateLeadInput) {
@@ -516,6 +585,76 @@ export class LeadsService {
       accountId: asString(input.accountId) ?? asString(existing.accountId),
       contactId: asString(input.contactId) ?? asString(existing.contactId)
     };
+  }
+
+  private async getAssignableOwner(ctx: RequestContext, ownerId: string) {
+    const owner = await this.prisma.user.findFirst({
+      where: {
+        id: ownerId,
+        tenantId: ctx.tenantId,
+        status: "ACTIVE",
+        roles: {
+          some: {
+            role: {
+              tenantId: ctx.tenantId,
+              code: LEAD_ASSIGNABLE_ROLE_CODE,
+              status: "ACTIVE"
+            }
+          }
+        }
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true
+      }
+    });
+    if (!owner) {
+      throw badRequest(
+        this.i18n,
+        ctx.locale,
+        "LEAD_OWNER_INVALID",
+        "lead.assign.invalid_owner"
+      );
+    }
+    return owner;
+  }
+
+  private async withOwner(ctx: RequestContext, lead: any) {
+    const [row] = await this.withOwners(ctx, [lead]);
+    return row;
+  }
+
+  private async withOwners(ctx: RequestContext, leads: any[]) {
+    if (!leads.length) {
+      return leads;
+    }
+    const ownerIds = Array.from(
+      new Set(
+        leads
+          .map((item) => item.ownerId)
+          .filter((ownerId): ownerId is string => typeof ownerId === "string" && ownerId.length > 0)
+      )
+    );
+    if (!ownerIds.length) {
+      return leads.map((item) => ({ ...item, owner: null }));
+    }
+    const owners = await this.prisma.user.findMany({
+      where: {
+        tenantId: ctx.tenantId,
+        id: { in: ownerIds }
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true
+      }
+    });
+    const ownerMap = new Map(owners.map((owner) => [owner.id, owner]));
+    return leads.map((item) => ({
+      ...item,
+      owner: item.ownerId ? ownerMap.get(item.ownerId) ?? null : null
+    }));
   }
 
   private assertLeadConversionReady(

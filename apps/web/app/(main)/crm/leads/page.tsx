@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Table, Button, Space, Tag, Input, Select, Card, Typography, Popconfirm, InputNumber, type TablePaginationConfig } from 'antd';
+import { Table, Button, Space, Tag, Input, Select, Card, Popconfirm, InputNumber, type TablePaginationConfig } from 'antd';
 import { PlusOutlined, SearchOutlined, ReloadOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import { useLeads, useDeleteLead, useCreateLeadDraft } from '@/hooks/useLeads';
 import { useAlertSettings } from '@/hooks/useAlerts';
@@ -16,8 +16,6 @@ import { getErrorMessage } from '@/utils/error';
 import { useSearchParams } from 'next/navigation';
 import { PermissionButton } from '@/components/auth/PermissionButton';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
-
-const { Text } = Typography;
 
 export default function LeadsPage() {
   const router = useRouter();
@@ -258,22 +256,22 @@ export default function LeadsPage() {
       key: 'name',
       render: (text: string, record: Lead) => <Link href={`/crm/leads/${record.id}`}>{text}</Link>,
     },
-    {
-      title: t('leads.table.company'),
-      dataIndex: 'companyName',
-      key: 'companyName',
-    },
-    {
-      title: t('leads.table.contact'),
-      key: 'contact',
-      render: (_: unknown, record: Lead) => (
-        <Space direction="vertical" size={0}>
-          <Text>{record.contactName || '-'}</Text>
-          <Text type="secondary">{record.email || '-'}</Text>
-          <Text type="secondary">{record.phone || '-'}</Text>
-        </Space>
-      ),
-    },
+    // {
+    //   title: t('leads.table.company'),
+    //   dataIndex: 'companyName',
+    //   key: 'companyName',
+    // },
+    // {
+    //   title: t('leads.table.contact'),
+    //   key: 'contact',
+    //   render: (_: unknown, record: Lead) => (
+    //     <Space direction="vertical" size={0}>
+    //       <Text>{record.contactName || '-'}</Text>
+    //       <Text type="secondary">{record.email || '-'}</Text>
+    //       <Text type="secondary">{record.phone || '-'}</Text>
+    //     </Space>
+    //   ),
+    // },
     {
       title: t('common.status'),
       dataIndex: 'status',
@@ -302,6 +300,12 @@ export default function LeadsPage() {
       dataIndex: 'source',
       key: 'source',
       render: (source: string) => sourceLabels[source] || source || '-',
+    },
+    {
+      title: t('common.owner_name'),
+      dataIndex: 'owner',
+      key: 'owner',
+      render: (_: unknown, record: Lead) => record.owner?.name || '-',
     },
     {
       title: t('common.created_at'),

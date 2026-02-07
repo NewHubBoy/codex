@@ -80,6 +80,21 @@ export class LeadDto {
 
   @ApiProperty({ required: false })
   description?: string | null;
+
+  @ApiProperty({
+    required: false,
+    type: "object",
+    properties: {
+      id: { type: "string" },
+      name: { type: "string" },
+      email: { type: "string" }
+    }
+  })
+  owner?: {
+    id: string;
+    name: string;
+    email: string;
+  } | null;
 }
 
 export class CreateLeadDto {
@@ -194,4 +209,20 @@ export class UpdateLeadDto {
     description: "When status=CONVERTED, accountId or contactId is required."
   })
   status?: string;
+}
+
+export class LeadAssigneeDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  name!: string;
+
+  @ApiProperty()
+  email!: string;
+}
+
+export class AssignLeadOwnerDto {
+  @ApiProperty()
+  ownerId!: string;
 }
