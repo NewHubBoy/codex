@@ -6,11 +6,14 @@ import type { ColumnsType } from "antd/es/table";
 import Link from "next/link";
 import { useActivities } from "@/hooks/useActivities";
 import type { Activity } from "@/services/activities";
+import { useI18n } from "@/i18n/provider";
 
 interface ActivityTableProps {
   relatedType: string;
   relatedId: string;
   pageSize?: number;
+  selectedActivityId?: string;
+  onSelectActivity?: (activity: Activity) => void;
 }
 
 const statusColors: Record<string, string> = {
@@ -19,13 +22,14 @@ const statusColors: Record<string, string> = {
   CANCELLED: "red",
 };
 
-const statusLabels: Record<string, string> = {
-  OPEN: "进行中",
-  COMPLETED: "已完成",
-  CANCELLED: "已取消",
-};
-
-export function ActivityTable({ relatedType, relatedId, pageSize = 5 }: ActivityTableProps) {
+export function ActivityTable({
+  relatedType,
+  relatedId,
+  pageSize = 5,
+  selectedActivityId,
+  onSelectActivity,
+}: ActivityTableProps) {
+  const { t, locale } = useI18n();
   const [page, setPage] = useState(1);
   const [currentPageSize, setCurrentPageSize] = useState(pageSize);
 
@@ -34,12 +38,18 @@ export function ActivityTable({ relatedType, relatedId, pageSize = 5 }: Activity
     pageSize: currentPageSize,
     relatedType,
     relatedId,
-    sort: "createdAt:desc",
+    sort: "createdAt:asc",
   });
+
+  const statusLabels: Record<string, string> = {
+    OPEN: t("activity.status.open"),
+    COMPLETED: t("activity.status.completed"),
+    CANCELLED: t("activity.status.cancelled"),
+  };
 
   const columns: ColumnsType<Activity> = [
     {
-      title: "主题",
+      title: t("activity.fields.subject"),
       dataIndex: "subject",
       key: "subject",
       ellipsis: true,
@@ -48,13 +58,20 @@ export function ActivityTable({ relatedType, relatedId, pageSize = 5 }: Activity
       ),
     },
     {
-      title: "类型",
+      title: t("common.type"),
       dataIndex: "type",
       key: "type",
       render: (text: string) => text || "-",
     },
     {
-      title: "状态",
+      title: t("activity.fields.content"),
+      dataIndex: "content",
+      key: "content",
+      ellipsis: true,
+      render: (text: string | undefined, record) => text || record.outcome || "-",
+    },
+    {
+      title: t("common.status"),
       dataIndex: "status",
       key: "status",
       render: (value: string) => (
@@ -64,16 +81,16 @@ export function ActivityTable({ relatedType, relatedId, pageSize = 5 }: Activity
       ),
     },
     {
-      title: "截止时间",
+      title: t("common.due_at"),
       dataIndex: "dueAt",
       key: "dueAt",
-      render: (value: string) => (value ? new Date(value).toLocaleString("zh-CN") : "-"),
+      render: (value: string) => (value ? new Date(value).toLocaleString(locale) : "-"),
     },
     {
-      title: "完成时间",
+      title: t("common.completed_at"),
       dataIndex: "completedAt",
       key: "completedAt",
-      render: (value: string) => (value ? new Date(value).toLocaleString("zh-CN") : "-"),
+      render: (value: string) => (value ? new Date(value).toLocaleString(locale) : "-"),
     },
   ];
 
@@ -83,14 +100,20 @@ export function ActivityTable({ relatedType, relatedId, pageSize = 5 }: Activity
       dataSource={activityData?.data}
       rowKey="id"
       loading={isLoading}
+      rowClassName={(record) =>
+        selectedActivityId && record.id === selectedActivityId ? "ant-table-row-selected" : ""
+      }
+      onRow={(record) => ({
+        onClick: () => onSelectActivity?.(record),
+      })}
       pagination={{
         current: page,
         pageSize: currentPageSize,
-        total: activityData?.total || 0,
-        showSizeChanger: true,
-        showQuickJumper: true,
-        showTotal: (total) => `共 ${total} 条`,
-      }}
+          total: activityData?.total || 0,
+          showSizeChanger: true,
+          showQuickJumper: true,
+          showTotal: (total) => t("common.total_count", { total }),
+        }}
       onChange={(pagination) => {
         setPage(pagination.current || 1);
         setCurrentPageSize(pagination.pageSize || pageSize);

@@ -100,8 +100,47 @@ export class ActivitiesService {
       }),
       this.prisma.activity.count({ where })
     ]);
+    const activityIds = data.map((item) => item.id);
+    const attachmentsByActivity = new Map<
+      string,
+      { id: string; fileName: string; url: string | null; mimeType: string }[]
+    >();
+    if (activityIds.length) {
+      const links = await this.prisma.attachmentLink.findMany({
+        where: {
+          tenantId: ctx.tenantId,
+          relatedType: "Activity",
+          relatedId: { in: activityIds }
+        },
+        include: {
+          attachment: {
+            select: {
+              id: true,
+              fileName: true,
+              url: true,
+              mimeType: true
+            }
+          }
+        },
+        orderBy: { createdAt: "desc" }
+      });
+      for (const link of links) {
+        const list = attachmentsByActivity.get(link.relatedId) ?? [];
+        list.push(link.attachment);
+        attachmentsByActivity.set(link.relatedId, list);
+      }
+    }
+    const enrichedData = data.map((item) => {
+      const relatedAttachments = attachmentsByActivity.get(item.id) ?? [];
+      return {
+        ...item,
+        attachmentCount: relatedAttachments.length,
+        attachmentsPreview: relatedAttachments.slice(0, 3)
+      };
+    });
+
     return {
-      data,
+      data: enrichedData,
       page: query.page,
       pageSize: query.pageSize,
       total

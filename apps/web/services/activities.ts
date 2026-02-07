@@ -30,12 +30,21 @@ export interface ActivityListParams {
   relatedId?: string;
 }
 
+export type ActivityAttachmentPreview = {
+  id: string;
+  fileName: string;
+  url?: string | null;
+  mimeType?: string;
+};
+
 export type Activity = ActivityDTO & {
   owner?: {
     id: string;
     name: string;
     email: string;
   };
+  attachmentCount?: number;
+  attachmentsPreview?: ActivityAttachmentPreview[];
 };
 
 export type ActivityListResponse = PaginatedResponse<Activity>;
