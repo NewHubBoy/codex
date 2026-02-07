@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { useOpportunity } from "@/hooks/useOpportunities";
 import Link from "next/link";
 import { useI18n } from "@/i18n/provider";
+import { DETAIL_TABS_MIN_HEIGHT } from "@/config/ui";
 
 const { Text } = Typography;
 
@@ -231,6 +232,7 @@ export default function OpportunityDetailPage() {
           items={tabItems}
           activeKey={activeTab}
           onChange={setActiveTab}
+          style={{ minHeight: DETAIL_TABS_MIN_HEIGHT }}
           destroyOnHidden
         />
       </Space>

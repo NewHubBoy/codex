@@ -17,6 +17,7 @@ import { ArrowLeftOutlined } from "@ant-design/icons";
 import Link from "next/link";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useContact } from "@/hooks/useContacts";
+import { DETAIL_TABS_MIN_HEIGHT } from "@/config/ui";
 
 const { Text } = Typography;
 
@@ -177,6 +178,7 @@ export default function ContactDetailPage() {
           items={tabItems}
           activeKey={activeTab}
           onChange={setActiveTab}
+          style={{ minHeight: DETAIL_TABS_MIN_HEIGHT }}
           destroyOnHidden
         />
       </Space>

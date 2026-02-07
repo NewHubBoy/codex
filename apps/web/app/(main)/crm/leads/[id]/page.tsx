@@ -30,6 +30,7 @@ import dayjs from 'dayjs';
 import { useAuth } from '@/hooks/useAuth';
 import { PermissionButton } from '@/components/auth/PermissionButton';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
+import { DETAIL_TABS_MIN_HEIGHT } from '@/config/ui';
 
 const { Text } = Typography;
 
@@ -552,6 +553,7 @@ export default function LeadDetailPage() {
             items={tabItems}
             activeKey={activeTab}
             onChange={setActiveTab}
+            style={{ minHeight: DETAIL_TABS_MIN_HEIGHT }}
             destroyOnHidden
           />
         </Card>

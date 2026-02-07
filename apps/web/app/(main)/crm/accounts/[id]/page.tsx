@@ -16,6 +16,7 @@ import {
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useAccount } from "@/hooks/useAccounts";
+import { DETAIL_TABS_MIN_HEIGHT } from "@/config/ui";
 
 const { Text } = Typography;
 
@@ -172,6 +173,7 @@ export default function AccountDetailPage() {
           items={tabItems}
           activeKey={activeTab}
           onChange={setActiveTab}
+          style={{ minHeight: DETAIL_TABS_MIN_HEIGHT }}
           destroyOnHidden
         />
       </Space>
