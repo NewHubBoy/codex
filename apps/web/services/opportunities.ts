@@ -12,6 +12,12 @@ export type Opportunity = OpportunityDTO & {
   owner?: { id: string; name: string; email: string };
 };
 
+export interface OpportunityAssignee {
+  id: string;
+  name: string;
+  email: string;
+}
+
 export type OpportunityListResponse = PaginatedResponse<Opportunity>;
 
 export const opportunities = {
@@ -63,5 +69,13 @@ export const opportunities = {
     stage: string
   ): Promise<Opportunity> => {
     return api.patch(`/opportunities/${id}/stage`, { stage });
+  },
+
+  assignees: async (params?: { q?: string }): Promise<OpportunityAssignee[]> => {
+    return api.get("/opportunities/assignees", { params });
+  },
+
+  assignOwner: async (id: string, ownerId: string): Promise<Opportunity> => {
+    return api.post(`/opportunities/${id}/assign-owner`, { ownerId });
   },
 };

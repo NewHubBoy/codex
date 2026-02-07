@@ -11,7 +11,7 @@ import {
   UseGuards
 } from "@nestjs/common";
 import type { Request } from "express";
-import { CreateOpportunityInputSchema, UpdateOpportunityInputSchema } from "@crm/shared";
+import { CreateOpportunityInputSchema, IdSchema, UpdateOpportunityInputSchema } from "@crm/shared";
 import { parseListQuery } from "../../common/list-query";
 import { getRequestContext } from "../../common/request-context";
 import { RequirePermissions } from "../../common/decorators/permissions.decorator";
@@ -27,9 +27,20 @@ import {
   ApiTags,
   getSchemaPath
 } from "@nestjs/swagger";
+import { z } from "zod";
 import { OpportunitiesService } from "./opportunities.service";
-import { CreateOpportunityDto, OpportunityDto, UpdateOpportunityDto } from "./dto/opportunities.swagger";
+import {
+  AssignOpportunityOwnerDto,
+  CreateOpportunityDto,
+  OpportunityAssigneeDto,
+  OpportunityDto,
+  UpdateOpportunityDto
+} from "./dto/opportunities.swagger";
 import { PaginatedResponseDto } from "../../common/swagger/pagination";
+
+const AssignOpportunityOwnerInputSchema = z.object({
+  ownerId: IdSchema
+});
 
 @ApiTags("opportunities")
 @ApiBearerAuth()
@@ -73,12 +84,20 @@ export class OpportunitiesController {
     return this.opportunitiesService.create(ctx, input);
   }
 
+  @Get("assignees")
+  @RequirePermissions("opportunity:write")
+  @ApiOkResponse({ type: OpportunityAssigneeDto, isArray: true })
+  async listAssignees(@Req() req: Request, @Query("q") q?: string) {
+    const ctx = getRequestContext(req);
+    return this.opportunitiesService.listAssignableOwners(ctx, q);
+  }
+
   @Get(":id")
   @RequirePermissions("opportunity:read")
   @ApiOkResponse({ type: OpportunityDto })
   async get(@Req() req: Request, @Param("id") id: string) {
     const ctx = getRequestContext(req);
-    return this.opportunitiesService.get(ctx, id);
+    return this.opportunitiesService.get(ctx, id, { includeOwner: true });
   }
 
   @Patch(":id")
@@ -89,6 +108,16 @@ export class OpportunitiesController {
     const ctx = getRequestContext(req);
     const input = UpdateOpportunityInputSchema.parse(body);
     return this.opportunitiesService.update(ctx, id, input);
+  }
+
+  @Post(":id/assign-owner")
+  @RequirePermissions("opportunity:write")
+  @ApiBody({ type: AssignOpportunityOwnerDto })
+  @ApiOkResponse({ type: OpportunityDto })
+  async assignOwner(@Req() req: Request, @Param("id") id: string, @Body() body: unknown) {
+    const ctx = getRequestContext(req);
+    const input = AssignOpportunityOwnerInputSchema.parse(body);
+    return this.opportunitiesService.assignOwner(ctx, id, input.ownerId);
   }
 
   @Delete(":id")

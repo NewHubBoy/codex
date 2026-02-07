@@ -3,13 +3,16 @@
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
-import { Card, Typography, Button, Space, Tag, Tabs, Descriptions, Spin } from "antd";
-import { ArrowLeftOutlined } from "@ant-design/icons";
+import { App, Card, Typography, Button, Space, Tag, Tabs, Descriptions, Spin, Modal, Table } from "antd";
+import { ArrowLeftOutlined, UserSwitchOutlined } from "@ant-design/icons";
 import { PageHeader } from "@/components/common/PageHeader";
-import { useOpportunity } from "@/hooks/useOpportunities";
+import { useOpportunity, useOpportunityAssignees, useAssignOpportunityOwner } from "@/hooks/useOpportunities";
 import Link from "next/link";
 import { useI18n } from "@/i18n/provider";
 import { DETAIL_TABS_MIN_HEIGHT } from "@/config/ui";
+import { getErrorMessage } from "@/utils/error";
+import { useAuth } from "@/hooks/useAuth";
+import { PermissionButton } from "@/components/auth/PermissionButton";
 
 const { Text } = Typography;
 
@@ -20,9 +23,11 @@ const EntityOwnerTab = dynamic(
   }
 );
 
-const EntityActivitiesTab = dynamic(
+const OpportunityActivitiesTab = dynamic(
   () =>
-    import("@/components/entity-tabs/EntityActivitiesTab").then((mod) => mod.EntityActivitiesTab),
+    import("@/components/opportunities/OpportunityActivitiesTab").then(
+      (mod) => mod.OpportunityActivitiesTab
+    ),
   {
     loading: () => <Spin size="small" />,
   }
@@ -57,11 +62,21 @@ const statusColors: Record<string, string> = {
 export default function OpportunityDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { message } = App.useApp();
   const { t, locale } = useI18n();
+  const { hasPermission } = useAuth();
+  const canWriteOpportunity = hasPermission("opportunity:write");
   const id = params.id as string;
   const [activeTab, setActiveTab] = useState("activity");
+  const [assignOwnerOpen, setAssignOwnerOpen] = useState(false);
+  const [selectedOwnerId, setSelectedOwnerId] = useState<string | undefined>(undefined);
 
   const { data: opportunity, isLoading } = useOpportunity(id);
+  const assignOwner = useAssignOpportunityOwner();
+  const { data: assignees = [], isLoading: assigneesLoading } = useOpportunityAssignees(
+    undefined,
+    { enabled: assignOwnerOpen && canWriteOpportunity }
+  );
 
   const stageLabels: Record<string, string> = {
     QUALIFICATION: t("opportunity.stage.qualification"),
@@ -80,6 +95,43 @@ export default function OpportunityDetailPage() {
     });
     return currency ? `${formatted} ${currency}` : formatted;
   };
+
+  const openAssignOwnerDialog = () => {
+    setSelectedOwnerId(opportunity?.ownerId ?? undefined);
+    setAssignOwnerOpen(true);
+  };
+
+  const handleAssignOwner = async () => {
+    try {
+      if (!selectedOwnerId) {
+        message.warning(t("opportunity.assign.validation.owner_required"));
+        return;
+      }
+      await assignOwner.mutateAsync({ id, ownerId: selectedOwnerId });
+      message.success(t("opportunity.assign.messages.success"));
+      setAssignOwnerOpen(false);
+    } catch (error) {
+      message.error(getErrorMessage(error, t("opportunity.assign.messages.failed")));
+    }
+  };
+
+  const assigneeColumns = useMemo(
+    () => [
+      {
+        title: t("common.owner_name"),
+        dataIndex: "name",
+        key: "name",
+        render: (value: string) => value || "-",
+      },
+      {
+        title: t("common.owner_email"),
+        dataIndex: "email",
+        key: "email",
+        render: (value: string) => value || "-",
+      },
+    ],
+    [t]
+  );
 
   const tabItems = useMemo(() => {
     if (!opportunity) {
@@ -105,7 +157,7 @@ export default function OpportunityDetailPage() {
         label: t("common.activities"),
         children:
           activeTab === "activity" ? (
-            <EntityActivitiesTab relatedType="Opportunity" relatedId={id} />
+            <OpportunityActivitiesTab opportunityId={id} />
           ) : null,
       },
       {
@@ -164,9 +216,53 @@ export default function OpportunityDetailPage() {
         extra={[
           <Button key="back" icon={<ArrowLeftOutlined />} onClick={() => router.back()}>
             {t("common.back")}
-          </Button>
+          </Button>,
+          <PermissionButton
+            key="assign-owner"
+            permission="opportunity:write"
+            icon={<UserSwitchOutlined />}
+            onClick={openAssignOwnerDialog}
+          >
+            {t("opportunity.actions.assign_owner")}
+          </PermissionButton>,
         ]}
       />
+
+      <Modal
+        title={t("opportunity.assign.dialog_title")}
+        open={assignOwnerOpen}
+        onCancel={() => {
+          setAssignOwnerOpen(false);
+          setSelectedOwnerId(undefined);
+        }}
+        onOk={handleAssignOwner}
+        confirmLoading={assignOwner.isPending}
+        destroyOnHidden
+        okText={t("common.confirm")}
+        cancelText={t("common.cancel")}
+      >
+        <Table
+          rowKey="id"
+          loading={assigneesLoading}
+          columns={assigneeColumns}
+          dataSource={assignees}
+          pagination={false}
+          size="small"
+          rowSelection={{
+            type: "radio",
+            selectedRowKeys: selectedOwnerId ? [selectedOwnerId] : [],
+            onChange: (selectedRowKeys) => {
+              setSelectedOwnerId(selectedRowKeys[0] as string | undefined);
+            },
+          }}
+          onRow={(record) => ({
+            onClick: () => setSelectedOwnerId(record.id),
+          })}
+        />
+        {!assigneesLoading && assignees.length === 0 ? (
+          <Text type="secondary">{t("opportunity.assign.messages.no_candidates")}</Text>
+        ) : null}
+      </Modal>
 
       <Space direction="vertical" size={16} style={{ width: "100%" }}>
         <Card title={t("common.basic_info")}>

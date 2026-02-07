@@ -21,5 +21,6 @@
   "opportunity.status.transition_invalid": "商机状态转换无效：{from} -> {to}",
   "opportunity.won.missing_amount": "状态为已赢单时需要 amount",
   "opportunity.won.missing_expected_close_date": "状态为已赢单时需要 expectedCloseDate",
-  "opportunity.lost.missing_reason": "状态为已失单时需要 reasonLost"
+  "opportunity.lost.missing_reason": "状态为已失单时需要 reasonLost",
+  "opportunity.assign.invalid_owner": "负责人必须是售前销售角色的在职员工"
 }

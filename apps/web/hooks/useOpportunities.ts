@@ -93,3 +93,27 @@ export function useUpdateOpportunityStage() {
     },
   });
 }
+
+export function useOpportunityAssignees(
+  params?: { q?: string },
+  options?: { enabled?: boolean }
+) {
+  return useQuery({
+    queryKey: ["opportunity-assignees", params?.q ?? ""],
+    queryFn: () => opportunities.assignees(params),
+    enabled: options?.enabled ?? true,
+  });
+}
+
+export function useAssignOpportunityOwner() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, ownerId }: { id: string; ownerId: string }) =>
+      opportunities.assignOwner(id, ownerId),
+    onSuccess: (_data, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ["opportunities"] });
+      queryClient.invalidateQueries({ queryKey: ["opportunity", id] });
+    },
+  });
+}

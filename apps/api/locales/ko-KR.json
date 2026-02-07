@@ -21,5 +21,6 @@
   "opportunity.status.transition_invalid": "Invalid opportunity status transition: {from} -> {to}.",
   "opportunity.won.missing_amount": "amount is required when status is WON.",
   "opportunity.won.missing_expected_close_date": "expectedCloseDate is required when status is WON.",
-  "opportunity.lost.missing_reason": "reasonLost is required when status is LOST."
+  "opportunity.lost.missing_reason": "reasonLost is required when status is LOST.",
+  "opportunity.assign.invalid_owner": "Owner must be an active employee with PRE_SALES_PERSON role."
 }

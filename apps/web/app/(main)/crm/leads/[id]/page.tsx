@@ -2,34 +2,9 @@
 
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import {
-  Card,
-  Typography,
-  Button,
-  Space,
-  Tag,
-  Tabs,
-  Descriptions,
-  Spin,
-  App,
-  Popconfirm,
-  Form,
-  Input,
-  Select,
-  InputNumber,
-  DatePicker,
-  Modal,
-  Table,
-} from 'antd';
+import { Card, Typography, Button, Space, Tag, Tabs, Descriptions, Spin, App, Popconfirm, Form, Input, Select, InputNumber, DatePicker, Modal, Table } from 'antd';
 import { ArrowLeftOutlined, EditOutlined, DeleteOutlined, SwapOutlined, UserSwitchOutlined } from '@ant-design/icons';
-import {
-  useLead,
-  useDeleteLead,
-  useUpdateLead,
-  useSubmitLead,
-  useLeadAssignees,
-  useAssignLeadOwner,
-} from '@/hooks/useLeads';
+import { useLead, useDeleteLead, useUpdateLead, useSubmitLead, useLeadAssignees, useAssignLeadOwner } from '@/hooks/useLeads';
 import { PageHeader } from '@/components/common/PageHeader';
 import { useEffect, useMemo, useState } from 'react';
 import { LeadSource, LeadRating, LeadStatus } from '@/services/leads';
@@ -43,25 +18,13 @@ import { DETAIL_TABS_MIN_HEIGHT } from '@/config/ui';
 
 const { Text } = Typography;
 
-const LeadOwnerTab = dynamic(
-  () => import('@/components/leads/LeadOwnerTab').then((mod) => mod.LeadOwnerTab),
-  { loading: () => <Spin size="small" /> }
-);
+const LeadOwnerTab = dynamic(() => import('@/components/leads/LeadOwnerTab').then((mod) => mod.LeadOwnerTab), { loading: () => <Spin size="small" /> });
 
-const LeadActivitiesTab = dynamic(
-  () => import('@/components/leads/LeadActivitiesTab').then((mod) => mod.LeadActivitiesTab),
-  { loading: () => <Spin size="small" /> }
-);
+const LeadActivitiesTab = dynamic(() => import('@/components/leads/LeadActivitiesTab').then((mod) => mod.LeadActivitiesTab), { loading: () => <Spin size="small" /> });
 
-const LeadAttachmentsTab = dynamic(
-  () => import('@/components/leads/LeadAttachmentsTab').then((mod) => mod.LeadAttachmentsTab),
-  { loading: () => <Spin size="small" /> }
-);
+const LeadAttachmentsTab = dynamic(() => import('@/components/leads/LeadAttachmentsTab').then((mod) => mod.LeadAttachmentsTab), { loading: () => <Spin size="small" /> });
 
-const LeadSystemTab = dynamic(
-  () => import('@/components/leads/LeadSystemTab').then((mod) => mod.LeadSystemTab),
-  { loading: () => <Spin size="small" /> }
-);
+const LeadSystemTab = dynamic(() => import('@/components/leads/LeadSystemTab').then((mod) => mod.LeadSystemTab), { loading: () => <Spin size="small" /> });
 
 const statusColors: Record<string, string> = {
   NEW: 'blue',
@@ -101,10 +64,7 @@ export default function LeadDetailPage() {
   const updateLead = useUpdateLead();
   const submitLead = useSubmitLead();
   const assignLeadOwner = useAssignLeadOwner();
-  const { data: assignees = [], isLoading: assigneesLoading } = useLeadAssignees(
-    undefined,
-    { enabled: assignOwnerOpen && canWriteLead }
-  );
+  const { data: assignees = [], isLoading: assigneesLoading } = useLeadAssignees(undefined, { enabled: assignOwnerOpen && canWriteLead });
   const isDraft = lead?.status === 'DRAFT';
 
   const statusLabels: Record<string, string> = {
@@ -154,9 +114,7 @@ export default function LeadDetailPage() {
         rating: lead.rating,
         expectedValue: lead.expectedValue,
         initialNeed: lead.initialNeed,
-        firstFollowUpDueAt: lead.firstFollowUpDueAt
-          ? dayjs(lead.firstFollowUpDueAt)
-          : undefined,
+        firstFollowUpDueAt: lead.firstFollowUpDueAt ? dayjs(lead.firstFollowUpDueAt) : undefined,
         nextFollowUpAt: lead.nextFollowUpAt ? dayjs(lead.nextFollowUpAt) : undefined,
         description: lead.description,
         ownerId: lead.ownerId,
@@ -185,12 +143,8 @@ export default function LeadDetailPage() {
         ...values,
         email: values.email || undefined,
         phone: values.phone || undefined,
-        firstFollowUpDueAt: values.firstFollowUpDueAt
-          ? values.firstFollowUpDueAt.toISOString()
-          : undefined,
-        nextFollowUpAt: values.nextFollowUpAt
-          ? values.nextFollowUpAt.toISOString()
-          : undefined,
+        firstFollowUpDueAt: values.firstFollowUpDueAt ? values.firstFollowUpDueAt.toISOString() : undefined,
+        nextFollowUpAt: values.nextFollowUpAt ? values.nextFollowUpAt.toISOString() : undefined,
       };
       if (!lead) {
         return;
@@ -233,9 +187,7 @@ export default function LeadDetailPage() {
         rating: lead.rating,
         expectedValue: lead.expectedValue,
         initialNeed: lead.initialNeed,
-        firstFollowUpDueAt: lead.firstFollowUpDueAt
-          ? dayjs(lead.firstFollowUpDueAt)
-          : undefined,
+        firstFollowUpDueAt: lead.firstFollowUpDueAt ? dayjs(lead.firstFollowUpDueAt) : undefined,
         nextFollowUpAt: lead.nextFollowUpAt ? dayjs(lead.nextFollowUpAt) : undefined,
         description: lead.description,
         ownerId: lead.ownerId,
@@ -285,15 +237,14 @@ export default function LeadDetailPage() {
         render: (value: string) => value || '-',
       },
     ],
-    [t]
+    [t],
   );
 
-  const tabItems = useMemo(
-    () => {
-      if (!lead) {
-        return [];
-      }
-      return [
+  const tabItems = useMemo(() => {
+    if (!lead) {
+      return [];
+    }
+    return [
       {
         key: 'owner',
         label: t('common.owner_info'),
@@ -312,16 +263,10 @@ export default function LeadDetailPage() {
       {
         key: 'system',
         label: t('common.system_info'),
-        children: activeTab === 'system' ? (
-          <LeadSystemTab
-            lead={{ id: lead.id, serialId: lead.serialId, createdAt: lead.createdAt, updatedAt: lead.updatedAt }}
-          />
-        ) : null,
+        children: activeTab === 'system' ? <LeadSystemTab lead={{ id: lead.id, serialId: lead.serialId, createdAt: lead.createdAt, updatedAt: lead.updatedAt }} /> : null,
       },
-      ];
-    },
-    [activeTab, id, lead, t]
-  );
+    ];
+  }, [activeTab, id, lead, t]);
 
   if (isLoading) {
     return (
@@ -352,13 +297,7 @@ export default function LeadDetailPage() {
                 <PermissionButton key="cancel" permission="lead:write" onClick={handleCancelEdit}>
                   {t('common.cancel')}
                 </PermissionButton>,
-                <PermissionButton
-                  key="save"
-                  permission="lead:write"
-                  type="primary"
-                  loading={submitLead.isPending || updateLead.isPending}
-                  onClick={handleSave}
-                >
+                <PermissionButton key="save" permission="lead:write" type="primary" loading={submitLead.isPending || updateLead.isPending} onClick={handleSave}>
                   {t('common.save')}
                 </PermissionButton>,
               ]
@@ -366,21 +305,10 @@ export default function LeadDetailPage() {
                 <PermissionButton key="edit" permission="lead:write" icon={<EditOutlined />} onClick={() => setIsEditing(true)}>
                   {t('common.edit')}
                 </PermissionButton>,
-                <PermissionButton
-                  key="assign-owner"
-                  permission="lead:write"
-                  icon={<UserSwitchOutlined />}
-                  onClick={openAssignOwnerDialog}
-                >
+                <PermissionButton key="assign-owner" permission="lead:write" icon={<UserSwitchOutlined />} onClick={openAssignOwnerDialog}>
                   {t('lead.actions.assign_owner')}
                 </PermissionButton>,
-                <PermissionButton
-                  key="convert"
-                  permission="lead:write"
-                  icon={<SwapOutlined />}
-                  type="primary"
-                  disabled={lead.status === 'CONVERTED'}
-                >
+                <PermissionButton key="convert" permission="lead:write" icon={<SwapOutlined />} type="primary" disabled={lead.status === 'CONVERTED'}>
                   {t('lead.actions.convert')}
                 </PermissionButton>,
               ]),
@@ -432,9 +360,7 @@ export default function LeadDetailPage() {
             onClick: () => setSelectedOwnerId(record.id),
           })}
         />
-        {!assigneesLoading && assignees.length === 0 ? (
-          <Text type="secondary">{t('lead.assign.messages.no_candidates')}</Text>
-        ) : null}
+        {!assigneesLoading && assignees.length === 0 ? <Text type="secondary">{t('lead.assign.messages.no_candidates')}</Text> : null}
       </Modal>
 
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
@@ -444,29 +370,17 @@ export default function LeadDetailPage() {
             <Form form={form} requiredMark="optional">
               <Descriptions column={2} bordered>
                 <Descriptions.Item label={t('lead.fields.name')}>
-                  <Form.Item
-                    name="name"
-                    rules={[{ required: true, message: t('lead.validation.name_required') }]}
-                    noStyle
-                  >
+                  <Form.Item name="name" rules={[{ required: true, message: t('lead.validation.name_required') }]} noStyle>
                     <Input placeholder={t('lead.placeholders.name')} />
                   </Form.Item>
                 </Descriptions.Item>
                 <Descriptions.Item label={t('lead.fields.contact_name')}>
-                  <Form.Item
-                    name="contactName"
-                    rules={[{ required: true, message: t('lead.validation.contact_name_required') }]}
-                    noStyle
-                  >
+                  <Form.Item name="contactName" rules={[{ required: true, message: t('lead.validation.contact_name_required') }]} noStyle>
                     <Input placeholder={t('lead.placeholders.contact_name')} />
                   </Form.Item>
                 </Descriptions.Item>
                 <Descriptions.Item label={t('lead.fields.company')}>
-                  <Form.Item
-                    name="companyName"
-                    rules={[{ required: true, message: t('lead.validation.company_required') }]}
-                    noStyle
-                  >
+                  <Form.Item name="companyName" rules={[{ required: true, message: t('lead.validation.company_required') }]} noStyle>
                     <Input placeholder={t('lead.placeholders.company')} />
                   </Form.Item>
                 </Descriptions.Item>
@@ -533,11 +447,7 @@ export default function LeadDetailPage() {
                   </Form.Item>
                 </Descriptions.Item>
                 <Descriptions.Item label={t('lead.fields.source')}>
-                  <Form.Item
-                    name="source"
-                    rules={[{ required: true, message: t('lead.validation.source_required') }]}
-                    noStyle
-                  >
+                  <Form.Item name="source" rules={[{ required: true, message: t('lead.validation.source_required') }]} noStyle>
                     <Select
                       placeholder={t('lead.placeholders.source')}
                       options={Object.entries(LeadSource).map(([key, value]) => ({
@@ -549,13 +459,7 @@ export default function LeadDetailPage() {
                 </Descriptions.Item>
                 <Descriptions.Item label={t('lead.fields.expected_value')}>
                   <Form.Item name="expectedValue" noStyle>
-                    <InputNumber
-                      style={{ width: '100%' }}
-                      placeholder={t('lead.placeholders.expected_value')}
-                      min={0}
-                      precision={2}
-                      prefix="¥"
-                    />
+                    <InputNumber style={{ width: '100%' }} placeholder={t('lead.placeholders.expected_value')} min={0} precision={2} prefix="¥" />
                   </Form.Item>
                 </Descriptions.Item>
                 <Descriptions.Item label={t('lead.fields.first_follow_up_due_at')}>
@@ -569,28 +473,16 @@ export default function LeadDetailPage() {
                     ]}
                     noStyle
                   >
-                    <DatePicker
-                      style={{ width: '100%' }}
-                      showTime
-                      placeholder={t('lead.placeholders.first_follow_up_due_at')}
-                    />
+                    <DatePicker style={{ width: '100%' }} showTime placeholder={t('lead.placeholders.first_follow_up_due_at')} />
                   </Form.Item>
                 </Descriptions.Item>
                 <Descriptions.Item label={t('lead.fields.next_follow_up_at')} span={2}>
                   <Form.Item name="nextFollowUpAt" noStyle>
-                    <DatePicker
-                      style={{ width: '100%' }}
-                      showTime
-                      placeholder={t('lead.placeholders.next_follow_up_at')}
-                    />
+                    <DatePicker style={{ width: '100%' }} showTime placeholder={t('lead.placeholders.next_follow_up_at')} />
                   </Form.Item>
                 </Descriptions.Item>
                 <Descriptions.Item label={t('lead.fields.initial_need')} span={2}>
-                  <Form.Item
-                    name="initialNeed"
-                    rules={[{ required: true, message: t('lead.validation.initial_need_required') }]}
-                    noStyle
-                  >
+                  <Form.Item name="initialNeed" rules={[{ required: true, message: t('lead.validation.initial_need_required') }]} noStyle>
                     <Input.TextArea rows={3} placeholder={t('lead.placeholders.initial_need')} />
                   </Form.Item>
                 </Descriptions.Item>
@@ -606,43 +498,27 @@ export default function LeadDetailPage() {
               <Form form={form} component={false} />
               <Descriptions column={2} bordered>
                 <Descriptions.Item label={t('lead.fields.name')}>{lead.name}</Descriptions.Item>
-                <Descriptions.Item label={t('lead.fields.contact_name')}>
-                  {lead.contactName || '-'}
-                </Descriptions.Item>
-                <Descriptions.Item label={t('lead.fields.company')}>
-                  {lead.companyName || '-'}
-                </Descriptions.Item>
+                <Descriptions.Item label={t('lead.fields.contact_name')}>{lead.contactName || '-'}</Descriptions.Item>
+                <Descriptions.Item label={t('lead.fields.company')}>{lead.companyName || '-'}</Descriptions.Item>
                 <Descriptions.Item label={t('lead.fields.email')}>{lead.email || '-'}</Descriptions.Item>
                 <Descriptions.Item label={t('lead.fields.phone')}>{lead.phone || '-'}</Descriptions.Item>
                 <Descriptions.Item label={t('lead.fields.status')}>
                   <Tag color={statusColors[lead.status]}>{statusLabels[lead.status] || lead.status}</Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label={t('lead.fields.rating')}>
-                  <Tag color={ratingColors[lead.rating || ''] || 'default'}>
-                    {lead.rating ? ratingLabels[lead.rating] || lead.rating : '-'}
-                  </Tag>
+                  <Tag color={ratingColors[lead.rating || ''] || 'default'}>{lead.rating ? ratingLabels[lead.rating] || lead.rating : '-'}</Tag>
                 </Descriptions.Item>
-                <Descriptions.Item label={t('lead.fields.source')}>
-                  {lead.source ? sourceLabels[lead.source] || lead.source : '-'}
-                </Descriptions.Item>
+                <Descriptions.Item label={t('lead.fields.source')}>{lead.source ? sourceLabels[lead.source] || lead.source : '-'}</Descriptions.Item>
                 <Descriptions.Item label={t('lead.fields.expected_value')} span={2}>
                   {lead.expectedValue ? `¥${lead.expectedValue.toLocaleString(locale)}` : '-'}
                 </Descriptions.Item>
                 <Descriptions.Item label={t('lead.fields.initial_need')} span={2}>
                   {lead.initialNeed || '-'}
                 </Descriptions.Item>
-                <Descriptions.Item label={t('lead.fields.first_follow_up_due_at')}>
-                  {lead.firstFollowUpDueAt
-                    ? new Date(lead.firstFollowUpDueAt).toLocaleString(locale)
-                    : '-'}
-                </Descriptions.Item>
-                <Descriptions.Item label={t('lead.fields.last_activity_at')}>
-                  {lead.lastActivityAt ? new Date(lead.lastActivityAt).toLocaleString(locale) : '-'}
-                </Descriptions.Item>
+                <Descriptions.Item label={t('lead.fields.first_follow_up_due_at')}>{lead.firstFollowUpDueAt ? new Date(lead.firstFollowUpDueAt).toLocaleString(locale) : '-'}</Descriptions.Item>
+                <Descriptions.Item label={t('lead.fields.last_activity_at')}>{lead.lastActivityAt ? new Date(lead.lastActivityAt).toLocaleString(locale) : '-'}</Descriptions.Item>
                 <Descriptions.Item label={t('lead.fields.next_follow_up_at')} span={2}>
-                  {lead.nextFollowUpAt
-                    ? new Date(lead.nextFollowUpAt).toLocaleString(locale)
-                    : '-'}
+                  {lead.nextFollowUpAt ? new Date(lead.nextFollowUpAt).toLocaleString(locale) : '-'}
                 </Descriptions.Item>
                 <Descriptions.Item label={t('lead.fields.description')} span={2}>
                   {lead.description || '-'}
@@ -652,15 +528,7 @@ export default function LeadDetailPage() {
           )}
         </Card>
 
-        <Card>
-          <Tabs
-            items={tabItems}
-            activeKey={activeTab}
-            onChange={setActiveTab}
-            style={{ minHeight: DETAIL_TABS_MIN_HEIGHT }}
-            destroyOnHidden
-          />
-        </Card>
+        <Tabs items={tabItems} activeKey={activeTab} onChange={setActiveTab} style={{ minHeight: DETAIL_TABS_MIN_HEIGHT }} destroyOnHidden />
       </Space>
     </div>
   );

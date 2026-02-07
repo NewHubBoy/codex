@@ -35,6 +35,21 @@ export class OpportunityDto {
 
   @ApiProperty({ required: false })
   lastStageChangedAt?: string | null;
+
+  @ApiProperty({
+    required: false,
+    type: "object",
+    properties: {
+      id: { type: "string" },
+      name: { type: "string" },
+      email: { type: "string" }
+    }
+  })
+  owner?: {
+    id: string;
+    name: string;
+    email: string;
+  } | null;
 }
 
 export class CreateOpportunityDto {
@@ -115,4 +130,20 @@ export class UpdateOpportunityDto {
       "When status=WON requires amount & expectedCloseDate; when status=LOST requires reasonLost."
   })
   status?: string;
+}
+
+export class OpportunityAssigneeDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  name!: string;
+
+  @ApiProperty()
+  email!: string;
+}
+
+export class AssignOpportunityOwnerDto {
+  @ApiProperty()
+  ownerId!: string;
 }

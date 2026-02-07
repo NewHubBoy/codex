@@ -11,6 +11,8 @@ import { assertTransition } from "../../common/status-transitions";
 import { I18nService } from "../../common/i18n/i18n.service";
 import { badRequest, notFound } from "../../common/i18n/i18n-error";
 
+const OPPORTUNITY_ASSIGNABLE_ROLE_CODE = "PRE_SALES_PERSON";
+
 @Injectable()
 export class OpportunitiesService {
   constructor(
@@ -114,7 +116,11 @@ export class OpportunitiesService {
     };
   }
 
-  async get(ctx: RequestContext, id: string) {
+  async get(
+    ctx: RequestContext,
+    id: string,
+    options?: { includeOwner?: boolean }
+  ) {
     const scopeFilter = await this.dataScope.buildOrgScopeFilter(ctx);
     const opportunity = await this.prisma.opportunity.findFirst({
       where: { id, tenantId: ctx.tenantId, ...scopeFilter }
@@ -127,7 +133,73 @@ export class OpportunitiesService {
         "opportunity.not_found"
       );
     }
-    return this.withOwner(ctx, opportunity);
+    if (options?.includeOwner) {
+      return this.withOwner(ctx, opportunity);
+    }
+    return opportunity;
+  }
+
+  async listAssignableOwners(ctx: RequestContext, q?: string) {
+    const normalizedQ = q?.trim();
+    return this.prisma.user.findMany({
+      where: {
+        tenantId: ctx.tenantId,
+        status: "ACTIVE",
+        roles: {
+          some: {
+            role: {
+              tenantId: ctx.tenantId,
+              code: OPPORTUNITY_ASSIGNABLE_ROLE_CODE,
+              status: "ACTIVE"
+            }
+          }
+        },
+        ...(normalizedQ
+          ? {
+              OR: [
+                { name: { contains: normalizedQ, mode: "insensitive" } },
+                { email: { contains: normalizedQ, mode: "insensitive" } }
+              ]
+            }
+          : {})
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true
+      },
+      orderBy: [{ name: "asc" }, { email: "asc" }],
+      take: 200
+    });
+  }
+
+  async assignOwner(ctx: RequestContext, id: string, ownerId: string) {
+    const existing = await this.get(ctx, id);
+    const owner = await this.getAssignableOwner(ctx, ownerId);
+    const opportunity = await this.prisma.opportunity.update({
+      where: { id: existing.id },
+      data: {
+        ownerId: owner.id
+      }
+    });
+    await this.audit.log(
+      ctx,
+      "update",
+      "Opportunity",
+      opportunity.id,
+      `Assigned owner to ${owner.email}`
+    );
+    await this.outbox.enqueue(
+      ctx,
+      "Opportunity",
+      opportunity.id,
+      "opportunity.owner.assigned",
+      { ownerId: owner.id }
+    );
+    return {
+      ...opportunity,
+      owner
+    };
   }
 
   async update(ctx: RequestContext, id: string, input: UpdateOpportunityInput) {
@@ -230,6 +302,39 @@ export class OpportunitiesService {
   private async withOwner(ctx: RequestContext, opportunity: any) {
     const [row] = await this.withOwners(ctx, [opportunity]);
     return row;
+  }
+
+  private async getAssignableOwner(ctx: RequestContext, ownerId: string) {
+    const owner = await this.prisma.user.findFirst({
+      where: {
+        id: ownerId,
+        tenantId: ctx.tenantId,
+        status: "ACTIVE",
+        roles: {
+          some: {
+            role: {
+              tenantId: ctx.tenantId,
+              code: OPPORTUNITY_ASSIGNABLE_ROLE_CODE,
+              status: "ACTIVE"
+            }
+          }
+        }
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true
+      }
+    });
+    if (!owner) {
+      throw badRequest(
+        this.i18n,
+        ctx.locale,
+        "OPPORTUNITY_OWNER_INVALID",
+        "opportunity.assign.invalid_owner"
+      );
+    }
+    return owner;
   }
 
   private async withOwners(ctx: RequestContext, opportunities: any[]) {
